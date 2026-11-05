@@ -255,6 +255,7 @@ class OrderEditFooter extends StatelessWidget {
     required this.onSave,
     required this.onAdd,
     required this.onRemoveMarked,
+    required this.maxHeight,
     this.saved = false,
     this.orderKnown = true,
     this.failure,
@@ -283,6 +284,10 @@ class OrderEditFooter extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback onRemoveMarked;
 
+  /// The most the strips and the total may stand high: they scroll above
+  /// the button when they hold more (`DL-132`).
+  final double maxHeight;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -310,50 +315,66 @@ class OrderEditFooter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (failure != null) ...<Widget>[
-              FailureMessage(failure),
-              const SizedBox(height: 8),
-            ],
-            if (summary.shortfallUzs > 0 && minimum != null)
-              _Strip(
-                stripKey: 'edit-minimum',
-                buttonKey: 'edit-minimum-add',
-                background: KitColors.warningWash,
-                icon: Icons.info_outline,
-                iconColor: KitColors.warningDark,
-                text: l10n.orderEditMinimum(
-                  MoneyFormat.uzs(minimum, language),
-                  MoneyFormat.uzs(summary.shortfallUzs, language),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (failure != null) ...<Widget>[
+                      FailureMessage(failure),
+                      const SizedBox(height: 8),
+                    ],
+                    if (summary.shortfallUzs > 0 && minimum != null)
+                      _Strip(
+                        stripKey: 'edit-minimum',
+                        buttonKey: 'edit-minimum-add',
+                        background: KitColors.warningWash,
+                        icon: Icons.info_outline,
+                        iconColor: KitColors.warningDark,
+                        text: l10n.orderEditMinimum(
+                          MoneyFormat.uzs(minimum, language),
+                          MoneyFormat.uzs(summary.shortfallUzs, language),
+                        ),
+                        button: l10n.orderEditAdd,
+                        onPressed:
+                            saving ||
+                                saved ||
+                                draft.kept.length >= orderMaxLines
+                            ? null
+                            : onAdd,
+                      ),
+                    if (marked.isNotEmpty)
+                      _Strip(
+                        stripKey: 'edit-gone',
+                        buttonKey: 'edit-gone-remove',
+                        background: KitColors.dangerWash,
+                        icon: Icons.error,
+                        iconColor: KitColors.danger,
+                        text: l10n.orderEditGone(
+                          marked
+                              .map((DraftLine line) => line.name(language))
+                              .join(', '),
+                        ),
+                        button: l10n.orderEditRemoveShort,
+                        onPressed: saving || saved ? null : onRemoveMarked,
+                      ),
+                    if (summary.failed)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          l10n.orderEditRecount,
+                          key: const ValueKey<String>('edit-recount'),
+                          style: _muted12,
+                        ),
+                      )
+                    else
+                      _TotalBlock(order: order, summary: summary),
+                  ],
                 ),
-                button: l10n.orderEditAdd,
-                onPressed: saving || saved ? null : onAdd,
               ),
-            if (marked.isNotEmpty)
-              _Strip(
-                stripKey: 'edit-gone',
-                buttonKey: 'edit-gone-remove',
-                background: KitColors.dangerWash,
-                icon: Icons.error,
-                iconColor: KitColors.danger,
-                text: l10n.orderEditGone(
-                  marked
-                      .map((DraftLine line) => line.name(language))
-                      .join(', '),
-                ),
-                button: l10n.orderEditRemoveShort,
-                onPressed: saving || saved ? null : onRemoveMarked,
-              ),
-            if (summary.failed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  l10n.orderEditRecount,
-                  key: const ValueKey<String>('edit-recount'),
-                  style: _muted12,
-                ),
-              )
-            else
-              _TotalBlock(order: order, summary: summary),
+            ),
             _SaveButton(
               face: face,
               text: _faceText(l10n, language, face, marked, summary),

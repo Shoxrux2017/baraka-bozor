@@ -510,6 +510,13 @@ class _EditorState extends ConsumerState<_Editor>
     );
   }
 
+  /// The strip's «Убрать»: every marked line goes out, with one light buzz
+  /// like every removal.
+  void _removeMarked() {
+    _draft.removeMarked();
+    unawaited(HapticFeedback.lightImpact());
+  }
+
   /// Keeps a line again, and says so.
   void _restore(DraftLine line) {
     _draft.restore(line.key);
@@ -803,108 +810,114 @@ class _EditorState extends ConsumerState<_Editor>
       },
       child: Form(
         key: _form,
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              // Every line is built, not only those in view, so the form
-              // checks them all and a line can be brought into view.
-              child: SingleChildScrollView(
-                key: const ValueKey<String>('order-editor'),
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _InfoBox(
-                      assigned:
-                          widget.order.status == OrderStatus.shoppingAssigned,
-                    ),
-                    const SizedBox(height: 8),
-                    FoldingColumn<DraftLine>(
-                      items: <DraftLine>[
-                        for (final DraftLine line in draft.lines)
-                          if (!draft.arriving.contains(line.key)) line,
-                      ],
-                      keyOf: (DraftLine line) => line.key,
-                      itemBuilder: (BuildContext context, DraftLine line) =>
-                          KeyedSubtree(
-                            key: _card(line.key),
-                            child: LineFlash(
-                              flash: _flashes[line.key] ?? 0,
-                              color:
-                                  _flashColors[line.key] ??
-                                  KitColors.dangerWash,
-                              child: _Settling(
-                                child: OrderEditLineTile(
-                                  draft: line,
-                                  adds:
-                                      !line.removed && line.adds(widget.order),
-                                  busy: saving.isBusy || _saved,
-                                  onStep: ({required bool up}) =>
-                                      _step(line, up: up),
-                                  onQuantity: () => _exactQuantity(line),
-                                  onOptions: () => _options(line, language),
-                                  onRemove: () => _remove(line),
-                                  onRestore: () => _restore(line),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) => Column(
+            children: <Widget>[
+              Expanded(
+                // Every line is built, not only those in view, so the form
+                // checks them all and a line can be brought into view.
+                child: SingleChildScrollView(
+                  key: const ValueKey<String>('order-editor'),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      _InfoBox(
+                        assigned:
+                            widget.order.status == OrderStatus.shoppingAssigned,
+                      ),
+                      const SizedBox(height: 8),
+                      FoldingColumn<DraftLine>(
+                        items: <DraftLine>[
+                          for (final DraftLine line in draft.lines)
+                            if (!draft.arriving.contains(line.key)) line,
+                        ],
+                        keyOf: (DraftLine line) => line.key,
+                        itemBuilder: (BuildContext context, DraftLine line) =>
+                            KeyedSubtree(
+                              key: _card(line.key),
+                              child: LineFlash(
+                                flash: _flashes[line.key] ?? 0,
+                                color:
+                                    _flashColors[line.key] ??
+                                    KitColors.dangerWash,
+                                child: _Settling(
+                                  child: OrderEditLineTile(
+                                    draft: line,
+                                    adds:
+                                        !line.removed &&
+                                        line.adds(widget.order),
+                                    busy: saving.isBusy || _saved,
+                                    onStep: ({required bool up}) =>
+                                        _step(line, up: up),
+                                    onQuantity: () => _exactQuantity(line),
+                                    onOptions: () => _options(line, language),
+                                    onRemove: () => _remove(line),
+                                    onRestore: () => _restore(line),
+                                  ),
                                 ),
                               ),
                             ),
+                      ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        key: const ValueKey<String>('edit-add-product'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: KitColors.primaryDark,
+                          side: const BorderSide(
+                            color: KitColors.primary,
+                            width: 1.5,
                           ),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      key: const ValueKey<String>('edit-add-product'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: KitColors.primaryDark,
-                        side: const BorderSide(
-                          color: KitColors.primary,
-                          width: 1.5,
+                          minimumSize: const Size.fromHeight(54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                        minimumSize: const Size.fromHeight(54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                        icon: const Icon(Icons.add),
+                        label: Text(
+                          l10n.orderAddProduct,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
+                        onPressed: saving.isBusy || _saved || full
+                            ? null
+                            : _add,
                       ),
-                      icon: const Icon(Icons.add),
-                      label: Text(
-                        l10n.orderAddProduct,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                      if (full)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            l10n.orderAddFull(orderMaxLines),
+                            key: const ValueKey<String>('edit-full'),
+                            style: warning,
+                          ),
                         ),
-                      ),
-                      onPressed: saving.isBusy || _saved || full ? null : _add,
-                    ),
-                    if (full)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          l10n.orderAddFull(orderMaxLines),
-                          key: const ValueKey<String>('edit-full'),
-                          style: warning,
-                        ),
-                      ),
-                    const SizedBox(height: 20),
-                    _WishField(controller: _wish),
-                    const SizedBox(height: 16),
-                    OrderEditTotals(keptCount: kept.length, summary: summary),
-                  ],
+                      const SizedBox(height: 20),
+                      _WishField(controller: _wish),
+                      const SizedBox(height: 16),
+                      OrderEditTotals(keptCount: kept.length, summary: summary),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            OrderEditFooter(
-              order: widget.order,
-              draft: draft,
-              summary: summary,
-              changes: changes,
-              saving: saving.isBusy,
-              saved: _saved,
-              orderKnown: orderKnown,
-              failure: _lineFailure(saving.failure),
-              onSave: _save,
-              onAdd: _add,
-              onRemoveMarked: _draft.removeMarked,
-            ),
-          ],
+              OrderEditFooter(
+                order: widget.order,
+                draft: draft,
+                summary: summary,
+                changes: changes,
+                saving: saving.isBusy,
+                saved: _saved,
+                orderKnown: orderKnown,
+                failure: _lineFailure(saving.failure),
+                onSave: _save,
+                onAdd: _add,
+                onRemoveMarked: _removeMarked,
+                maxHeight: constraints.maxHeight * 0.45,
+              ),
+            ],
+          ),
         ),
       ),
     );

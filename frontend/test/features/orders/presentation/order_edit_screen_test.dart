@@ -1225,6 +1225,30 @@ void main() {
         },
       );
     }
+
+    for (final (String, TextScaler) scale in <(String, TextScaler)>[
+      ('100 %', TextScaler.noScaling),
+      ('200 %', const NonlinearTextScaler(2)),
+    ]) {
+      testWidgets('the line sheet meets the guideline at ${scale.$1}', (
+        WidgetTester tester,
+      ) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(
+          tester,
+          at: AppPaths.customerOrderEdit(orderOne),
+          size: const Size(360, 800),
+          scaler: scale.$2,
+          device: const Locale('ru'),
+        );
+        await tapAndSettle(tester, byKey('edit-options-$lineTomato'));
+        expect(byKey('edit-remove-$lineTomato'), findsOneWidget);
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      });
+    }
   });
 
   group('the sums, the minimum and the save', () {
@@ -1797,6 +1821,132 @@ void main() {
         }
       },
     );
+
+    ApiRefusal minimumRefusal(int shortfall) => ApiRefusal(
+      ApiError(
+        status: 409,
+        code: 'minimum_order_not_reached',
+        details: <String, Object?>{
+          'minimum_order_uzs': 50000,
+          'shortfall_uzs': shortfall,
+        },
+      ),
+    );
+
+    testWidgets(
+      'a save refused for the minimum after a failed preview still shows the '
+      'strip and the shortfall on the button',
+      (WidgetTester tester) async {
+        orders.previews = (String id, List<OrderEditLine> lines) =>
+            throw const NetworkFailure();
+        await openPage(tester);
+        await removeLine(tester, lineBread);
+        await removeLine(tester, lineApple);
+        await answered(tester);
+        expect(byKey('edit-recount'), findsOneWidget);
+        expect(byKey('edit-minimum'), findsNothing);
+
+        orders.failure = minimumRefusal(15000);
+        await tapAndSettle(tester, byKey('edit-save'));
+
+        expect(byKey('edit-minimum'), findsOneWidget);
+        expect(inButton('Не хватает ${uzs(15000)}'), findsOneWidget);
+        expect(
+          tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+          isNull,
+        );
+      },
+    );
+
+    testWidgets("the strip's Добавить is off while the order holds 100 lines", (
+      WidgetTester tester,
+    ) async {
+      String id(int group, int i) =>
+          '0192f0a0-0000-7000-800$group-${i.toString().padLeft(12, '0')}';
+      orders.rows = <Map<String, Object?>>[
+        customerOrderJson(
+          lines: <Object?>[
+            for (int i = 0; i < orderMaxLines; i++)
+              orderLineJson(
+                id: id(1, i),
+                productId: id(2, i),
+                unit: 'piece',
+                quantity: '1',
+              ),
+          ],
+        ),
+      ];
+      orders.previews = (String id, List<OrderEditLine> lines) =>
+          editPreviewJson(minimum: 50000, shortfall: 1000);
+      await open(
+        tester,
+        at: AppPaths.customerOrderEdit(orderOne),
+        device: const Locale('ru'),
+      );
+
+      await tapAndSettle(tester, byKey('line-plus-${id(1, 0)}'));
+      await answered(tester);
+
+      expect(byKey('edit-minimum'), findsOneWidget);
+      expect(
+        tester.widget<TextButton>(byKey('edit-minimum-add')).onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets(
+      'at 200 % on 360 x 640 each strip with the total fits, with the '
+      'keyboard up too',
+      (WidgetTester tester) async {
+        orders.previews = (String id, List<OrderEditLine> lines) =>
+            editPreviewJson(
+              merchandise: 9000,
+              total: 29000,
+              before: 91000,
+              change: -62000,
+              minimum: 50000,
+              shortfall: 41000,
+            );
+        await openPage(
+          tester,
+          size: const Size(360, 640),
+          scaler: const NonlinearTextScaler(2),
+        );
+        await tapAndSettle(tester, byKey('line-minus-$lineTomato'));
+        await answered(tester);
+        expect(byKey('edit-minimum'), findsOneWidget);
+        expect(byKey('edit-footer-total'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(
+          tester.getRect(byKey('edit-save')).bottom,
+          lessThanOrEqualTo(640),
+        );
+
+        tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
+
+        orders.previewFailure = ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'product_unavailable',
+            details: <String, Object?>{
+              'product_ids': <Object?>[productApple],
+            },
+          ),
+        );
+        await tapAndSettle(tester, byKey('line-plus-$lineBread'));
+        await answered(tester);
+        expect(byKey('edit-gone'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('leaving and refusals', () {
@@ -2268,5 +2418,36 @@ void main() {
         handle.dispose();
       });
     }
+
+    testWidgets("the strip's Убрать buzzes once, like every removal", (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      orders.previewFailure = gone(<String>[productApple, productBread]);
+      await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+      await answered(tester);
+      expect(byKey('edit-gone'), findsOneWidget);
+      final List<String> haptics = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await tapAndSettle(tester, byKey('edit-gone-remove'));
+
+      expect(byKey('edit-gone'), findsNothing);
+      expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+    });
   });
 }
