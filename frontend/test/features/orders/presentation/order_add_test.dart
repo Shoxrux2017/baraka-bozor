@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
@@ -16,6 +17,7 @@ import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:baraka_bozor/features/orders/presentation/line_flash.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/semantics.dart' show SemanticsNode;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -201,6 +203,18 @@ void main() {
       .takeAnnouncements()
       .map((CapturedAccessibilityAnnouncement a) => a.message)
       .toList();
+
+  /// The width the stepper of [id] stands at when it has grown: 124, or more
+  /// when its quantity needs it (`DL-132`).
+  double pillOf(WidgetTester tester, String id) {
+    final RenderParagraph quantity = tester.renderObject<RenderParagraph>(
+      find.descendant(of: byKey('pick-step-$id'), matching: find.byType(Text)),
+    );
+    return math.max(
+      124,
+      88 + quantity.getMaxIntrinsicWidth(double.infinity) + 8,
+    );
+  }
 
   /// Every light buzz the platform is asked for.
   List<String> catchHaptics(WidgetTester tester) {
@@ -702,10 +716,11 @@ void main() {
           .getSize(byKey('pick-step-$productMilk'))
           .width;
       expect(midway, greaterThan(44));
-      expect(midway, lessThan(124), reason: 'the plus is growing');
       await tester.pumpAndSettle();
+      final double grown = pillOf(tester, productMilk);
+      expect(midway, lessThan(grown), reason: 'the plus is growing');
 
-      expect(tester.getSize(byKey('pick-step-$productMilk')).width, 124);
+      expect(tester.getSize(byKey('pick-step-$productMilk')).width, grown);
       expect(tester.getSize(byKey('pick-step-$productMilk')).height, 44);
       expect(
         byKey('pick-$productMilk'),
@@ -748,7 +763,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
 
-    expect(tester.getSize(byKey('pick-step-$productMilk')).width, 124);
+    expect(
+      tester.getSize(byKey('pick-step-$productMilk')).width,
+      pillOf(tester, productMilk),
+    );
     await tester.pumpAndSettle();
   });
 
@@ -1366,6 +1384,136 @@ void main() {
         await tester.enterText(byKey('edit-delivery-wish'), 'c' * 160);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'the bar says "≈" only when a line this visit added is an estimate',
+    (WidgetTester tester) async {
+      await open(tester, device: const Locale('ru'));
+      await openSection(tester);
+      await tapAndSettle(tester, byKey('pick-$productMilk'));
+
+      final String fixed = MoneyFormat.uzs(12000, AppLanguage.ru);
+      expect(
+        find.descendant(of: byKey('pick-bar'), matching: find.text(fixed)),
+        findsOneWidget,
+        reason: 'a fixed price, no "≈"',
+      );
+      expect(
+        find.descendant(
+          of: byKey('pick-bar'),
+          matching: find.text(l10n(tester).cartLineEstimate(fixed)),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('the bin and the plus buzz like every other removal and pick', (
+    WidgetTester tester,
+  ) async {
+    final List<String> haptics = catchHaptics(tester);
+    await open(tester, device: const Locale('ru'));
+    await openSection(tester);
+
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+
+    await tapAndSettle(tester, byKey('pick-minus-$productMilk'));
+    expect(haptics, <String>[
+      'HapticFeedbackType.lightImpact',
+      'HapticFeedbackType.lightImpact',
+    ]);
+  });
+
+  testWidgets('a plus that keeps a removed line again says it is back', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await removeLine(tester, lineTomato);
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await search(tester, 'pom');
+    announced(tester);
+
+    await tapAndSettle(tester, byKey('pick-$tomato'));
+
+    expect(announced(tester), <String>[
+      l10n(tester).orderEditRestored('Помидоры'),
+    ]);
+  });
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('200 %', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets(
+      'the stepper shows its whole quantity in Uzbek at ${scale.$1}',
+      (WidgetTester tester) async {
+        catalog.productRows.add(
+          catalogProduct(
+            id: '0192f0a0-0000-7000-8000-00000000c031',
+            nameUz: 'Qadoqli sut',
+            unitCode: UnitCode.package,
+            priceMode: PriceMode.fixed,
+            customerUnitPriceUzs: 9000,
+          ),
+        );
+        await open(tester, size: const Size(360, 800), scaler: scale.$2);
+        await openSection(tester);
+        const String boxed = '0192f0a0-0000-7000-8000-00000000c031';
+        for (final String id in <String>[productMilk, boxed]) {
+          await tapAndSettle(tester, byKey('pick-$id'));
+          final Finder quantity = find.descendant(
+            of: byKey('pick-step-$id'),
+            matching: find.byType(Text),
+          );
+          final RenderParagraph paragraph = tester
+              .renderObject<RenderParagraph>(quantity);
+          expect(paragraph.didExceedMaxLines, isFalse, reason: id);
+          expect(
+            tester.widget<Text>(quantity).overflow,
+            isNot(TextOverflow.ellipsis),
+            reason: id,
+          );
+          if (scale.$2 == TextScaler.noScaling) {
+            // The test font is as wide as it is high; at 200 % no row could
+            // hold it, so the pill is checked at 100 % only.
+            expect(
+              paragraph.getMaxIntrinsicWidth(double.infinity),
+              lessThanOrEqualTo(paragraph.size.width + 0.01),
+              reason: '$id: the whole quantity',
+            );
+          }
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('200 %', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets(
+      'a search result with plus and stepper rows meets the guideline '
+      'at ${scale.$1}',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(
+          tester,
+          size: const Size(360, 800),
+          scaler: scale.$2,
+          device: const Locale('ru'),
+        );
+        await tapAndSettle(tester, byKey('edit-add-product'));
+        await search(tester, 'о');
+        expect(byKey('product-$productMilk'), findsOneWidget);
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
       },
     );
   }

@@ -101,15 +101,27 @@ class _OrderProductPickerScreenState
   void _pick(CatalogProduct product) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
+    final String id = product.id.toLowerCase();
+    final bool restored = ref
+        .read(orderDraftProvider(widget.orderId))
+        .lines
+        .any(
+          (DraftLine line) =>
+              line.removed && line.productId.toLowerCase() == id,
+        );
     final DraftLine line = _draft.add(product, arriving: true);
     unawaited(HapticFeedback.lightImpact());
+    // A line the editor took out and the plus keeps again is not an added
+    // one: it says it is back (`DL-132`).
     announce(
       context,
-      l10n.orderPickAddedSpoken(
-        line.name(language),
-        quantityWords(l10n, line.unit, line.quantity),
-        _added(ref.read(orderDraftProvider(widget.orderId))).length,
-      ),
+      restored
+          ? l10n.orderEditRestored(line.name(language))
+          : l10n.orderPickAddedSpoken(
+              line.name(language),
+              quantityWords(l10n, line.unit, line.quantity),
+              _added(ref.read(orderDraftProvider(widget.orderId))).length,
+            ),
     );
   }
 
@@ -126,6 +138,7 @@ class _OrderProductPickerScreenState
       }
     }
     if (now == null || now.removed) {
+      unawaited(HapticFeedback.lightImpact());
       announce(context, l10n.orderEditRemoved(name));
     } else if (now.quantity != line.quantity) {
       announce(
@@ -263,6 +276,9 @@ class _OrderProductPickerScreenState
                   sumUzs: added.fold<int>(
                     0,
                     (int sum, DraftLine line) => sum + (line.previewUzs ?? 0),
+                  ),
+                  estimate: added.any(
+                    (DraftLine line) => line.priceMode == PriceMode.estimate,
                   ),
                   full: full,
                   onDone: _done,
@@ -548,6 +564,17 @@ class _PickRowState extends State<_PickRow>
     final bool atMinimum =
         line.quantityValid &&
         CardQuantity.previous(line.unit, line.quantity) == null;
+    const TextStyle quantityStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    );
+    final String quantityText = quantityWords(l10n, line.unit, line.quantity);
+    // The pill grows to hold its quantity, never cutting it (`DL-132`).
+    final double pill = math.max(
+      124,
+      88 + textWidth(context, quantityText, quantityStyle) + 8,
+    );
     final Widget content = Row(
       children: <Widget>[
         _StepButton(
@@ -559,15 +586,10 @@ class _PickRowState extends State<_PickRow>
         Expanded(
           child: ExcludeSemantics(
             child: Text(
-              quantityWords(l10n, line.unit, line.quantity),
+              quantityText,
               textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+              softWrap: false,
+              style: quantityStyle,
             ),
           ),
         ),
@@ -592,7 +614,7 @@ class _PickRowState extends State<_PickRow>
             : const Interval(80 / 280, 1).transform(t);
         return SizedBox(
           key: ValueKey<String>('pick-step-${widget.product.id}'),
-          width: expanded ? double.infinity : 44 + 80 * growth,
+          width: expanded ? double.infinity : 44 + (pill - 44) * growth,
           height: 44,
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -604,8 +626,8 @@ class _PickRowState extends State<_PickRow>
               child: expanded
                   ? Opacity(opacity: fade, child: content)
                   : OverflowBox(
-                      minWidth: 124,
-                      maxWidth: 124,
+                      minWidth: pill,
+                      maxWidth: pill,
                       child: Opacity(opacity: fade, child: content),
                     ),
             ),
@@ -827,12 +849,16 @@ class _PickBar extends StatelessWidget {
   const _PickBar({
     required this.count,
     required this.sumUzs,
+    required this.estimate,
     required this.full,
     required this.onDone,
   });
 
   final int count;
   final int sumUzs;
+
+  /// A line of this visit has an estimate price, so the sum carries "≈".
+  final bool estimate;
   final bool full;
   final VoidCallback onDone;
 
@@ -858,7 +884,9 @@ class _PickBar extends StatelessWidget {
         Text(
           full
               ? l10n.orderAddFull(orderMaxLines)
-              : l10n.cartLineEstimate(MoneyFormat.uzs(sumUzs, language)),
+              : estimate
+              ? l10n.cartLineEstimate(MoneyFormat.uzs(sumUzs, language))
+              : MoneyFormat.uzs(sumUzs, language),
           style: const TextStyle(fontSize: 13, color: KitColors.muted),
         ),
       ],
