@@ -13,13 +13,10 @@ import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
-import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/platform/phone_calls.dart';
-import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
-import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../cart/presentation/cart_summary.dart';
 import '../domain/customer_orders.dart';
@@ -1063,7 +1060,6 @@ class CancellationRequestCard extends StatelessWidget {
 class OrderFooter extends StatelessWidget {
   const OrderFooter({
     required this.order,
-    required this.cancelling,
     required this.onEdit,
     required this.onCancel,
     required this.onRequestCancel,
@@ -1071,61 +1067,25 @@ class OrderFooter extends StatelessWidget {
   });
 
   final CustomerOrder order;
-  final MutationState cancelling;
   final VoidCallback onEdit;
   final VoidCallback onCancel;
   final VoidCallback onRequestCancel;
-
-  /// Shopping began since the order was shown: the cancel now asks an
-  /// Operator, and a request needs its reason (`DL-65` (1)).
-  static bool needsReason(ApiFailure? failure) =>
-      failure is ApiRefusal &&
-      failure.status == 422 &&
-      failure.error.errors.containsKey('reason');
-
-  /// A request filed meanwhile, from another device: the order loaded again
-  /// shows it, and its words are the Operator's.
-  static bool alreadyRequested(ApiFailure? failure) =>
-      failure is ApiRefusal && failure.code == 'cancellation_already_pending';
 
   static bool _ended(CustomerOrder order) =>
       order.status == OrderStatus.completed ||
       order.status == OrderStatus.cancelled;
 
   /// Whether there is anything for the bar to hold.
-  static bool shows(CustomerOrder order, MutationState cancelling) {
-    final ApiFailure? failure = cancelling.failure;
-    return order.canEdit ||
-        order.canCancelDirectly ||
-        order.canRequestCancellation ||
-        _ended(order) ||
-        needsReason(failure) ||
-        (failure != null && !alreadyRequested(failure));
-  }
+  static bool shows(CustomerOrder order) =>
+      order.canEdit ||
+      order.canCancelDirectly ||
+      order.canRequestCancellation ||
+      _ended(order);
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool busy = cancelling.isBusy;
     final bool stacked = MediaQuery.textScalerOf(context).scale(14) > 18;
-    final ApiFailure? failure = cancelling.failure;
-
-    Widget label(String text) => busy
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  semanticsLabel: l10n.orderCancelling,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(child: _buttonText(text)),
-            ],
-          )
-        : _buttonText(text);
 
     final ButtonStyle outlinedDanger = OutlinedButton.styleFrom(
       foregroundColor: KitColors.danger,
@@ -1139,8 +1099,8 @@ class OrderFooter extends StatelessWidget {
         ? OutlinedButton(
             key: const ValueKey<String>('order-cancel'),
             style: outlinedDanger,
-            onPressed: busy ? null : onCancel,
-            child: label(l10n.orderCancelShort),
+            onPressed: onCancel,
+            child: _buttonText(l10n.orderCancelShort),
           )
         : null;
     final Widget? edit = order.canEdit
@@ -1157,15 +1117,15 @@ class OrderFooter extends StatelessWidget {
             ),
             icon: const Icon(Icons.edit, size: 18),
             label: _buttonText(l10n.orderEdit),
-            onPressed: busy ? null : onEdit,
+            onPressed: onEdit,
           )
         : null;
     final Widget? request = order.canRequestCancellation
         ? OutlinedButton(
             key: const ValueKey<String>('order-request-cancel'),
             style: outlinedDanger,
-            onPressed: busy ? null : onRequestCancel,
-            child: label(l10n.orderRequestCancel),
+            onPressed: onRequestCancel,
+            child: _buttonText(l10n.orderRequestCancel),
           )
         : null;
 
@@ -1212,17 +1172,6 @@ class OrderFooter extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (needsReason(failure))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      l10n.orderCancellationNeedsReason,
-                      key: const ValueKey<String>('order-cancel-needs-reason'),
-                      style: const TextStyle(color: KitColors.danger),
-                    ),
-                  )
-                else
-                  FailureMessage(alreadyRequested(failure) ? null : failure),
                 for (int i = 0; i < buttons.length; i++) ...<Widget>[
                   if (i > 0) const SizedBox(height: 10),
                   buttons[i],

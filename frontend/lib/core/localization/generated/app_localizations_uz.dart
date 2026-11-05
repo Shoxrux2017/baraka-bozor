@@ -2364,20 +2364,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get orderCancelReason => 'Sabab (ixtiyoriy)';
-
-  @override
-  String get orderCancelRepeating =>
-      'Avvalgi so\'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi';
-
-  @override
-  String get orderCancelling => 'Bekor qilinmoqda';
-
-  @override
-  String get orderCancellationNeedsReason =>
-      'Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi';
-
-  @override
   String get orderOpen => 'Buyurtmani ochish';
 
   @override
@@ -3220,9 +3206,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderRequestCancel => 'Bekor qilishni so\'rash';
-
-  @override
-  String get orderRequestCancelReason => 'Sabab';
 
   @override
   String get errorApprovalExpired => 'Savolga javob berish vaqti o\'tgan.';
@@ -4347,13 +4330,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Yig\'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.';
 
   @override
-  String get cancelReasonHint => 'Masalan: noto\'g\'ri buyurtma berdim';
-
-  @override
   String get orderCancelKeepKit => 'Buyurtmani qoldirish';
-
-  @override
-  String get requestSend => 'Yuborish';
 
   @override
   String get rateTitle => 'Buyurtmani baholash';

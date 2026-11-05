@@ -2395,20 +2395,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get orderCancelReason => 'Причина (необязательно)';
-
-  @override
-  String get orderCancelRepeating =>
-      'Прошлый запрос остался без ответа: он повторится с той же причиной';
-
-  @override
-  String get orderCancelling => 'Отменяем';
-
-  @override
-  String get orderCancellationNeedsReason =>
-      'Заказ уже в работе: напишите причину отмены, и решит оператор';
-
-  @override
   String get orderOpen => 'Открыть заказ';
 
   @override
@@ -3261,9 +3247,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderRequestCancel => 'Попросить отменить';
-
-  @override
-  String get orderRequestCancelReason => 'Причина';
 
   @override
   String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
@@ -4395,13 +4378,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.';
 
   @override
-  String get cancelReasonHint => 'Например: заказал не то';
-
-  @override
   String get orderCancelKeepKit => 'Оставить заказ';
-
-  @override
-  String get requestSend => 'Отправить';
 
   @override
   String get rateTitle => 'Оценка заказа';

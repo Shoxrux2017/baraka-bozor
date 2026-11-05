@@ -1457,10 +1457,6 @@
       }
     }
   },
-  "orderCancelReason": "Sabab (ixtiyoriy)",
-  "orderCancelRepeating": "Avvalgi so'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi",
-  "orderCancelling": "Bekor qilinmoqda",
-  "orderCancellationNeedsReason": "Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi",
   "orderOpen": "Buyurtmani ochish",
   "errorOrderEditingLocked": "Buyurtmani endi o'zgartirib bo'lmaydi. Buyurtma yangilandi",
   "errorOrderCancellationNotAllowed": "Buyurtmani endi bekor qilib bo'lmaydi. Buyurtma yangilandi",
@@ -2241,7 +2237,6 @@
   "requestStateRejected": "Operator rad etdi",
   "requestStateClosed": "Yopildi — buyurtma boshqacha yakunlandi",
   "orderRequestCancel": "Bekor qilishni so'rash",
-  "orderRequestCancelReason": "Sabab",
   "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
   "decisionSending": "Javob yuborilmoqda",
@@ -3135,9 +3130,7 @@
     }
   },
   "requestSheetHint": "Yig'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.",
-  "cancelReasonHint": "Masalan: noto'g'ri buyurtma berdim",
   "orderCancelKeepKit": "Buyurtmani qoldirish",
-  "requestSend": "Yuborish",
   "rateTitle": "Buyurtmani baholash",
   "rateQuestion": "Buyurtma № {number} sizga yoqdimi?",
   "@rateQuestion": {

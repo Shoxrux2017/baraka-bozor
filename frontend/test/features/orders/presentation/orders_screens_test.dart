@@ -8,7 +8,6 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
-import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_edited_banner.dart';
@@ -412,7 +411,9 @@ void main() {
         await tapAndSettle(tester, byKey('order-cancel'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
-        expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+        // The sheet itself is the retry: it stays, and says what is unknown.
+        expect(find.text(l10n(tester).cancelSheetUnsureTitle), findsOneWidget);
+        expect(find.text('«Kerak emas»'), findsOneWidget);
 
         orders.failure = const ApiRefusal(
           ApiError(status: 409, code: 'order_cancellation_not_allowed'),
@@ -420,17 +421,6 @@ void main() {
         orders.rows = <Map<String, Object?>>[
           customerOrderJson(status: 'shopping', changeable: false),
         ];
-        await tapAndSettle(tester, byKey('order-cancel'));
-        // The retry is the same request: its reason is shown and kept.
-        final TextField reason = tester.widget<TextField>(
-          find.descendant(
-            of: byKey('cancel-reason'),
-            matching: find.byType(TextField),
-          ),
-        );
-        expect(reason.controller!.text, 'Kerak emas');
-        expect(reason.readOnly, isTrue);
-        expect(find.text(l10n(tester).orderCancelRepeating), findsOneWidget);
         await tapAndSettle(tester, byKey('cancel-confirm'));
 
         expect(orders.cancels, hasLength(2));
@@ -440,6 +430,7 @@ void main() {
           find.text(l10n(tester).errorOrderCancellationNotAllowed),
           findsOneWidget,
         );
+        await tapAndSettle(tester, byKey('cancel-keep'));
         expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
       },
     );
@@ -480,6 +471,8 @@ void main() {
       await tapAndSettle(tester, byKey('order-cancel'));
       await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
       await tapAndSettle(tester, byKey('cancel-confirm'));
+      // The sheet stays on its retry face; the Customer leaves it by hand.
+      await tapAndSettle(tester, byKey('cancel-sheet-close'));
       await backToList(tester);
 
       expect(byKey('order-$orderOne'), findsOneWidget);
@@ -510,34 +503,28 @@ void main() {
       },
     );
 
-    testWidgets('without a reason, the Customer is told to give one', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, at: AppPaths.customerOrder(orderOne));
+    testWidgets(
+      'without a reason, the sheet turns into the request that asks for one',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.customerOrder(orderOne));
 
-      orders.failure = const ApiRefusal(
-        ApiError(
-          status: 422,
-          code: 'validation_failed',
-          errors: <String, List<String>>{
-            'reason': <String>['A cancellation request needs its reason.'],
-          },
-        ),
-      );
-      await tapAndSettle(tester, byKey('order-cancel'));
-      await tapAndSettle(tester, byKey('cancel-confirm'));
+        orders.failure = const ApiRefusal(
+          ApiError(
+            status: 422,
+            code: 'validation_failed',
+            errors: <String, List<String>>{
+              'reason': <String>['A cancellation request needs its reason.'],
+            },
+          ),
+        );
+        await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-confirm'));
 
-      expect(byKey('order-cancel-needs-reason'), findsOneWidget);
-      expect(
-        find.text(l10n(tester).orderCancellationNeedsReason),
-        findsOneWidget,
-      );
-      expect(find.text(l10n(tester).errorValidationFailed), findsNothing);
-      expect(
-        tester.widget<Text>(byKey('order-cancel-needs-reason')).style?.color,
-        KitColors.danger,
-      );
-    });
+        expect(byKey('cancel-raced'), findsOneWidget);
+        expect(find.text(l10n(tester).cancelSheetRaced), findsOneWidget);
+        expect(find.text(l10n(tester).errorValidationFailed), findsNothing);
+      },
+    );
 
     testWidgets('a cancellation request keeps the order on the list', (
       WidgetTester tester,

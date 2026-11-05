@@ -4172,30 +4172,6 @@ abstract class AppLocalizations {
   /// **'Buyurtmada ko\'pi bilan {count} ta mahsulot bo\'lishi mumkin'**
   String orderAddFull(int count);
 
-  /// No description provided for @orderCancelReason.
-  ///
-  /// In uz, this message translates to:
-  /// **'Sabab (ixtiyoriy)'**
-  String get orderCancelReason;
-
-  /// No description provided for @orderCancelRepeating.
-  ///
-  /// In uz, this message translates to:
-  /// **'Avvalgi so\'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi'**
-  String get orderCancelRepeating;
-
-  /// No description provided for @orderCancelling.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bekor qilinmoqda'**
-  String get orderCancelling;
-
-  /// No description provided for @orderCancellationNeedsReason.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi'**
-  String get orderCancellationNeedsReason;
-
   /// No description provided for @orderOpen.
   ///
   /// In uz, this message translates to:
@@ -5539,12 +5515,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bekor qilishni so\'rash'**
   String get orderRequestCancel;
-
-  /// No description provided for @orderRequestCancelReason.
-  ///
-  /// In uz, this message translates to:
-  /// **'Sabab'**
-  String get orderRequestCancelReason;
 
   /// No description provided for @errorApprovalExpired.
   ///
@@ -7286,23 +7256,11 @@ abstract class AppLocalizations {
   /// **'Yig\'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.'**
   String get requestSheetHint;
 
-  /// No description provided for @cancelReasonHint.
-  ///
-  /// In uz, this message translates to:
-  /// **'Masalan: noto\'g\'ri buyurtma berdim'**
-  String get cancelReasonHint;
-
   /// No description provided for @orderCancelKeepKit.
   ///
   /// In uz, this message translates to:
   /// **'Buyurtmani qoldirish'**
   String get orderCancelKeepKit;
-
-  /// No description provided for @requestSend.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yuborish'**
-  String get requestSend;
 
   /// No description provided for @rateTitle.
   ///

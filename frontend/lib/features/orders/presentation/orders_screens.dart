@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/money_format.dart';
-import '../../../core/formatting/server_text.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -131,27 +130,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
-  Future<void> _cancel(
-    BuildContext context, {
-    required int orderNumber,
-    required bool request,
-  }) async {
-    final OrderCancelController cancelling = ref.read(
-      orderCancelProvider(orderId).notifier,
-    );
-    final String? reason = await showCancelSheet(
-      context,
-      orderNumber: orderNumber,
-      request: request,
-      unconfirmed: cancelling.unconfirmed,
-      reason: cancelling.unconfirmedReason,
-    );
-    if (reason == null || !context.mounted) {
-      return;
-    }
-    final String trimmed = trimLikeServer(reason);
-    await cancelling.cancel(trimmed.isEmpty ? null : trimmed, request: request);
-  }
+  /// Opens the cancel sheet, which sends the cancel itself (`DL-133`); what
+  /// it answers is shown on the page by a later task.
+  Future<void> _cancel(BuildContext context) =>
+      showCancelSheet(context, orderId: orderId);
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +146,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final ApiFailure? failure = error == null
         ? null
         : (error is ApiFailure ? error : const UnexpectedFailure());
-    final MutationState cancelling = ref.watch(orderCancelProvider(orderId));
+    // The cancel's key and the sheet's draft last while the page shows.
+    ref.watch(orderCancelProvider(orderId));
     // The decisions sent without a sure answer last while the order is shown.
     ref.watch(unansweredDecisionsProvider(orderId));
 
@@ -175,21 +158,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             ? ''
             : l10n.customerOrderTitle(order.value!.orderNumber),
       ),
-      bottomNavigationBar: shown != null && OrderFooter.shows(shown, cancelling)
+      bottomNavigationBar: shown != null && OrderFooter.shows(shown)
           ? OrderFooter(
               order: shown,
-              cancelling: cancelling,
               onEdit: () => _edit(context, shown.id),
-              onCancel: () => _cancel(
-                context,
-                orderNumber: shown.orderNumber,
-                request: false,
-              ),
-              onRequestCancel: () => _cancel(
-                context,
-                orderNumber: shown.orderNumber,
-                request: true,
-              ),
+              onCancel: () => _cancel(context),
+              onRequestCancel: () => _cancel(context),
             )
           : null,
       body: SafeArea(

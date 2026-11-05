@@ -1177,16 +1177,18 @@ void main() {
   });
 
   group('the cancel sheet', () {
-    testWidgets('counts what is kept', (WidgetTester tester) async {
+    testWidgets('names the order and has a field for the reason', (
+      WidgetTester tester,
+    ) async {
       await show(tester, customerOrderJson());
       await tester.tap(byKey('order-cancel'));
       await tester.pumpAndSettle();
 
       expect(find.text('Отменить заказ № 1001?'), findsOneWidget);
-      expect(find.text('0 / 300'), findsOneWidget);
+      expect(find.text(ru().cancelFieldOwn), findsOneWidget);
       await tester.enterText(byKey('cancel-reason'), '  не то  ');
       await tester.pump();
-      expect(find.text('5 / 300'), findsOneWidget);
+      expect(find.text('  не то  '), findsOneWidget);
     });
 
     testWidgets('the close button keeps the order', (
@@ -1217,7 +1219,7 @@ void main() {
 
       expect(find.text('Попросить отменить заказ № 1001?'), findsOneWidget);
       expect(find.text(ru().requestSheetHint), findsOneWidget);
-      expect(find.text('Отправить'), findsOneWidget);
+      expect(find.text(ru().cancelSheetSendRequest), findsOneWidget);
       expect(find.text('Оставить заказ'), findsOneWidget);
     });
   });
