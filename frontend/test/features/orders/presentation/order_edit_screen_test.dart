@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:baraka_bozor/features/orders/presentation/line_flash.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_edit_words.dart';
@@ -110,7 +111,7 @@ void main() {
     Size size = const Size(800, 2400),
     double textScale = 1,
     TextScaler? scaler,
-    Object? extra,
+    FakeCatalogRepository? catalog,
     Locale device = const Locale('uz'),
     FakePhoneCalls? phoneCalls,
   }) async {
@@ -125,6 +126,7 @@ void main() {
         repository: auth,
         orders: orders,
         cart: cart,
+        catalog: catalog,
         device: device,
         textScaler: scaler,
         phoneCalls: phoneCalls,
@@ -133,10 +135,26 @@ void main() {
     await tester.pumpAndSettle();
     if (at != null) {
       final GoRouter router = GoRouter.of(anywhere(tester));
-      alone ? router.go(at, extra: extra) : router.push(at, extra: extra);
+      alone ? router.go(at) : router.push(at);
       await tester.pumpAndSettle();
     }
   }
+
+  /// A catalog with one section and the milk, the product the editor's added
+  /// line is made of.
+  FakeCatalogRepository milkCatalog() => FakeCatalogRepository(
+    categories: <CatalogCategory>[catalogCategory()],
+    products: <CatalogProduct>[
+      catalogProduct(
+        id: productMilk,
+        nameUz: 'Sut',
+        nameRu: 'Молоко',
+        unitCode: UnitCode.piece,
+        priceMode: PriceMode.fixed,
+        customerUnitPriceUzs: 12000,
+      ),
+    ],
+  );
 
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
     if (finder.evaluate().isEmpty) {
@@ -155,6 +173,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(finder);
     await tester.pumpAndSettle();
+  }
+
+  /// Adds the milk in the picker and comes back to the editor.
+  Future<void> addMilkFromPicker(WidgetTester tester) async {
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await tapAndSettle(tester, byKey('pick-section-c-1'));
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    await tapAndSettle(tester, byKey('pick-done'));
   }
 
   /// Takes a line out of the editor: its options sheet, then the remove
@@ -1159,16 +1185,10 @@ void main() {
       await open(
         tester,
         at: AppPaths.customerOrderEdit(orderOne),
-        extra: catalogProduct(
-          id: productMilk,
-          nameUz: 'Sut',
-          nameRu: 'Молоко',
-          unitCode: UnitCode.piece,
-          priceMode: PriceMode.fixed,
-          customerUnitPriceUzs: 12000,
-        ),
+        catalog: milkCatalog(),
         device: const Locale('ru'),
       );
+      await addMilkFromPicker(tester);
 
       expect(
         tester.getSemantics(byKey('edit-line-added-$productMilk')).label,
@@ -1192,16 +1212,10 @@ void main() {
             at: AppPaths.customerOrderEdit(orderOne),
             size: const Size(360, 2400),
             scaler: scale.$2,
-            extra: catalogProduct(
-              id: productMilk,
-              nameUz: 'Sut',
-              nameRu: 'Молоко',
-              unitCode: UnitCode.piece,
-              priceMode: PriceMode.fixed,
-              customerUnitPriceUzs: 12000,
-            ),
+            catalog: milkCatalog(),
             device: const Locale('ru'),
           );
+          await addMilkFromPicker(tester);
           await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
           await removeLine(tester, lineBread);
 

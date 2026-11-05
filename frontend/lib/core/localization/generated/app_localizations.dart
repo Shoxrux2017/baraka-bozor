@@ -3902,12 +3902,6 @@ abstract class AppLocalizations {
   /// **'Yetkazish, yig\'im va jamini saqlagandan keyin qayta hisoblaymiz'**
   String get orderEditRecount;
 
-  /// No description provided for @orderPickInOrder.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtmada'**
-  String get orderPickInOrder;
-
   /// No description provided for @orderEditRemoveLine.
   ///
   /// In uz, this message translates to:
@@ -4171,12 +4165,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmaga qo\'shish'**
   String get orderAddTitle;
-
-  /// No description provided for @orderAddAlreadyIn.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bu mahsulot buyurtmada bor, uni o\'zgartirishingiz mumkin'**
-  String get orderAddAlreadyIn;
 
   /// No description provided for @orderAddFull.
   ///
@@ -8269,6 +8257,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Saqlanmadi: {title}. Saqlanmagan o\'zgarishlar: {count}'**
   String orderEditLockedSpoken(String title, int count);
+
+  /// No description provided for @orderPickAllSections.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha bo\'limlar'**
+  String get orderPickAllSections;
+
+  /// No description provided for @orderPickSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, bo\'lim'**
+  String orderPickSection(String name);
+
+  /// No description provided for @orderPickAlreadyIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada bor'**
+  String get orderPickAlreadyIn;
+
+  /// No description provided for @orderPickAddedNow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir qo\'shildi'**
+  String get orderPickAddedNow;
+
+  /// No description provided for @orderPickAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish: {name}'**
+  String orderPickAdd(String name);
+
+  /// No description provided for @orderPickRowSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {unit} uchun {price}'**
+  String orderPickRowSpoken(String name, String price, String unit);
+
+  /// No description provided for @orderPickInOrderSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, buyurtmada {quantity}'**
+  String orderPickInOrderSpoken(String name, String quantity);
+
+  /// No description provided for @orderPickAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shildi: {count} ta mahsulot'**
+  String orderPickAdded(int count);
+
+  /// No description provided for @orderPickAddedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shildi: {name}, {quantity}. Qo\'shilgan mahsulotlar: {count}'**
+  String orderPickAddedSpoken(String name, String quantity, int count);
 }
 
 class _AppLocalizationsDelegate

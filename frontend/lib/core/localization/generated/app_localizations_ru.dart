@@ -2206,9 +2206,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Доставку, сбор и итог пересчитаем после сохранения';
 
   @override
-  String get orderPickInOrder => 'В заказе';
-
-  @override
   String get orderEditRemoveLine => 'Убрать из заказа';
 
   @override
@@ -2391,10 +2388,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderAddTitle => 'Добавить в заказ';
-
-  @override
-  String get orderAddAlreadyIn =>
-      'Этот товар уже в заказе — его можно изменить';
 
   @override
   String orderAddFull(int count) {
@@ -5097,5 +5090,52 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String orderEditLockedSpoken(String title, int count) {
     return 'Не сохранено: $title. Не сохранилось изменений: $count';
+  }
+
+  @override
+  String get orderPickAllSections => 'Все разделы';
+
+  @override
+  String orderPickSection(String name) {
+    return '$name, раздел';
+  }
+
+  @override
+  String get orderPickAlreadyIn => 'Уже в заказе';
+
+  @override
+  String get orderPickAddedNow => 'Добавлен сейчас';
+
+  @override
+  String orderPickAdd(String name) {
+    return 'Добавить: $name';
+  }
+
+  @override
+  String orderPickRowSpoken(String name, String price, String unit) {
+    return '$name, $price за $unit';
+  }
+
+  @override
+  String orderPickInOrderSpoken(String name, String quantity) {
+    return '$name, в заказе $quantity';
+  }
+
+  @override
+  String orderPickAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавлено: $count товара',
+      many: 'Добавлено: $count товаров',
+      few: 'Добавлено: $count товара',
+      one: 'Добавлено: $count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String orderPickAddedSpoken(String name, String quantity, int count) {
+    return 'Добавили: $name, $quantity. Добавлено товаров: $count';
   }
 }

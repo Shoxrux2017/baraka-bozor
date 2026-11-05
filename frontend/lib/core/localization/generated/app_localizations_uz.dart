@@ -2175,9 +2175,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Yetkazish, yig\'im va jamini saqlagandan keyin qayta hisoblaymiz';
 
   @override
-  String get orderPickInOrder => 'Buyurtmada';
-
-  @override
   String get orderEditRemoveLine => 'Buyurtmadan olib tashlash';
 
   @override
@@ -2360,10 +2357,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderAddTitle => 'Buyurtmaga qo\'shish';
-
-  @override
-  String get orderAddAlreadyIn =>
-      'Bu mahsulot buyurtmada bor, uni o\'zgartirishingiz mumkin';
 
   @override
   String orderAddFull(int count) {
@@ -5029,5 +5022,44 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String orderEditLockedSpoken(String title, int count) {
     return 'Saqlanmadi: $title. Saqlanmagan o\'zgarishlar: $count';
+  }
+
+  @override
+  String get orderPickAllSections => 'Barcha bo\'limlar';
+
+  @override
+  String orderPickSection(String name) {
+    return '$name, bo\'lim';
+  }
+
+  @override
+  String get orderPickAlreadyIn => 'Buyurtmada bor';
+
+  @override
+  String get orderPickAddedNow => 'Hozir qo\'shildi';
+
+  @override
+  String orderPickAdd(String name) {
+    return 'Qo\'shish: $name';
+  }
+
+  @override
+  String orderPickRowSpoken(String name, String price, String unit) {
+    return '$name, $unit uchun $price';
+  }
+
+  @override
+  String orderPickInOrderSpoken(String name, String quantity) {
+    return '$name, buyurtmada $quantity';
+  }
+
+  @override
+  String orderPickAdded(int count) {
+    return 'Qo\'shildi: $count ta mahsulot';
+  }
+
+  @override
+  String orderPickAddedSpoken(String name, String quantity, int count) {
+    return 'Qo\'shildi: $name, $quantity. Qo\'shilgan mahsulotlar: $count';
   }
 }

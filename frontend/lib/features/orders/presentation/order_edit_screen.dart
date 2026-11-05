@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +22,6 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/fold.dart';
-import '../../catalog/domain/catalog.dart';
 import '../../catalog/presentation/quantity_sheet.dart';
 import '../application/customer_orders_controllers.dart';
 import '../application/order_draft.dart';
@@ -33,6 +34,7 @@ import 'order_edit_locked.dart';
 import 'order_edit_sheets.dart';
 import 'order_edit_words.dart';
 import 'order_line_sheet.dart';
+import 'order_product_picker.dart';
 
 /// The order's editor (`docs/09` section 21, `DL-43`): the lines the
 /// Customer still orders, each with its quantity, note and rule and the way
@@ -44,12 +46,9 @@ import 'order_line_sheet.dart';
 /// is not edited: after a refusal the order loads again and the editor gives
 /// way to saying so.
 class OrderEditScreen extends ConsumerStatefulWidget {
-  const OrderEditScreen({required this.orderId, this.adding, super.key});
+  const OrderEditScreen({required this.orderId, super.key});
 
   final String orderId;
-
-  /// A product picked before the editor was open, to add at once.
-  final CatalogProduct? adding;
 
   @override
   ConsumerState<OrderEditScreen> createState() => _OrderEditScreenState();
@@ -193,7 +192,6 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
                   _Editor(
                     key: _editor,
                     order: value,
-                    adding: widget.adding,
                     holding: _holding,
                     onLost: _handOver,
                   ),
@@ -238,13 +236,11 @@ class _Editor extends ConsumerStatefulWidget {
     required this.order,
     required this.holding,
     required this.onLost,
-    this.adding,
     super.key,
   });
 
   /// The order as last loaded, which a reload replaces under the draft.
   final CustomerOrder order;
-  final CatalogProduct? adding;
 
   /// Told when the ✓ «Сохранено» moment starts.
   final ValueNotifier<bool> holding;
@@ -278,8 +274,10 @@ class _EditorState extends ConsumerState<_Editor>
   /// The wish as the server would keep it, to count it among the changes.
   String _wishSeen = '';
 
-  /// How many times a line was flashed red after a refused save.
-  final Map<String, int> _redFlash = <String, int>{};
+  /// How many times a line was flashed — red after a refused save, green when
+  /// it arrived from the picker — and the colour of its last flash.
+  final Map<String, int> _flashes = <String, int>{};
+  final Map<String, Color> _flashColors = <String, Color>{};
 
   /// What the latest change says, until the preview of its sums answers; a
   /// later change replaces it (`DL-132`).
@@ -293,15 +291,6 @@ class _EditorState extends ConsumerState<_Editor>
     super.initState();
     _wishSeen = trimLikeServer(_wish.text);
     _wish.addListener(_wishChanged);
-    final CatalogProduct? adding = widget.adding;
-    if (adding != null) {
-      // The draft is changed after the build, not while it runs.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _take(adding);
-        }
-      });
-    }
   }
 
   @override
@@ -355,54 +344,75 @@ class _EditorState extends ConsumerState<_Editor>
     }
   }
 
-  /// Adds [product] to the draft; one the order already has is not added
-  /// twice: its line is kept and brought into view, and the Customer is told.
-  void _take(CatalogProduct product) {
-    final String id = product.id.toLowerCase();
-    final bool present = ref
-        .read(orderDraftProvider(widget.order.id))
-        .lines
-        .any((DraftLine line) => line.productId.toLowerCase() == id);
-    final DraftLine line = _draft.add(product);
-    if (present) {
-      _showPresent(line.key);
+  /// Opens the picker, which adds to the draft as it stays open; on return
+  /// the lines it added arrive in the list (`DL-132`). A picker closed by a
+  /// lock leaves this editor gone, and nothing arrives.
+  Future<void> _add() async {
+    await GoRouter.of(context).push<void>(
+      AppPaths.customerOrderAdd(widget.order.id),
+      extra: const OrderPickerOpening(),
+    );
+    if (mounted) {
+      _arrive(_draft.settleArrivals());
     }
   }
 
-  /// Picks a product from the catalog, which marks the products the order
-  /// keeps.
-  Future<void> _add() async {
-    final Set<String> inOrder = <String>{
-      for (final DraftLine line
-          in ref.read(orderDraftProvider(widget.order.id)).kept)
-        line.productId.toLowerCase(),
-    };
-    final CatalogProduct? product = await GoRouter.of(context)
-        .push<CatalogProduct>(
-          AppPaths.customerOrderAdd(widget.order.id),
-          extra: inOrder,
-        );
-    if (product == null || !mounted) {
+  /// The lines the picker added come in: the list unfolds them, scrolls to the
+  /// first so that it stands a third down the view, and flashes them green; the
+  /// first is said with the total through it. The flash and the scroll wait
+  /// for the frame that builds the lines.
+  void _arrive(List<String> keys) {
+    final DraftLine? first = keys.isEmpty ? null : _lineOf(keys.first);
+    if (first == null) {
       return;
     }
-    _take(product);
-  }
-
-  /// Tells the Customer the product is already in the order, and brings its
-  /// line into view, once the line is built.
-  void _showPresent(String key) {
+    _say(_quantityWords(first));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).orderAddAlreadyIn)),
-      );
-      final BuildContext? card = _card(key).currentContext;
-      if (card != null) {
-        Scrollable.ensureVisible(card);
-      }
+      setState(() {
+        for (final String key in keys) {
+          _flashes[key] = (_flashes[key] ?? 0) + 1;
+          _flashColors[key] = KitColors.lineFlash;
+        }
+      });
+      _scrollToThird(first.key);
     });
+  }
+
+  /// Scrolls so that the top of the line stands a third down the view, in
+  /// 300 ms, at once with reduced motion. The line may still be unfolding, so
+  /// its top is used, not the middle of the room it takes up at this moment.
+  void _scrollToThird(String key) {
+    final BuildContext? card = _card(key).currentContext;
+    final RenderObject? line = card?.findRenderObject();
+    final ScrollableState? scrollable = card == null
+        ? null
+        : Scrollable.maybeOf(card);
+    if (line == null || scrollable == null) {
+      return;
+    }
+    final ScrollPosition position = scrollable.position;
+    final double top = RenderAbstractViewport.of(line)
+        .getOffsetToReveal(line, 0)
+        .offset;
+    // Not held to the extent standing now: the room grows as the line unfolds.
+    final double target = math.max(
+      position.minScrollExtent,
+      top - position.viewportDimension / 3,
+    );
+    if (MediaQuery.disableAnimationsOf(context)) {
+      position.jumpTo(target);
+    } else {
+      unawaited(
+        position.animateTo(
+          target,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        ),
+      );
+    }
   }
 
   /// Says [words] with the total the lines now come to. A change that
@@ -426,6 +436,9 @@ class _EditorState extends ConsumerState<_Editor>
       return;
     }
     _waiting = words;
+    // The sums may already stand for these lines, as when the picker added
+    // them while the editor waited underneath.
+    _answered(ref.read(orderEditSummaryProvider(order.id)));
   }
 
   /// The words waiting go out once the sums are known; after a failed
@@ -622,7 +635,10 @@ class _EditorState extends ConsumerState<_Editor>
       return;
     }
     final DraftLine first = marked.first;
-    setState(() => _redFlash[first.key] = (_redFlash[first.key] ?? 0) + 1);
+    setState(() {
+      _flashes[first.key] = (_flashes[first.key] ?? 0) + 1;
+      _flashColors[first.key] = KitColors.dangerWash;
+    });
     final Duration duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 300);
@@ -813,8 +829,10 @@ class _EditorState extends ConsumerState<_Editor>
                           KeyedSubtree(
                             key: _card(line.key),
                             child: LineFlash(
-                              flash: _redFlash[line.key] ?? 0,
-                              color: KitColors.dangerWash,
+                              flash: _flashes[line.key] ?? 0,
+                              color:
+                                  _flashColors[line.key] ??
+                                  KitColors.dangerWash,
                               child: _Settling(
                                 child: OrderEditLineTile(
                                   draft: line,

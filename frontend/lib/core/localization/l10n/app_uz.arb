@@ -1181,7 +1181,6 @@
   "orderEditInfo": "Yig'uvchi xarid qilishni boshlamaguncha o'zgartirish mumkin. Buyurtmadagi mahsulotlarning narxi o'zgarmaydi.",
   "orderEditNew": "Yangi",
   "orderEditRecount": "Yetkazish, yig'im va jamini saqlagandan keyin qayta hisoblaymiz",
-  "orderPickInOrder": "Buyurtmada",
   "orderEditRemoveLine": "Buyurtmadan olib tashlash",
   "orderEditKeepLine": "Qaytarish",
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
@@ -1450,7 +1449,6 @@
   "orderChangeNoWish": "Yetkazish istagi olib tashlandi",
   "orderAddProduct": "Mahsulot qo'shish",
   "orderAddTitle": "Buyurtmaga qo'shish",
-  "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",
   "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'lishi mumkin",
   "@orderAddFull": {
     "placeholders": {
@@ -3835,6 +3833,72 @@
   "@orderEditLockedSpoken": {
     "placeholders": {
       "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderPickAllSections": "Barcha bo'limlar",
+  "orderPickSection": "{name}, bo'lim",
+  "@orderPickSection": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickAlreadyIn": "Buyurtmada bor",
+  "orderPickAddedNow": "Hozir qo'shildi",
+  "orderPickAdd": "Qo'shish: {name}",
+  "@orderPickAdd": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickRowSpoken": "{name}, {unit} uchun {price}",
+  "@orderPickRowSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickInOrderSpoken": "{name}, buyurtmada {quantity}",
+  "@orderPickInOrderSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickAdded": "Qo'shildi: {count} ta mahsulot",
+  "@orderPickAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderPickAddedSpoken": "Qo'shildi: {name}, {quantity}. Qo'shilgan mahsulotlar: {count}",
+  "@orderPickAddedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
         "type": "String"
       },
       "count": {
