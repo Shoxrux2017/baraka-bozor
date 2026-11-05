@@ -2007,5 +2007,5 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
 12. **Haptics:** `lightImpact` on a removal, a pick that adds and the save's success.
 13. **The picker's sections are the page's own tiles** (name over picture, two to a row, one above 1.3 at 14 px), not the home's tile grid.
 14. **At large text a line stacks as the cart's line does** (`DL-119` (4)).
-15. **How `edit-3`, `edit-9`, `edit-11`, `edit-12` were reproduced:** to be filled in by the lead.
+15. **How `edit-3`, `edit-9`, `edit-11`, `edit-12` were reproduced:** by red tests on the editor before its change, as in stages 11 and 12 — the Owner dropped the emulator walks for stages 8 to 12 (2026-11-05). `edit-11`: at large text the line's sum stood in a `FittedBox` («Found 1 widget with type "FittedBox" that are ancestors of …»); `edit-12`: a removed line had no removed row a reader could tell apart (no `edit-removed-<key>`); `edit-3`: × and system back left with changes without a word (no `edit-leave-sheet`); `edit-9`: a refusal because shopping started showed no list of what did not save (no `edit-locked`). Each of these tests stays as the item's test.
 16. **The banner «Заказ изменён · Итого …» shows on the order page the editor was opened over;** an editor opened by its address alone goes to the order without it.
