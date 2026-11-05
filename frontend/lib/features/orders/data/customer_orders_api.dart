@@ -44,6 +44,59 @@ class CustomerOrdersApi {
     return _theOrder(response, id);
   }
 
+  static List<Map<String, Object?>> _editItems(List<OrderEditLine> lines) =>
+      <Map<String, Object?>>[
+        for (final OrderEditLine line in lines)
+          <String, Object?>{
+            'product_id': line.productId,
+            'quantity': line.quantity,
+            'customer_note': line.customerNote,
+            'substitution_policy': line.substitutionPolicy.code,
+          },
+      ];
+
+  Future<OrderEditPreview> previewEdit(
+    String id,
+    List<OrderEditLine> lines,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_path(id)}/items/preview',
+      data: <String, Object?>{'items': _editItems(lines)},
+      options: _customer,
+    );
+    return parsePreview(ApiEnvelope.unwrap(response.data));
+  }
+
+  /// The sums of an edit (`docs/09` section 21): the total is its three
+  /// parts, the change is the total less the one before.
+  static OrderEditPreview parsePreview(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'edit preview');
+    final TotalKind kind = json.choice('total_kind', TotalKind.tryParse);
+    if (kind == TotalKind.none) {
+      throw const FormatException('an edit preview has a total');
+    }
+    final OrderEditPreview preview = OrderEditPreview(
+      merchandiseSubtotalUzs: _amount(json, 'merchandise_subtotal_uzs'),
+      serviceFeeUzs: _amount(json, 'service_fee_uzs'),
+      deliveryFeeUzs: _amount(json, 'delivery_fee_uzs'),
+      totalUzs: _amount(json, 'total_uzs'),
+      totalKind: kind,
+      totalBeforeUzs: _amount(json, 'total_before_uzs'),
+      totalChangeUzs: json.integer('total_change_uzs'),
+      minimumOrderUzs: _nullableAmount(json, 'minimum_order_uzs'),
+      minimumShortfallUzs: _amount(json, 'minimum_order_shortfall_uzs'),
+    );
+    if (preview.totalUzs !=
+            preview.merchandiseSubtotalUzs +
+                preview.serviceFeeUzs +
+                preview.deliveryFeeUzs ||
+        preview.totalChangeUzs != preview.totalUzs - preview.totalBeforeUzs ||
+        (preview.minimumShortfallUzs > 0 && preview.minimumOrderUzs == null)) {
+      throw const FormatException('an edit preview off its sums');
+    }
+    return preview;
+  }
+
   Future<CustomerOrder> edit(
     String id,
     List<OrderEditLine> lines,
@@ -52,15 +105,7 @@ class CustomerOrdersApi {
     final Response<dynamic> response = await _dio.put<dynamic>(
       '${_path(id)}/items',
       data: <String, Object?>{
-        'items': <Map<String, Object?>>[
-          for (final OrderEditLine line in lines)
-            <String, Object?>{
-              'product_id': line.productId,
-              'quantity': line.quantity,
-              'customer_note': line.customerNote,
-              'substitution_policy': line.substitutionPolicy.code,
-            },
-        ],
+        'items': _editItems(lines),
         'delivery_time_note': deliveryTimeNote,
       },
       options: _customer,
@@ -689,6 +734,10 @@ class CustomerOrdersRepositoryImpl implements CustomerOrdersRepository {
 
   @override
   Future<CustomerOrder> order(String id) => guardApiCall(() => _api.order(id));
+
+  @override
+  Future<OrderEditPreview> previewEdit(String id, List<OrderEditLine> lines) =>
+      guardApiCall(() => _api.previewEdit(id, lines));
 
   @override
   Future<CustomerOrder> edit(

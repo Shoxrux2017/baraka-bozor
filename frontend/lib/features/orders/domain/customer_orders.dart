@@ -520,12 +520,74 @@ final class OrderEditLine {
   final SubstitutionPolicy substitutionPolicy;
 }
 
+/// The sums an edit would leave the order with, as the server counts them
+/// before the edit is saved (`docs/09` section 21, `DL-132`).
+final class OrderEditPreview {
+  const OrderEditPreview({
+    required this.merchandiseSubtotalUzs,
+    required this.serviceFeeUzs,
+    required this.deliveryFeeUzs,
+    required this.totalUzs,
+    required this.totalKind,
+    required this.totalBeforeUzs,
+    required this.totalChangeUzs,
+    required this.minimumOrderUzs,
+    required this.minimumShortfallUzs,
+  });
+
+  /// The order's own sums, as a preview of the lines it holds: no change,
+  /// no shortfall. An order that can be edited is never cancelled, so its
+  /// sums are there.
+  factory OrderEditPreview.ofOrder(CustomerOrder order) {
+    final int? goods = order.merchandiseSubtotalUzs;
+    final int? fee = order.serviceFeeUzs;
+    final int? delivery = order.deliveryFeeUzs;
+    final int? total = order.totalUzs;
+    if (goods == null ||
+        fee == null ||
+        delivery == null ||
+        total == null ||
+        order.totalKind == TotalKind.none) {
+      throw StateError('an order without sums has no edit preview');
+    }
+    return OrderEditPreview(
+      merchandiseSubtotalUzs: goods,
+      serviceFeeUzs: fee,
+      deliveryFeeUzs: delivery,
+      totalUzs: total,
+      totalKind: order.totalKind,
+      totalBeforeUzs: total,
+      totalChangeUzs: 0,
+      minimumOrderUzs: null,
+      minimumShortfallUzs: 0,
+    );
+  }
+
+  final int merchandiseSubtotalUzs;
+  final int serviceFeeUzs;
+  final int deliveryFeeUzs;
+  final int totalUzs;
+
+  /// `final` or `estimate`, never `none`.
+  final TotalKind totalKind;
+  final int totalBeforeUzs;
+  final int totalChangeUzs;
+
+  /// The smallest order the shop takes, `null` when there is none.
+  final int? minimumOrderUzs;
+  final int minimumShortfallUzs;
+}
+
 /// The Customer's orders (`docs/09` sections 20 to 23), on the Customer
 /// session. Every method throws an `ApiFailure`.
 abstract interface class CustomerOrdersRepository {
   Future<Paged<OrderSummary>> orders(OrdersTab tab, int page);
 
   Future<CustomerOrder> order(String id);
+
+  /// The sums [lines] would leave the order with, without saving them
+  /// (`DL-132`).
+  Future<OrderEditPreview> previewEdit(String id, List<OrderEditLine> lines);
 
   /// Replaces the order's lines with [lines] and its wish with
   /// [deliveryTimeNote].

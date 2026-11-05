@@ -252,6 +252,33 @@ Map<String, Object?> orderSummaryJson({
   };
 }
 
+/// The edit preview as `docs/09` section 21 answers it (`DL-132`): the
+/// defaults are the sums of [customerOrderJson], unchanged.
+Map<String, Object?> editPreviewJson({
+  int merchandise = 35600,
+  int serviceFee = 5000,
+  int deliveryFee = 15000,
+  int? total,
+  String kind = 'estimate',
+  int before = 55600,
+  int? change,
+  int? minimum = 30000,
+  int shortfall = 0,
+}) {
+  final int sum = total ?? merchandise + serviceFee + deliveryFee;
+  return <String, Object?>{
+    'merchandise_subtotal_uzs': merchandise,
+    'service_fee_uzs': serviceFee,
+    'delivery_fee_uzs': deliveryFee,
+    'total_uzs': sum,
+    'total_kind': kind,
+    'total_before_uzs': before,
+    'total_change_uzs': change ?? sum - before,
+    'minimum_order_uzs': minimum,
+    'minimum_order_shortfall_uzs': shortfall,
+  };
+}
+
 /// The Customer's orders in memory. A change answers with [answer] when set
 /// (a test decides what the server says), or fails once with [failure]; an
 /// order's load fails once with [loadFailure].
@@ -385,6 +412,45 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
     for (final Map<String, Object?> row in rows) {
       if (row['id'] == id) {
         return CustomerOrdersApi.parseOrder(row);
+      }
+    }
+    throw const ApiRefusal(ApiError(status: 404, code: 'resource_not_found'));
+  }
+
+  /// What a preview answers (its json), by order and lines; the order row's
+  /// own sums, unchanged, when not set.
+  Map<String, Object?> Function(String id, List<OrderEditLine> lines)? previews;
+
+  /// The next preview fails with it, once.
+  ApiFailure? previewFailure;
+
+  /// Holds the previews back until the test completes it.
+  Completer<void>? holdPreview;
+
+  /// Every preview asked: the order and the lines.
+  final List<(String, List<OrderEditLine>)> previewCalls =
+      <(String, List<OrderEditLine>)>[];
+
+  @override
+  Future<OrderEditPreview> previewEdit(
+    String id,
+    List<OrderEditLine> lines,
+  ) async {
+    previewCalls.add((id, lines));
+    await holdPreview?.future;
+    final ApiFailure? failed = previewFailure;
+    if (failed != null) {
+      previewFailure = null;
+      throw failed;
+    }
+    final Map<String, Object?> Function(String, List<OrderEditLine>)? custom =
+        previews;
+    if (custom != null) {
+      return CustomerOrdersApi.parsePreview(custom(id, lines));
+    }
+    for (final Map<String, Object?> row in rows) {
+      if (row['id'] == id) {
+        return OrderEditPreview.ofOrder(CustomerOrdersApi.parseOrder(row));
       }
     }
     throw const ApiRefusal(ApiError(status: 404, code: 'resource_not_found'));
