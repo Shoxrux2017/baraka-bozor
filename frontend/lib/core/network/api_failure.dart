@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 /// The error envelope of `docs/09-api-contracts.md` section 3, as the client
@@ -116,7 +118,7 @@ sealed class ApiFailure implements Exception {
       // No answer at all: a timeout, a refused connection, a bad certificate,
       // an interrupted transfer. All of them read as "the server could not
       // be reached" to the person holding the phone.
-      return const NetworkFailure();
+      return NetworkFailure(mayHaveArrived: _mayHaveArrived(exception));
     }
 
     final ApiError? error = ApiError.fromResponse(response);
@@ -125,6 +127,18 @@ sealed class ApiFailure implements Exception {
     }
 
     return ApiRefusal(error, retryAfterSeconds: ApiError.retryAfter(response));
+  }
+
+  /// Whether a request that got no answer may still have reached the server
+  /// (`DL-134`). dio's io adapter reports a `SocketException` only while it is
+  /// connecting, and a connect timeout only before anything was sent; every
+  /// other break comes after the request left the phone.
+  static bool _mayHaveArrived(DioException exception) {
+    if (exception.type == DioExceptionType.connectionTimeout) {
+      return false;
+    }
+    return !(exception.type == DioExceptionType.connectionError &&
+        exception.error is SocketException);
   }
 }
 
@@ -146,7 +160,12 @@ final class ApiRefusal extends ApiFailure {
 
 /// The server could not be reached, or the connection broke.
 final class NetworkFailure extends ApiFailure {
-  const NetworkFailure();
+  const NetworkFailure({this.mayHaveArrived = true});
+
+  /// `false` only when the connection was never made, so the request surely
+  /// did not reach the server; otherwise it may have, and an answer was lost
+  /// (`DL-134`).
+  final bool mayHaveArrived;
 
   @override
   String get code => ApiFailure.networkCode;

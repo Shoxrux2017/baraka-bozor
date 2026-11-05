@@ -321,6 +321,7 @@ class CustomerOrdersApi {
       ],
       comment: json.nullableString('comment'),
       createdAt: json.instant('created_at'),
+      reviewedAt: json.nullableInstant('reviewed_at'),
     );
   }
 

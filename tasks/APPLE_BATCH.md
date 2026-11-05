@@ -356,6 +356,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app reads the list summary's new keys as required (`pending_approval_expires_at`, `preview`), like `working_hours` (`DL-125` (7)) and the order screen's keys (`DL-130`): deploy the backend before any build of stage 12 reaches a phone (`DL-131`).
 - The stage 13 editor asks `POST /customer/orders/{order}/items/preview` for the order's sums (`DL-132`): an editor of this build against an older server finds no preview (`404`) and shows «Доставку, сбор и итог пересчитаем после сохранения», so deploy the backend first.
 - The app reads the order's `cancellation_note` as a required key, like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 14 reaches a phone (`DL-133`).
+- The app reads the rating's `reviewed_at` as a required key (its value may be `null`), like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 15 reaches a phone (`DL-134`).
 - After a cancel, focus moves to the order's status heading through its input focus (`DL-133` (9)); that TalkBack and VoiceOver follow it there is checked only on a real phone, at the wave's manual check.
 
 ## Review findings not acted on

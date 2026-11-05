@@ -19,6 +19,7 @@ const Map<String, Object?> _ratedTwo = <String, Object?>{
   'reasons': <Object?>['not_fresh'],
   'comment': 'мятые',
   'created_at': '2026-09-29T08:00:00Z',
+  'reviewed_at': null,
 };
 
 /// Rating a delivered order (drawings 29ж, 30, 30а, 30б) through the real
@@ -201,6 +202,7 @@ void main() {
           'reasons': <Object?>[],
           'comment': null,
           'created_at': '2026-09-29T08:00:00Z',
+          'reviewed_at': null,
         },
       ),
     ];
@@ -400,6 +402,7 @@ void main() {
               'reasons': <Object?>['not_fresh', 'wrong_weight', 'late', 'rude'],
               'comment': 'мятые ' * 40,
               'created_at': '2026-09-29T08:00:00Z',
+              'reviewed_at': null,
             },
           ),
         ];
