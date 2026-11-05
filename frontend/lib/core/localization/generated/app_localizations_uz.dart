@@ -4987,4 +4987,47 @@ class AppLocalizationsUz extends AppLocalizations {
   String orderQuestionsExpiredAnnounced(int number) {
     return 'Buyurtma № $number bo\'yicha savolga javob vaqti tugadi';
   }
+
+  @override
+  String get orderEditInfoAssigned =>
+      'Yig\'uvchi tayinlangan va tez orada xarid qilishni boshlaydi — shundan keyin buyurtmani o\'zgartirib bo\'lmaydi. O\'zgarishlarni darhol saqlang. Buyurtmadagi mahsulotlar narxi o\'zgarmaydi.';
+
+  @override
+  String get orderEditLeaveTitle => 'Saqlamasdan chiqasizmi?';
+
+  @override
+  String orderEditLeaveCount(int count) {
+    return '$count ta o\'zgarish saqlanmaydi:';
+  }
+
+  @override
+  String get orderEditKeepEditing => 'O\'zgartirishni davom ettirish';
+
+  @override
+  String get orderEditLeave => 'Saqlamasdan chiqish';
+
+  @override
+  String get orderEditLockedTitle => 'Yig\'uvchi xarid qilishni boshladi';
+
+  @override
+  String get orderEditLockedCancelled => 'Buyurtma bekor qilindi';
+
+  @override
+  String get orderEditLockedText =>
+      'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi. Muhim narsa bo\'lsa, qo\'llab-quvvatlash xizmatiga qo\'ng\'iroq qiling.';
+
+  @override
+  String get orderEditLockedTextNoPhone =>
+      'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi.';
+
+  @override
+  String get orderEditLost => 'Nima saqlanmadi';
+
+  @override
+  String get orderCallSupport => 'Qo\'llab-quvvatlashga qo\'ng\'iroq qilish';
+
+  @override
+  String orderEditLockedSpoken(String title, int count) {
+    return 'Saqlanmadi: $title. Saqlanmagan o\'zgarishlar: $count';
+  }
 }

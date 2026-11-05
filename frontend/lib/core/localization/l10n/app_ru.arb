@@ -3115,5 +3115,34 @@
   "orderOnTheWayAnnounced": "Заказ № {number} в пути. Курьер выехал",
   "orderDeliveredAnnounced": "Заказ № {number} доставлен. Он в прошлых заказах — там его можно оценить",
   "orderCancelledAnnounced": "Заказ № {number} отменён. Он в прошлых заказах",
-  "orderQuestionsExpiredAnnounced": "Время ответа на вопрос по заказу № {number} вышло"
+  "orderQuestionsExpiredAnnounced": "Время ответа на вопрос по заказу № {number} вышло",
+  "orderEditInfoAssigned": "Сборщик уже назначен и скоро начнёт покупать — после этого заказ не изменить. Сохраните изменения сразу. Цена товаров, что уже в заказе, не меняется.",
+  "orderEditLeaveTitle": "Выйти без сохранения?",
+  "orderEditLeaveCount": "{count, plural, one{Не сохранится {count} изменение:} few{Не сохранятся {count} изменения:} many{Не сохранятся {count} изменений:} other{Не сохранятся {count} изменения:}}",
+  "@orderEditLeaveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditKeepEditing": "Продолжить изменять",
+  "orderEditLeave": "Выйти без сохранения",
+  "orderEditLockedTitle": "Сборщик уже начал покупать",
+  "orderEditLockedCancelled": "Заказ отменён",
+  "orderEditLockedText": "Изменения не сохранились — заказ остался прежним. Если что-то важно, позвоните в поддержку.",
+  "orderEditLockedTextNoPhone": "Изменения не сохранились — заказ остался прежним.",
+  "orderEditLost": "Что не сохранилось",
+  "orderCallSupport": "Позвонить в поддержку",
+  "orderEditLockedSpoken": "Не сохранено: {title}. Не сохранилось изменений: {count}",
+  "@orderEditLockedSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

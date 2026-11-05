@@ -8197,6 +8197,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtma № {number} bo\'yicha savolga javob vaqti tugadi'**
   String orderQuestionsExpiredAnnounced(int number);
+
+  /// No description provided for @orderEditInfoAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlangan va tez orada xarid qilishni boshlaydi — shundan keyin buyurtmani o\'zgartirib bo\'lmaydi. O\'zgarishlarni darhol saqlang. Buyurtmadagi mahsulotlar narxi o\'zgarmaydi.'**
+  String get orderEditInfoAssigned;
+
+  /// No description provided for @orderEditLeaveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamasdan chiqasizmi?'**
+  String get orderEditLeaveTitle;
+
+  /// No description provided for @orderEditLeaveCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta o\'zgarish saqlanmaydi:'**
+  String orderEditLeaveCount(int count);
+
+  /// No description provided for @orderEditKeepEditing.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirishni davom ettirish'**
+  String get orderEditKeepEditing;
+
+  /// No description provided for @orderEditLeave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamasdan chiqish'**
+  String get orderEditLeave;
+
+  /// No description provided for @orderEditLockedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi xarid qilishni boshladi'**
+  String get orderEditLockedTitle;
+
+  /// No description provided for @orderEditLockedCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilindi'**
+  String get orderEditLockedCancelled;
+
+  /// No description provided for @orderEditLockedText.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi. Muhim narsa bo\'lsa, qo\'llab-quvvatlash xizmatiga qo\'ng\'iroq qiling.'**
+  String get orderEditLockedText;
+
+  /// No description provided for @orderEditLockedTextNoPhone.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi.'**
+  String get orderEditLockedTextNoPhone;
+
+  /// No description provided for @orderEditLost.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima saqlanmadi'**
+  String get orderEditLost;
+
+  /// No description provided for @orderCallSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llab-quvvatlashga qo\'ng\'iroq qilish'**
+  String get orderCallSupport;
+
+  /// No description provided for @orderEditLockedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmadi: {title}. Saqlanmagan o\'zgarishlar: {count}'**
+  String orderEditLockedSpoken(String title, int count);
 }
 
 class _AppLocalizationsDelegate

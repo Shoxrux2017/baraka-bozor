@@ -10,6 +10,7 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
+import 'package:baraka_bozor/features/orders/presentation/line_flash.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_edit_words.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -22,6 +23,7 @@ import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_catalog_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
+import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
 import '../../../support/nonlinear_text_scaler.dart';
 
@@ -30,7 +32,14 @@ import '../../../support/nonlinear_text_scaler.dart';
 const String lineApple = '0192f0a0-0000-7000-8000-00000000c014';
 const String productApple = '0192f0a0-0000-7000-8000-00000000c024';
 
-Map<String, Object?> pageOrder() => customerOrderJson(
+Map<String, Object?> pageOrder({
+  String status = 'new',
+  bool changeable = true,
+  String? supportPhone,
+}) => customerOrderJson(
+  status: status,
+  changeable: changeable,
+  supportPhone: supportPhone,
   lines: <Object?>[
     orderLineJson(
       quantity: '2.500',
@@ -103,6 +112,7 @@ void main() {
     TextScaler? scaler,
     Object? extra,
     Locale device = const Locale('uz'),
+    FakePhoneCalls? phoneCalls,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -117,6 +127,7 @@ void main() {
         cart: cart,
         device: device,
         textScaler: scaler,
+        phoneCalls: phoneCalls,
       ),
     );
     await tester.pumpAndSettle();
@@ -234,8 +245,11 @@ void main() {
 
         await tapAndSettle(tester, byKey('edit-save'));
 
-        expect(byKey('edit-closed'), findsOneWidget);
-        expect(find.text(l10n(tester).orderEditClosed), findsOneWidget);
+        // The wish the Customer typed did not save, and the view says so.
+        expect(byKey('edit-locked'), findsOneWidget);
+        expect(byKey('edit-closed'), findsNothing);
+        expect(find.text(l10n(tester).orderEditLockedTitle), findsOneWidget);
+        expect(find.text('Yetkazish istagi: «Ertalab»'), findsOneWidget);
         expect(byKey('edit-save'), findsNothing);
         await tapAndSettle(tester, byKey('edit-back-to-order'));
         expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
@@ -335,7 +349,8 @@ void main() {
         expect(byKey('retry-load'), findsNothing);
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
         await tester.pumpAndSettle();
-        expect(byKey('edit-closed'), findsOneWidget);
+        expect(byKey('edit-locked'), findsOneWidget);
+        expect(find.text('Yetkazish istagi: «Ertalab»'), findsOneWidget);
       },
     );
 
@@ -1768,5 +1783,476 @@ void main() {
         }
       },
     );
+  });
+
+  group('leaving and refusals', () {
+    const String phone = '+998712000000';
+
+    Finder inButton(String text) =>
+        find.descendant(of: byKey('edit-save'), matching: find.text(text));
+
+    List<String> announced(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .map((CapturedAccessibilityAnnouncement a) => a.message)
+        .toList();
+
+    Future<void> answered(WidgetTester tester) async {
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pumpAndSettle();
+    }
+
+    /// The editor opened over the order, in Russian.
+    Future<void> openEditor(
+      WidgetTester tester, {
+      Map<String, Object?>? order,
+      Size size = const Size(800, 2400),
+      TextScaler? scaler,
+      FakePhoneCalls? phoneCalls,
+    }) async {
+      orders.rows = <Map<String, Object?>>[order ?? pageOrder()];
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        size: size,
+        scaler: scaler,
+        device: const Locale('ru'),
+        phoneCalls: phoneCalls,
+      );
+      await tapAndSettle(tester, byKey('order-edit'));
+      expect(byKey('order-editor'), findsOneWidget);
+    }
+
+    /// Two changes: the flatbread out, the tomatoes from 2,5 to 3 kg.
+    Future<void> twoChanges(WidgetTester tester) async {
+      await removeLine(tester, lineBread);
+      await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+      await answered(tester);
+    }
+
+    testWidgets('with changes × asks before leaving', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      await twoChanges(tester);
+
+      await tapAndSettle(tester, byKey('edit-close'));
+
+      expect(byKey('edit-leave-sheet'), findsOneWidget);
+      expect(byKey('order-editor'), findsOneWidget, reason: 'still here');
+      for (final String text in <String>[
+        'Выйти без сохранения?',
+        'Не сохранятся 2 изменения:',
+        '− Хлеб',
+        'Помидоры: 2,5 кг → 3 кг',
+        'Продолжить изменять',
+        'Выйти без сохранения',
+      ]) {
+        expect(
+          find.descendant(
+            of: byKey('edit-leave-sheet'),
+            matching: find.text(text),
+          ),
+          findsOneWidget,
+          reason: text,
+        );
+      }
+    });
+
+    testWidgets(
+      'Продолжить изменять keeps the edits, Выйти без сохранения leaves',
+      (WidgetTester tester) async {
+        await openEditor(tester);
+        await twoChanges(tester);
+
+        await tapAndSettle(tester, byKey('edit-close'));
+        await tapAndSettle(tester, byKey('edit-keep-editing'));
+        expect(byKey('edit-leave-sheet'), findsNothing);
+        expect(byKey('edit-removed-$lineBread'), findsOneWidget);
+        expect(inButton('Сохранить изменения (2)'), findsOneWidget);
+
+        await tapAndSettle(tester, byKey('edit-close'));
+        await tapAndSettle(tester, byKey('edit-leave'));
+        expect(byKey('order-editor'), findsNothing);
+        expect(byKey('order-edit'), findsOneWidget, reason: 'the order');
+        expect(orders.edits, isEmpty);
+      },
+    );
+
+    testWidgets('a tap outside the exit sheet keeps editing', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      await twoChanges(tester);
+      await tapAndSettle(tester, byKey('edit-close'));
+
+      await tester.tapAt(const Offset(400, 40));
+      await tester.pumpAndSettle();
+
+      expect(byKey('edit-leave-sheet'), findsNothing);
+      expect(byKey('order-editor'), findsOneWidget);
+    });
+
+    testWidgets('system back asks too', (WidgetTester tester) async {
+      await openEditor(tester);
+      await twoChanges(tester);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('edit-leave-sheet'), findsOneWidget);
+      expect(byKey('order-editor'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('edit-leave-sheet'), findsNothing, reason: 'back keeps');
+      expect(byKey('order-editor'), findsOneWidget);
+    });
+
+    testWidgets('without changes × and back leave at once', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      await tapAndSettle(tester, byKey('edit-close'));
+      expect(byKey('edit-leave-sheet'), findsNothing);
+      expect(byKey('order-editor'), findsNothing);
+
+      await tapAndSettle(tester, byKey('order-edit'));
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('order-editor'), findsNothing);
+    });
+
+    testWidgets('a quantity to be set anew alone does not hold the editor', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(
+        tester,
+        order: customerOrderJson(
+          lines: <Object?>[
+            orderLineJson(unit: 'piece', quantity: '1.500'),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              unit: 'piece',
+              quantity: '2',
+            ),
+          ],
+        ),
+      );
+
+      await tapAndSettle(tester, byKey('edit-close'));
+
+      expect(byKey('edit-leave-sheet'), findsNothing);
+      expect(byKey('order-editor'), findsNothing);
+    });
+
+    testWidgets(
+      'a Shopper assigned shows the amber note, a new order the green one',
+      (WidgetTester tester) async {
+        await openEditor(tester, order: pageOrder(status: 'shopping_assigned'));
+        expect(
+          tester.widget<Text>(byKey('edit-info')).data,
+          'Сборщик уже назначен и скоро начнёт покупать — после этого '
+          'заказ не изменить. Сохраните изменения сразу. Цена товаров, '
+          'что уже в заказе, не меняется.',
+        );
+        expect(find.byIcon(Icons.schedule), findsOneWidget);
+        expect(find.byIcon(Icons.info_outline), findsNothing);
+        final BoxDecoration amber =
+            tester
+                    .widget<DecoratedBox>(
+                      find
+                          .ancestor(
+                            of: byKey('edit-info'),
+                            matching: find.byType(DecoratedBox),
+                          )
+                          .first,
+                    )
+                    .decoration
+                as BoxDecoration;
+        expect(amber.color, KitColors.warningWash);
+      },
+    );
+
+    testWidgets('a new order shows the green note', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      expect(find.text(l10n(tester).orderEditInfo), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(Icons.schedule), findsNothing);
+    });
+
+    /// The order a refusal because shopping started reloads.
+    Map<String, Object?> shopping({String? supportPhone = phone}) => pageOrder(
+      status: 'shopping',
+      changeable: false,
+      supportPhone: supportPhone,
+    );
+
+    const ApiRefusal locked = ApiRefusal(
+      ApiError(status: 409, code: 'order_editing_locked'),
+    );
+
+    testWidgets('a refusal because shopping started shows what did not save', (
+      WidgetTester tester,
+    ) async {
+      final FakePhoneCalls calls = FakePhoneCalls();
+      await openEditor(
+        tester,
+        order: pageOrder(supportPhone: phone),
+        phoneCalls: calls,
+      );
+      await twoChanges(tester);
+      orders
+        ..failure = locked
+        ..rows = <Map<String, Object?>>[shopping()];
+      announced(tester);
+
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(byKey('edit-locked'), findsOneWidget);
+      expect(byKey('edit-closed'), findsNothing);
+      expect(byKey('order-editor'), findsNothing);
+      for (final String text in <String>[
+        'Сборщик уже начал покупать',
+        'Изменения не сохранились — заказ остался прежним. '
+            'Если что-то важно, позвоните в поддержку.',
+        'Что не сохранилось',
+        '− Хлеб',
+        'Помидоры: 2,5 кг → 3 кг',
+        'Позвонить в поддержку',
+        'Открыть заказ',
+      ]) {
+        expect(find.text(text), findsOneWidget, reason: text);
+      }
+      expect(announced(tester), <String>[
+        'Не сохранено: Сборщик уже начал покупать. '
+            'Не сохранилось изменений: 2',
+      ]);
+
+      await tapAndSettle(tester, byKey('edit-call-support'));
+      expect(calls.calls, <String>[phone]);
+
+      await tapAndSettle(tester, byKey('edit-back-to-order'));
+      expect(byKey('edit-locked'), findsNothing);
+      expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
+    });
+
+    testWidgets(
+      'without a support phone the lock view offers only Открыть заказ',
+      (WidgetTester tester) async {
+        await openEditor(tester);
+        await twoChanges(tester);
+        orders
+          ..failure = locked
+          ..rows = <Map<String, Object?>>[shopping(supportPhone: null)];
+
+        await tapAndSettle(tester, byKey('edit-save'));
+
+        expect(byKey('edit-locked'), findsOneWidget);
+        expect(byKey('edit-call-support'), findsNothing);
+        expect(find.text('Позвонить в поддержку'), findsNothing);
+        expect(
+          find.text('Изменения не сохранились — заказ остался прежним.'),
+          findsOneWidget,
+        );
+        expect(byKey('edit-back-to-order'), findsOneWidget);
+      },
+    );
+
+    testWidgets("a cancelled order's lock view says Заказ отменён", (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      await twoChanges(tester);
+      orders
+        ..failure = locked
+        ..rows = <Map<String, Object?>>[
+          pageOrder(status: 'cancelled', changeable: false),
+        ];
+
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(byKey('edit-locked'), findsOneWidget);
+      expect(find.text('Заказ отменён'), findsOneWidget);
+      expect(find.text('Сборщик уже начал покупать'), findsNothing);
+    });
+
+    testWidgets('a preview that finds the order locked shows the lock view', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester, order: pageOrder(supportPhone: phone));
+      await removeLine(tester, lineBread);
+      orders
+        ..previewFailure = locked
+        ..rows = <Map<String, Object?>>[shopping()];
+      announced(tester);
+
+      await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+      await answered(tester);
+
+      expect(byKey('edit-locked'), findsOneWidget);
+      expect(find.text('− Хлеб'), findsOneWidget);
+      expect(find.text('Помидоры: 2,5 кг → 3 кг'), findsOneWidget);
+      expect(announced(tester), <String>[
+        'Не сохранено: Сборщик уже начал покупать. '
+            'Не сохранилось изменений: 2',
+      ]);
+    });
+
+    testWidgets('a save refused for another reason keeps the editor', (
+      WidgetTester tester,
+    ) async {
+      await openEditor(tester);
+      await twoChanges(tester);
+      orders.failure = const NetworkFailure();
+
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(byKey('edit-locked'), findsNothing);
+      expect(byKey('order-editor'), findsOneWidget);
+      expect(inButton('Сохранить изменения (2)'), findsOneWidget);
+    });
+
+    ApiRefusal gone(List<String> ids) => ApiRefusal(
+      ApiError(
+        status: 409,
+        code: 'product_unavailable',
+        details: <String, Object?>{'product_ids': ids},
+      ),
+    );
+
+    testWidgets(
+      'a product no longer sold is framed red with Убрать, and the footer '
+      'strip too',
+      (WidgetTester tester) async {
+        await openEditor(tester);
+        orders.previewFailure = gone(<String>[productApple]);
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+
+        expect(byKey('edit-marked-$lineApple'), findsOneWidget);
+        expect(byKey('edit-marked-$lineTomato'), findsNothing);
+        expect(
+          find.descendant(
+            of: byKey('edit-line-$lineApple'),
+            matching: find.text('Сейчас нет в продаже'),
+          ),
+          findsOneWidget,
+        );
+        final BoxDecoration frame =
+            tester
+                    .widget<DecoratedBox>(byKey('edit-marked-$lineApple'))
+                    .decoration
+                as BoxDecoration;
+        expect(frame.border!.top.color, KitColors.danger);
+        expect(frame.border!.top.width, 1.5);
+        expect(byKey('edit-gone'), findsOneWidget);
+        expect(byKey('edit-marked-remove-$lineApple'), findsOneWidget);
+
+        await tapAndSettle(tester, byKey('edit-marked-remove-$lineApple'));
+        expect(byKey('edit-marked-$lineApple'), findsNothing);
+        expect(byKey('edit-removed-$lineApple'), findsOneWidget);
+        expect(byKey('edit-gone'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a save refused for it scrolls to the line and flashes it red',
+      (WidgetTester tester) async {
+        await openEditor(tester, size: const Size(360, 440));
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+        final Rect view = tester.getRect(byKey('order-editor'));
+        expect(
+          tester.getRect(byKey('edit-line-$lineApple')).top,
+          greaterThan(view.bottom),
+          reason: 'the apples are below the fold',
+        );
+        orders.failure = gone(<String>[productApple]);
+        announced(tester);
+
+        await tester.tap(byKey('edit-save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final LineFlash flash = tester.widget<LineFlash>(
+          find.ancestor(
+            of: byKey('edit-line-$lineApple'),
+            matching: find.byType(LineFlash),
+          ),
+        );
+        expect(flash.flash, 1);
+        expect(flash.color, KitColors.dangerWash);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.getRect(byKey('edit-marked-$lineApple')).top,
+          lessThan(view.bottom),
+        );
+        expect(byKey('edit-marked-remove-$lineApple'), findsOneWidget);
+        expect(announced(tester), <String>[
+          'Не сохранено. Яблоки: нет в продаже — уберите, чтобы сохранить',
+        ]);
+        expect(byKey('edit-locked'), findsNothing);
+        expect(inButton('Сначала уберите: Яблоки'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Убрать in the strip removes every marked product and the button '
+      'comes back',
+      (WidgetTester tester) async {
+        await openEditor(tester);
+        orders.previewFailure = gone(<String>[productApple, productBread]);
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+        expect(inButton('Сначала уберите: Хлеб и ещё 1'), findsOneWidget);
+
+        await tapAndSettle(tester, byKey('edit-gone-remove'));
+        await answered(tester);
+
+        expect(byKey('edit-gone'), findsNothing);
+        expect(byKey('edit-removed-$lineApple'), findsOneWidget);
+        expect(byKey('edit-removed-$lineBread'), findsOneWidget);
+        expect(inButton('Сохранить изменения (3)'), findsOneWidget);
+      },
+    );
+
+    for (final (String, TextScaler) scale in <(String, TextScaler)>[
+      ('100 %', TextScaler.noScaling),
+      ('200 %', const NonlinearTextScaler(2)),
+    ]) {
+      testWidgets('the exit sheet, the lock view and a marked line meet the '
+          'guideline at ${scale.$1}', (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await openEditor(
+          tester,
+          order: pageOrder(supportPhone: phone),
+          size: const Size(360, 800),
+          scaler: scale.$2,
+        );
+        orders.previewFailure = gone(<String>[productApple]);
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+        expect(byKey('edit-marked-$lineApple'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        await tapAndSettle(tester, byKey('edit-close'));
+        expect(byKey('edit-leave-sheet'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await tapAndSettle(tester, byKey('edit-keep-editing'));
+
+        await tapAndSettle(tester, byKey('edit-gone-remove'));
+        await answered(tester);
+        orders
+          ..failure = locked
+          ..rows = <Map<String, Object?>>[shopping()];
+        await tapAndSettle(tester, byKey('edit-save'));
+        expect(byKey('edit-locked'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      });
+    }
   });
 }

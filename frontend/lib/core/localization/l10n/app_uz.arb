@@ -3812,5 +3812,34 @@
         "type": "int"
       }
     }
+  },
+  "orderEditInfoAssigned": "Yig'uvchi tayinlangan va tez orada xarid qilishni boshlaydi — shundan keyin buyurtmani o'zgartirib bo'lmaydi. O'zgarishlarni darhol saqlang. Buyurtmadagi mahsulotlar narxi o'zgarmaydi.",
+  "orderEditLeaveTitle": "Saqlamasdan chiqasizmi?",
+  "orderEditLeaveCount": "{count} ta o'zgarish saqlanmaydi:",
+  "@orderEditLeaveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditKeepEditing": "O'zgartirishni davom ettirish",
+  "orderEditLeave": "Saqlamasdan chiqish",
+  "orderEditLockedTitle": "Yig'uvchi xarid qilishni boshladi",
+  "orderEditLockedCancelled": "Buyurtma bekor qilindi",
+  "orderEditLockedText": "O'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi. Muhim narsa bo'lsa, qo'llab-quvvatlash xizmatiga qo'ng'iroq qiling.",
+  "orderEditLockedTextNoPhone": "O'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi.",
+  "orderEditLost": "Nima saqlanmadi",
+  "orderCallSupport": "Qo'llab-quvvatlashga qo'ng'iroq qilish",
+  "orderEditLockedSpoken": "Saqlanmadi: {title}. Saqlanmagan o'zgarishlar: {count}",
+  "@orderEditLockedSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

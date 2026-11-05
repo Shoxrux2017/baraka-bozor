@@ -12,6 +12,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/orders/order_values.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
@@ -28,6 +29,8 @@ import '../domain/customer_orders.dart';
 import 'line_flash.dart';
 import 'order_edit_footer.dart';
 import 'order_edit_line.dart';
+import 'order_edit_locked.dart';
+import 'order_edit_sheets.dart';
 import 'order_edit_words.dart';
 import 'order_line_sheet.dart';
 
@@ -56,7 +59,70 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
   /// The ✓ «Сохранено» moment, in which the editor cannot be closed.
   final ValueNotifier<bool> _holding = ValueNotifier<bool>(false);
 
+  /// The editor, which knows the changes that × and the system back would
+  /// lose.
+  final GlobalKey<_EditorState> _editor = GlobalKey<_EditorState>();
+
+  /// The changes of the edit the server refused, as the editor gave them
+  /// when the save started or the preview found the order locked: the editor
+  /// may be gone before the refusal's reload is in (`DL-132`).
+  List<String> _lost = const <String>[];
+
+  /// A preview found the order locked.
+  bool _previewLocked = false;
+
+  /// The lock view's words are announced once per refusal.
+  bool _announcedLock = false;
+
   String get orderId => widget.orderId;
+
+  /// The editor hands over the texts of its changes: [locked] when the
+  /// summary says the order is locked, otherwise as a save starts.
+  void _handOver(List<String> lost, {required bool locked}) {
+    _lost = lost;
+    _previewLocked = locked;
+    _announcedLock = false;
+  }
+
+  /// × asks the editor, which asks before losing changes; with no editor
+  /// there is nothing to lose.
+  void _close() {
+    final _EditorState? editor = _editor.currentState;
+    if (editor != null) {
+      unawaited(editor.close());
+    } else {
+      backToOrder(GoRouter.of(context), orderId);
+    }
+  }
+
+  /// Says the lock view's title and how many changes did not save, once it
+  /// stands.
+  void _announceLock(CustomerOrder order) {
+    if (_announcedLock) {
+      return;
+    }
+    _announcedLock = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      announce(
+        context,
+        l10n.orderEditLockedSpoken(lockedTitle(l10n, order), _lost.length),
+      );
+    });
+  }
+
+  /// An order past editing: what did not save when the Customer lost
+  /// changes to the refusal, otherwise only that it can no longer change.
+  Widget _lockedOrClosed(CustomerOrder order, bool locked) {
+    if (!locked) {
+      return _Closed(orderId: order.id);
+    }
+    _announceLock(order);
+    return OrderEditLocked(order: order, lost: _lost);
+  }
 
   @override
   void dispose() {
@@ -70,7 +136,18 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
     final AsyncValue<CustomerOrder> order = ref.watch(
       customerOrderProvider(orderId),
     );
-    final bool saving = ref.watch(orderEditProvider(orderId)).isBusy;
+    final MutationState edit = ref.watch(orderEditProvider(orderId));
+    final bool saving = edit.isBusy;
+    // A save refused because shopping started, or a preview that found the
+    // order locked, with the changes the editor handed over.
+    final ApiFailure? refusal = edit.failure;
+    final bool locked =
+        _lost.isNotEmpty &&
+        (_previewLocked ||
+            (refusal is ApiRefusal && refusal.code == 'order_editing_locked'));
+    if (_previewLocked && (order.value?.canEdit ?? false) && !order.isLoading) {
+      _previewLocked = false;
+    }
     final int? number = order.value?.orderNumber;
 
     return Scaffold(
@@ -84,9 +161,7 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
             key: const ValueKey<String>('edit-close'),
             icon: const Icon(Icons.close, color: KitColors.ink),
             tooltip: l10n.orderEditCloseSpoken,
-            onPressed: saving || holding
-                ? null
-                : () => _backToOrder(GoRouter.of(context), orderId),
+            onPressed: saving || holding ? null : _close,
           ),
         ),
       ),
@@ -100,6 +175,9 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
               child: switch (order) {
                 AsyncValue<CustomerOrder>(hasError: true, isLoading: true) =>
                   const Center(child: CircularProgressIndicator()),
+                // The lock view waits for the order as the server holds it.
+                AsyncValue<CustomerOrder>(isLoading: true) when locked =>
+                  const Center(child: CircularProgressIndicator()),
                 AsyncValue<CustomerOrder>(:final Object error) => Padding(
                   padding: const EdgeInsets.all(16),
                   child: LoadFailure(
@@ -110,13 +188,14 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
                 ),
                 AsyncValue<CustomerOrder>(:final CustomerOrder value)
                     when !value.canEdit =>
-                  _Closed(orderId: value.id),
+                  _lockedOrClosed(value, locked),
                 AsyncValue<CustomerOrder>(:final CustomerOrder value) =>
                   _Editor(
-                    key: ValueKey<String>(value.id),
+                    key: _editor,
                     order: value,
                     adding: widget.adding,
                     holding: _holding,
+                    onLost: _handOver,
                   ),
                 _ => const Center(child: CircularProgressIndicator()),
               },
@@ -125,17 +204,6 @@ class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
         ),
       ),
     );
-  }
-}
-
-/// Leaves the editor for the order: back to it when the editor was opened
-/// over it, with the order [saved] for its banner, to it when the editor was
-/// opened by its address alone, with no banner (`DL-132`).
-void _backToOrder(GoRouter router, String orderId, [CustomerOrder? saved]) {
-  if (router.canPop()) {
-    router.pop(saved);
-  } else {
-    router.go(AppPaths.customerOrder(orderId));
   }
 }
 
@@ -157,7 +225,7 @@ class _Closed extends StatelessWidget {
         const SizedBox(height: 16),
         FilledButton(
           key: const ValueKey<String>('edit-back-to-order'),
-          onPressed: () => _backToOrder(GoRouter.of(context), orderId),
+          onPressed: () => backToOrder(GoRouter.of(context), orderId),
           child: Text(l10n.orderOpen),
         ),
       ],
@@ -169,6 +237,7 @@ class _Editor extends ConsumerStatefulWidget {
   const _Editor({
     required this.order,
     required this.holding,
+    required this.onLost,
     this.adding,
     super.key,
   });
@@ -179,6 +248,10 @@ class _Editor extends ConsumerStatefulWidget {
 
   /// Told when the ✓ «Сохранено» moment starts.
   final ValueNotifier<bool> holding;
+
+  /// Hands the screen the texts of the changes, as a save starts and when a
+  /// preview finds the order locked, for the lock view.
+  final void Function(List<String> lost, {required bool locked}) onLost;
 
   @override
   ConsumerState<_Editor> createState() => _EditorState();
@@ -204,6 +277,9 @@ class _EditorState extends ConsumerState<_Editor>
 
   /// The wish as the server would keep it, to count it among the changes.
   String _wishSeen = '';
+
+  /// How many times a line was flashed red after a refused save.
+  final Map<String, int> _redFlash = <String, int>{};
 
   /// What the latest change says, until the preview of its sums answers; a
   /// later change replaces it (`DL-132`).
@@ -244,6 +320,40 @@ class _EditorState extends ConsumerState<_Editor>
   }
 
   GlobalKey _card(String key) => _cards.putIfAbsent(key, GlobalKey.new);
+
+  /// The changes the draft makes, as lines of the exit sheet and the lock
+  /// view; a quantity still to be set anew is not one of them.
+  List<DraftChange> _listed(OrderDraft draft) =>
+      draftChanges(draft, widget.order, _wishSeen.isEmpty ? null : _wishSeen);
+
+  List<String> _texts(OrderDraft draft) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    return <String>[
+      for (final DraftChange change in _listed(draft))
+        changeText(l10n, language, change),
+    ];
+  }
+
+  /// × and the system back: without changes the editor goes at once; with
+  /// them it asks first (`DL-132`).
+  Future<void> close() async {
+    if (ref.read(orderEditProvider(widget.order.id)).isBusy || _saved) {
+      return;
+    }
+    final GoRouter router = GoRouter.of(context);
+    final List<String> texts = _texts(
+      ref.read(orderDraftProvider(widget.order.id)),
+    );
+    if (texts.isEmpty) {
+      backToOrder(router, widget.order.id);
+      return;
+    }
+    final bool leave = await showLeaveSheet(context, changes: texts);
+    if (leave && mounted) {
+      backToOrder(router, widget.order.id);
+    }
+  }
 
   /// Adds [product] to the draft; one the order already has is not added
   /// twice: its line is kept and brought into view, and the Customer is told.
@@ -464,8 +574,11 @@ class _EditorState extends ConsumerState<_Editor>
     final String? deliveryTimeNote = wish.isEmpty ? null : wish;
     final GoRouter router = GoRouter.of(context);
 
-    // What the server said of an earlier attempt goes with it.
+    // What the server said of an earlier attempt goes with it. The changes
+    // go to the screen now: a refusal's reload may close this editor before
+    // the answer is back here.
     _draft.setUnavailable(const <String>{});
+    widget.onLost(_texts(draft), locked: false);
     final CustomerOrder? answer = await ref
         .read(orderEditProvider(widget.order.id).notifier)
         .edit(lines, deliveryTimeNote);
@@ -473,21 +586,67 @@ class _EditorState extends ConsumerState<_Editor>
       return;
     }
     if (answer != null) {
+      widget.onLost(const <String>[], locked: false);
       _saysSaved(answer, router);
       return;
     }
     final ApiFailure? failure = ref
         .read(orderEditProvider(widget.order.id))
         .failure;
+    if (failure is ApiRefusal && failure.code == 'order_editing_locked') {
+      return;
+    }
+    widget.onLost(const <String>[], locked: false);
     if (failure is! ApiRefusal) {
       return;
     }
     if (failure.code == 'product_unavailable') {
       // The products the server names as no longer orderable are marked.
       _draft.setUnavailable(_named(failure.error.details['product_ids']));
+      _showMarked();
     } else if (failure.code == 'minimum_order_not_reached') {
       _refusedMinimum(failure);
     }
+  }
+
+  /// After a refusal because products are no longer sold: the first marked
+  /// line is brought to a third of the view and flashes red, and the words of
+  /// the strip are announced (`DL-132`).
+  void _showMarked() {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final List<DraftLine> marked = ref
+        .read(orderDraftProvider(widget.order.id))
+        .marked;
+    if (marked.isEmpty) {
+      return;
+    }
+    final DraftLine first = marked.first;
+    setState(() => _redFlash[first.key] = (_redFlash[first.key] ?? 0) + 1);
+    final Duration duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 300);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? card = _card(first.key).currentContext;
+      if (mounted && card != null) {
+        unawaited(
+          Scrollable.ensureVisible(
+            card,
+            alignment: 1 / 3,
+            duration: duration,
+            curve: Curves.easeInOut,
+          ),
+        );
+      }
+    });
+    announce(
+      context,
+      l10n.orderEditNotSaved(
+        l10n.orderEditGone(
+          marked.map((DraftLine line) => line.name(language)).join(', '),
+        ),
+      ),
+    );
   }
 
   /// ✓ «Сохранено»: a light buzz, the new total said, and 650 ms later the
@@ -515,7 +674,7 @@ class _EditorState extends ConsumerState<_Editor>
     _hold
       ..addStatusListener((AnimationStatus status) {
         if (status == AnimationStatus.completed && mounted) {
-          _backToOrder(router, widget.order.id, answer);
+          backToOrder(router, widget.order.id, answer);
         }
       })
       ..forward();
@@ -573,10 +732,20 @@ class _EditorState extends ConsumerState<_Editor>
     final EditSummary answered = ref.watch(
       orderEditSummaryProvider(widget.order.id),
     );
-    ref.listen<EditSummary>(
-      orderEditSummaryProvider(widget.order.id),
-      (EditSummary? _, EditSummary after) => _answered(after),
-    );
+    ref.listen<EditSummary>(orderEditSummaryProvider(widget.order.id), (
+      EditSummary? before,
+      EditSummary after,
+    ) {
+      if (after.locked && !(before?.locked ?? false)) {
+        // The server says the order is locked: what the Customer set goes
+        // to the screen before the order reloads under this editor.
+        widget.onLost(
+          _texts(ref.read(orderDraftProvider(widget.order.id))),
+          locked: true,
+        );
+      }
+      _answered(after);
+    });
     final List<DraftLine> kept = draft.kept;
     final bool full = kept.length >= orderMaxLines;
     // A line without a quantity has no preview: no sums stand for the lines.
@@ -587,12 +756,9 @@ class _EditorState extends ConsumerState<_Editor>
         ? answered
         : answered.copyWith(failed: true);
     // A quantity to be set anew is a change to make before saving.
+    final List<DraftChange> listed = _listed(draft);
     final List<DraftChange> changes = <DraftChange>[
-      ...draftChanges(
-        draft,
-        widget.order,
-        _wishSeen.isEmpty ? null : _wishSeen,
-      ),
+      ...listed,
       for (final DraftLine line in kept)
         if (!line.quantityValid)
           (
@@ -611,7 +777,14 @@ class _EditorState extends ConsumerState<_Editor>
     const TextStyle warning = TextStyle(fontSize: 12, color: KitColors.danger);
 
     return PopScope(
-      canPop: !saving.isBusy && !_saved,
+      // With changes the system back asks first; the save's own pop goes
+      // through the router and is not held (`DL-132`).
+      canPop: listed.isEmpty && !saving.isBusy && !_saved,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          unawaited(close());
+        }
+      },
       child: Form(
         key: _form,
         child: Column(
@@ -625,7 +798,10 @@ class _EditorState extends ConsumerState<_Editor>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    const _InfoBox(),
+                    _InfoBox(
+                      assigned:
+                          widget.order.status == OrderStatus.shoppingAssigned,
+                    ),
                     const SizedBox(height: 8),
                     FoldingColumn<DraftLine>(
                       items: <DraftLine>[
@@ -637,7 +813,8 @@ class _EditorState extends ConsumerState<_Editor>
                           KeyedSubtree(
                             key: _card(line.key),
                             child: LineFlash(
-                              flash: 0,
+                              flash: _redFlash[line.key] ?? 0,
+                              color: KitColors.dangerWash,
                               child: _Settling(
                                 child: OrderEditLineTile(
                                   draft: line,
@@ -741,13 +918,17 @@ class _Settling extends StatelessWidget {
 /// What the Customer may change, and that the prices of what is already in
 /// the order stay.
 class _InfoBox extends StatelessWidget {
-  const _InfoBox();
+  const _InfoBox({required this.assigned});
+
+  /// A Shopper is assigned: the box is amber and says to save at once.
+  final bool assigned;
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: KitColors.primaryWash,
+        color: assigned ? KitColors.warningWash : KitColors.primaryWash,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(
@@ -755,22 +936,22 @@ class _InfoBox extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Padding(
-              padding: EdgeInsets.only(top: 1),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
               child: Icon(
-                Icons.info_outline,
+                assigned ? Icons.schedule : Icons.info_outline,
                 size: 18,
-                color: KitColors.primaryDark,
+                color: assigned ? KitColors.warningDark : KitColors.primaryDark,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                AppLocalizations.of(context).orderEditInfo,
+                assigned ? l10n.orderEditInfoAssigned : l10n.orderEditInfo,
                 key: const ValueKey<String>('edit-info'),
                 style: const TextStyle(
                   fontSize: 13,
-                  height: 1.35,
+                  height: 1.4,
                   color: KitColors.ink2,
                 ),
               ),

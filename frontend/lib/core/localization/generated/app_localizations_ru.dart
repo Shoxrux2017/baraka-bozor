@@ -5047,4 +5047,55 @@ class AppLocalizationsRu extends AppLocalizations {
   String orderQuestionsExpiredAnnounced(int number) {
     return 'Время ответа на вопрос по заказу № $number вышло';
   }
+
+  @override
+  String get orderEditInfoAssigned =>
+      'Сборщик уже назначен и скоро начнёт покупать — после этого заказ не изменить. Сохраните изменения сразу. Цена товаров, что уже в заказе, не меняется.';
+
+  @override
+  String get orderEditLeaveTitle => 'Выйти без сохранения?';
+
+  @override
+  String orderEditLeaveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Не сохранятся $count изменения:',
+      many: 'Не сохранятся $count изменений:',
+      few: 'Не сохранятся $count изменения:',
+      one: 'Не сохранится $count изменение:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get orderEditKeepEditing => 'Продолжить изменять';
+
+  @override
+  String get orderEditLeave => 'Выйти без сохранения';
+
+  @override
+  String get orderEditLockedTitle => 'Сборщик уже начал покупать';
+
+  @override
+  String get orderEditLockedCancelled => 'Заказ отменён';
+
+  @override
+  String get orderEditLockedText =>
+      'Изменения не сохранились — заказ остался прежним. Если что-то важно, позвоните в поддержку.';
+
+  @override
+  String get orderEditLockedTextNoPhone =>
+      'Изменения не сохранились — заказ остался прежним.';
+
+  @override
+  String get orderEditLost => 'Что не сохранилось';
+
+  @override
+  String get orderCallSupport => 'Позвонить в поддержку';
+
+  @override
+  String orderEditLockedSpoken(String title, int count) {
+    return 'Не сохранено: $title. Не сохранилось изменений: $count';
+  }
 }

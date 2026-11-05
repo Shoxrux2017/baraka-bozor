@@ -56,26 +56,57 @@ class OrderEditLineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: KitColors.line)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: draft.removed
-            ? _RemovedRow(draft: draft, busy: busy, onRestore: onRestore)
-            : _KeptLine(
-                draft: draft,
-                adds: adds,
-                busy: busy,
-                onStep: onStep,
-                onQuantity: onQuantity,
-                onOptions: onOptions,
-                onRemove: onRemove,
+    if (draft.removed) {
+      return _ruled(
+        _RemovedRow(draft: draft, busy: busy, onRestore: onRestore),
+      );
+    }
+    final Widget line = _KeptLine(
+      draft: draft,
+      adds: adds,
+      busy: busy,
+      onStep: onStep,
+      onQuantity: onQuantity,
+      onOptions: onOptions,
+      onRemove: onRemove,
+    );
+    if (!draft.unavailable) {
+      return _ruled(line);
+    }
+    // A product the server no longer sells: a red frame that reaches 10 into
+    // the side padding, 4 above and below (`DL-132`).
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        Positioned(
+          left: -10,
+          right: -10,
+          top: 4,
+          bottom: 4,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              key: ValueKey<String>('edit-marked-${draft.key}'),
+              decoration: BoxDecoration(
+                border: Border.all(color: KitColors.danger, width: 1.5),
+                borderRadius: BorderRadius.circular(16),
               ),
-      ),
+            ),
+          ),
+        ),
+        Padding(padding: const EdgeInsets.symmetric(vertical: 18), child: line),
+      ],
     );
   }
+
+  Widget _ruled(Widget child) => DecoratedBox(
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: KitColors.line)),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: child,
+    ),
+  );
 }
 
 /// The picture box of a line: [size] square, the picture in it [inner]
@@ -207,19 +238,6 @@ class _KeptLine extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12, color: KitColors.muted),
                 ),
-                if (draft.unavailable)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      l10n.cartLineUnavailable,
-                      key: ValueKey<String>('edit-unavailable-${draft.key}'),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: KitColors.danger,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -346,10 +364,71 @@ class _KeptLine extends StatelessWidget {
           children: <Widget>[
             top,
             optionsRow,
+            if (draft.unavailable)
+              _GoneRow(draft: draft, busy: busy, onRemove: onRemove),
             const SizedBox(height: 6),
             bottom(constraints.maxWidth),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// What a marked line says, under its options: the product is no longer
+/// sold, and «Убрать» takes it out (`DL-132`).
+class _GoneRow extends StatelessWidget {
+  const _GoneRow({
+    required this.draft,
+    required this.busy,
+    required this.onRemove,
+  });
+
+  final DraftLine draft;
+  final bool busy;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.error, size: 20, color: KitColors.danger),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.cartLineUnavailable,
+              key: ValueKey<String>('edit-unavailable-${draft.key}'),
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+                color: KitColors.danger,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            key: ValueKey<String>('edit-marked-remove-${draft.key}'),
+            style: FilledButton.styleFrom(
+              backgroundColor: KitColors.danger,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(44, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: busy ? null : onRemove,
+            child: Text(
+              l10n.orderEditRemoveShort,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

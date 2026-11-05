@@ -83,7 +83,11 @@ class _Card extends StatelessWidget {
 
 /// Opens the dialer on [phone]; where nothing opens it, says the number to
 /// dial by hand.
-Future<void> _dial(BuildContext context, WidgetRef ref, String phone) async {
+Future<void> dialOrSay(
+  BuildContext context,
+  WidgetRef ref,
+  String phone,
+) async {
   final AppLocalizations l10n = AppLocalizations.of(context);
   final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
   final bool opened = await ref.read(phoneCallsProvider).call(phone);
@@ -846,7 +850,7 @@ class OrderInfoSection extends ConsumerWidget {
           subtitle: l10n.supportHint,
           actionLabel: l10n.callAction,
           actionKey: const ValueKey<String>('order-call-support'),
-          onAction: () => _dial(context, ref, supportPhone),
+          onAction: () => dialOrSay(context, ref, supportPhone),
         ),
     ];
 
@@ -943,7 +947,7 @@ class CourierCard extends ConsumerWidget {
               fixedSize: const Size.square(44),
             ),
             icon: const Icon(Icons.call),
-            onPressed: () => _dial(context, ref, courier.phone),
+            onPressed: () => dialOrSay(context, ref, courier.phone),
           ),
         ],
       ),
