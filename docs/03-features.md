@@ -107,6 +107,8 @@ Manual, tracked: an obligation is created when an online-paid order is cancelled
 
 Before shopping starts: the Customer cancels directly. After shopping starts and before `on_the_way`: the Customer files a request, an Operator or Admin decides. `on_the_way` and later: no. Operators may cancel unpaid online orders after the 30-minute window and orders that could not be delivered.
 
+The cancel sheet offers reasons to pick as chips (the words are sent as the reason; optional for a direct cancel, required for a request), stays open while it sends and shows the answer in place, and switches between a direct cancel and a request when the order changes under it. The cancelled order shows the Customer's reason under its status (`DL-133`).
+
 ## 21. Courier Delivery
 
 Accept, start (`on_the_way`, delay snapshot), delivered with cash received for cash orders, or not delivered with a reason. Delay past the threshold is derived attention.

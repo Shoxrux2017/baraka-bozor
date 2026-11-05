@@ -8,6 +8,7 @@ use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\ItemRemovedReason;
+use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
@@ -273,6 +274,21 @@ class Order extends Model
     public function latestCancellationRequest(): HasOne
     {
         return $this->hasOne(OrderCancellationRequest::class)->orderByDesc('created_at')->orderByDesc('id');
+    }
+
+    /**
+     * The history row of the Customer's own direct cancel, whose note is the
+     * reason they gave (`DL-133` (1)). Only `CancelOrder` writes
+     * `customer_cancelled` and a cancel is terminal, so there is at most one.
+     *
+     * @return HasOne<OrderHistory, $this>
+     */
+    public function customerCancellation(): HasOne
+    {
+        return $this->hasOne(OrderHistory::class)
+            ->where('event_type', OrderHistoryEvent::StatusChanged->value)
+            ->where('to_status', OrderStatus::Cancelled->value)
+            ->where('reason_code', CancellationReason::CustomerCancelled->value);
     }
 
     /**

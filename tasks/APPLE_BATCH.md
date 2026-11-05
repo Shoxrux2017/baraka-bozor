@@ -29,7 +29,7 @@ Rules for every stage:
 | 10 | Favourites | 7 | favourites order | Merged (PR #132) |
 | 11 | Order | 9 | approval amounts and picture | Merged (PR #133) |
 | 12 | My orders | 10 | list summary fields | Merged (PR #134) |
-| 13 | Order editing | 12 | edit preview, minimum | Planned |
+| 13 | Order editing | 12 | edit preview, minimum | Merged (PR #135) |
 | 14 | Cancellation | 12 | cancel reason | Planned |
 | 15 | Rating | 10 | `reviewed_at` | Planned |
 | 16 | Profile and name | 18 | — | Planned |

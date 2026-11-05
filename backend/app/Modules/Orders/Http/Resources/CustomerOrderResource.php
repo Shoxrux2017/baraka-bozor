@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Http\Resources;
 use App\Models\BusinessSettings;
 use App\Models\CustomerApproval;
 use App\Models\Enums\ApprovalType;
+use App\Models\Enums\CancellationReason;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -30,7 +31,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * the Customer may do with it now, its open questions (`DL-59` (2)), and its
  * instants, and the payment once made: the cash the Courier took at the door
  * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
- * rated (`DL-91` (4)). Refunds arrive with Wave 5; until then the list is empty.
+ * rated (`DL-91` (4)). A direct cancel carries the Customer's reason as
+ * `cancellation_note` (`DL-133` (1)). Refunds arrive with Wave 5; until then
+ * the list is empty.
  *
  * Expects `self::RELATIONS` loaded.
  *
@@ -48,6 +51,7 @@ final class CustomerOrderResource extends JsonResource
         'approvals.replacementProduct.image',
         'livePayment',
         'latestCancellationRequest',
+        'customerCancellation',
         'rating',
     ];
 
@@ -116,6 +120,11 @@ final class CustomerOrderResource extends JsonResource
             'courier' => CourierContact::of($order),
             'support_phone' => BusinessSettings::current()->support_phone,
             'cancellation_reason_code' => $order->cancellation_reason_code?->value,
+            // The Customer's own words of a direct cancel, from its history
+            // row; no other ending has a note to show (`DL-133` (1)).
+            'cancellation_note' => $order->cancellation_reason_code === CancellationReason::CustomerCancelled
+                ? $order->customerCancellation?->note
+                : null,
             // The payment made, once there is one (DL-64 (4)).
             'payment' => $order->livePayment === null ? null : [
                 'method' => $order->livePayment->method->value,
