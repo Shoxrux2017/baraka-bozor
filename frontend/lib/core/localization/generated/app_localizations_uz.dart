@@ -4360,6 +4360,17 @@ class AppLocalizationsUz extends AppLocalizations {
   String get rateStar5 => 'A\'lo!';
 
   @override
+  String get rateStarsSpokenLabel => 'Baho';
+
+  @override
+  String rateStarsValue(int stars, String word) {
+    return '5 dan $stars, $word';
+  }
+
+  @override
+  String get rateStarsNone => 'tanlanmagan';
+
+  @override
   String get rateWhatWrong => 'Nima noto\'g\'ri bo\'ldi?';
 
   @override

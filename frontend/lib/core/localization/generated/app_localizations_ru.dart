@@ -4407,6 +4407,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rateStar5 => 'Отлично!';
 
   @override
+  String get rateStarsSpokenLabel => 'Оценка';
+
+  @override
+  String rateStarsValue(int stars, String word) {
+    return '$stars из 5, $word';
+  }
+
+  @override
+  String get rateStarsNone => 'не выбрана';
+
+  @override
   String get rateWhatWrong => 'Что пошло не так?';
 
   @override

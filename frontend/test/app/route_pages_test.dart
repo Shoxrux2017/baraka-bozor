@@ -35,6 +35,8 @@ const Set<String> _entryNames = <String>{
   'operations-order',
 };
 
+const Set<String> _risingNames = <String>{'customer-order-rate'};
+
 const Set<String> _pageNames = <String>{
   'catalog-categories',
   'catalog-category',
@@ -47,7 +49,6 @@ const Set<String> _pageNames = <String>{
   'customer-order',
   'customer-order-edit',
   'customer-order-add',
-  'customer-order-rate',
   'customer-edit-profile',
   'customer-delete-account',
   'customer-addresses',
@@ -126,34 +127,39 @@ void main() {
     }
   });
 
-  testWidgets('the flat routes stand in place and the rest slide in', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const SizedBox());
-    final BuildContext context = tester.element(find.byType(SizedBox));
-    final GoRouter router = buildRouter();
-    addTearDown(router.dispose);
-    final Set<String> standing = <String>{};
-    final Set<String> sliding = <String>{};
-    for (final RouteBase route in _all(router)) {
-      if (route is! GoRoute || route.pageBuilder == null) {
-        continue;
+  testWidgets(
+    'the flat routes stand in place, the rating rises and the rest slide in',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const SizedBox());
+      final BuildContext context = tester.element(find.byType(SizedBox));
+      final GoRouter router = buildRouter();
+      addTearDown(router.dispose);
+      final Set<String> standing = <String>{};
+      final Set<String> sliding = <String>{};
+      final Set<String> rising = <String>{};
+      for (final RouteBase route in _all(router)) {
+        if (route is! GoRoute || route.pageBuilder == null) {
+          continue;
+        }
+        final Page<dynamic> page = route.pageBuilder!(
+          context,
+          _stateFor(router, route.name, route.path),
+        );
+        final String name = route.name ?? route.path;
+        if (page is NoTransitionPage) {
+          standing.add(name);
+        } else if (page is CustomTransitionPage) {
+          rising.add(name);
+        } else {
+          expect(page, isA<MaterialPage<dynamic>>(), reason: name);
+          sliding.add(name);
+        }
       }
-      final Page<dynamic> page = route.pageBuilder!(
-        context,
-        _stateFor(router, route.name, route.path),
-      );
-      final String name = route.name ?? route.path;
-      if (page is NoTransitionPage) {
-        standing.add(name);
-      } else {
-        expect(page, isA<MaterialPage<dynamic>>(), reason: name);
-        sliding.add(name);
-      }
-    }
-    expect(standing, _entryNames);
-    expect(sliding, _pageNames);
-  });
+      expect(standing, _entryNames);
+      expect(sliding, _pageNames);
+      expect(rising, _risingNames);
+    },
+  );
 
   for (final (String name, int ms) in <(String, int)>[
     ('catalog-recommended', 420),
@@ -192,6 +198,46 @@ void main() {
       );
       expect(plain, isA<MaterialPage<dynamic>>());
     });
+  }
+
+  for (final (bool reduced, int up, int down) in <(bool, int, int)>[
+    (false, 340, 260),
+    (true, 200, 200),
+  ]) {
+    testWidgets(
+      'the rating rises as a full-screen dialog${reduced ? ' (reduced)' : ''}',
+      (WidgetTester tester) async {
+        late BuildContext context;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(disableAnimations: reduced),
+            child: Builder(
+              builder: (BuildContext c) {
+                context = c;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+        final GoRouter router = buildRouter();
+        addTearDown(router.dispose);
+        final GoRoute route = _all(router)
+            .whereType<GoRoute>()
+            .firstWhere((GoRoute r) => r.name == 'customer-order-rate');
+        final Page<dynamic> page = route.pageBuilder!(
+          context,
+          _stateFor(router, route.name, route.path),
+        );
+        expect(page, isA<CustomTransitionPage<dynamic>>());
+        final CustomTransitionPage<dynamic> rising =
+            page as CustomTransitionPage<dynamic>;
+        expect(rising.fullscreenDialog, isTrue);
+        expect(rising.transitionDuration, Duration(milliseconds: up));
+        expect(rising.reverseTransitionDuration, Duration(milliseconds: down));
+        expect(rising.name, 'customer-order-rate');
+        expect(rising.restorationId, isNotNull);
+      },
+    );
   }
 
   testWidgets('the panel shells stand in place', (WidgetTester tester) async {

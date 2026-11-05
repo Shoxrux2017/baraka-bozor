@@ -7310,6 +7310,24 @@ abstract class AppLocalizations {
   /// **'A\'lo!'**
   String get rateStar5;
 
+  /// No description provided for @rateStarsSpokenLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho'**
+  String get rateStarsSpokenLabel;
+
+  /// No description provided for @rateStarsValue.
+  ///
+  /// In uz, this message translates to:
+  /// **'5 dan {stars}, {word}'**
+  String rateStarsValue(int stars, String word);
+
+  /// No description provided for @rateStarsNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'tanlanmagan'**
+  String get rateStarsNone;
+
   /// No description provided for @rateWhatWrong.
   ///
   /// In uz, this message translates to:

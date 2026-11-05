@@ -2729,6 +2729,19 @@
   "rateStar3": "Нормально",
   "rateStar4": "Хорошо",
   "rateStar5": "Отлично!",
+  "rateStarsSpokenLabel": "Оценка",
+  "rateStarsValue": "{stars} из 5, {word}",
+  "@rateStarsValue": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "rateStarsNone": "не выбрана",
   "rateWhatWrong": "Что пошло не так?",
   "rateComment": "Комментарий (необязательно)",
   "rateCommentHintGood": "Что понравилось?",

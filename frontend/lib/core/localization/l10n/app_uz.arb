@@ -3146,6 +3146,19 @@
   "rateStar3": "O'rtacha",
   "rateStar4": "Yaxshi",
   "rateStar5": "A'lo!",
+  "rateStarsSpokenLabel": "Baho",
+  "rateStarsValue": "5 dan {stars}, {word}",
+  "@rateStarsValue": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "rateStarsNone": "tanlanmagan",
   "rateWhatWrong": "Nima noto'g'ri bo'ldi?",
   "rateComment": "Izoh (ixtiyoriy)",
   "rateCommentHintGood": "Nima yoqdi?",
