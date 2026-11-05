@@ -603,6 +603,7 @@ void main() {
       Size size = const Size(360, 700),
       TextScaler? scaler,
       Completer<void>? holdOrder,
+      String? note,
     }) async {
       if (request) {
         orders.rows = <Map<String, Object?>>[shoppingRow()];
@@ -628,6 +629,7 @@ void main() {
         orders.answer = customerOrderJson(
           status: 'cancelled',
           changeable: false,
+          cancellationNote: note,
         );
       }
       orders.holdOrder = holdOrder;
@@ -799,17 +801,48 @@ void main() {
       expect(byKey('cancel-banner'), findsNothing);
     });
 
+    testWidgets(
+      'a replay the Operator already rejected plays no outcome and shows the rejected card',
+      (WidgetTester tester) async {
+        await open(
+          tester,
+          at: AppPaths.customerOrder(orderOne),
+          size: const Size(360, 700),
+        );
+        await tapAndSettle(tester, byKey('order-cancel'));
+        orders.failure = const NetworkFailure();
+        await tester.ensureVisible(byKey('cancel-confirm'));
+        await tester.tap(byKey('cancel-confirm'));
+        await tester.pumpAndSettle();
+        expect(byKey('cancel-unsure'), findsOneWidget);
+
+        orders.rows = <Map<String, Object?>>[shoppingRow(request: 'rejected')];
+        await tester.tap(byKey('cancel-confirm'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
+
+        final AppLocalizations words = l10n(tester);
+        expect(byKey('cancel-sheet'), findsNothing);
+        expect(find.text(words.cancelSheetRequested), findsNothing);
+        expect(byKey('cancel-banner'), findsNothing);
+        expect(haptics(), 0);
+        expect(find.text(words.requestStateRejected), findsWidgets);
+      },
+    );
+
     for (final (String, TextScaler?) scale in <(String, TextScaler?)>[
       ('100 %', null),
       ('NonlinearTextScaler(2)', NonlinearTextScaler(2)),
     ]) {
       testWidgets(
-        'the order page with the banner meets the tap target guideline at ${scale.$1}',
+        'the order page with the banner and the reason line meets the tap target guideline at ${scale.$1}',
         (WidgetTester tester) async {
           final SemanticsHandle handle = tester.ensureSemantics();
-          await cancelFromPage(tester, scaler: scale.$2);
+          await cancelFromPage(tester, scaler: scale.$2, note: 'Kerak emas');
           await tester.pump(const Duration(milliseconds: 500));
           expect(byKey('cancel-banner'), findsOneWidget);
+          expect(byKey('order-status-reason'), findsOneWidget);
 
           await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
           expect(tester.takeException(), isNull);

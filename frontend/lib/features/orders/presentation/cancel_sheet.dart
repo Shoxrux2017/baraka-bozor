@@ -165,7 +165,7 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
     if (answered != null) {
       _show(answered);
     } else if (failure == null || failure is CancelledFailure) {
-      Navigator.of(context).pop();
+      _leave();
     } else {
       setState(() {
         _held = null;
@@ -180,17 +180,39 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
     }
   }
 
-  /// The outcome on the sheet, which closes 550 ms later.
+  /// Ends the sheet itself, never the route above it: a route pushed over the
+  /// sheet stays (`frontend/AGENTS.md` §5).
+  void _leave([CancelSheetExit? exit]) {
+    final ModalRoute<Object?>? route = ModalRoute.of(context);
+    if (route == null) {
+      return;
+    }
+    if (route.isCurrent) {
+      Navigator.of(context).pop(exit);
+    } else {
+      Navigator.of(context).removeRoute(route, exit);
+    }
+  }
+
+  /// The outcome on the sheet, which closes 550 ms later. An answer that is
+  /// neither a cancelled order nor one with a pending request claims nothing:
+  /// the sheet closes and the page shows the server's state (`DL-133`).
   void _show(CustomerOrder answered) {
     final bool cancelled = answered.status == OrderStatus.cancelled;
     _controller.draft = CancelDraft.empty;
+    if (!cancelled &&
+        answered.cancellationRequest?.status !=
+            CancellationRequestStatus.pending) {
+      _leave();
+      return;
+    }
     setState(() {
       _done = true;
       _doneCancelled = cancelled;
     });
     _closing = Timer(const Duration(milliseconds: 550), () {
       if (mounted) {
-        Navigator.of(context).pop(
+        _leave(
           cancelled ? CancelSheetExit.cancelled : CancelSheetExit.requested,
         );
       }
@@ -300,7 +322,7 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
         // keeps the order current for itself (`DL-133`).
         child: PeriodicRefresh(
           interval: const Duration(seconds: 15),
-          active: !busy && !holding,
+          active: !busy && !holding && !loaded.isLoading && !loaded.hasError,
           onRefresh: () =>
               ref.invalidate(customerOrderProvider(widget.orderId)),
           child: Padding(
@@ -559,15 +581,19 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
       style: FilledButton.styleFrom(
         backgroundColor: KitColors.danger,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: KitColors.buttonOff,
-        disabledForegroundColor: KitColors.muted,
+        // While sending and done the button stays red; it is off for a reader
+        // all the same (`DL-133`).
+        disabledBackgroundColor: sending || _done
+            ? KitColors.danger
+            : KitColors.buttonOff,
+        disabledForegroundColor: sending || _done
+            ? Colors.white
+            : KitColors.muted,
         minimumSize: const Size.fromHeight(54),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
-      onPressed: sending || _done
-          ? () {}
-          : block != null
+      onPressed: sending || _done || block != null
           ? null
           : () => _send(order, mode),
       child: label,

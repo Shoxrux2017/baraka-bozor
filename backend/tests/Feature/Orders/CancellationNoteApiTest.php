@@ -7,6 +7,7 @@ namespace Tests\Feature\Orders;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
+use App\Models\Enums\Role;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -74,8 +75,10 @@ final class CancellationNoteApiTest extends TestCase
 
         $failed = Order::factory()->deliveryFailed()->cancelled(CancellationReason::DeliveryFailed)
             ->create(['customer_id' => $this->customer->id]);
-        $this->writeHistory($failed, OrderHistoryEvent::DeliveryFailed, CancellationReason::DeliveryFailed, 'Никого нет дома');
+        $operator = User::factory()->role(Role::Operator)->create();
+        $this->writeHistory($failed, OrderHistoryEvent::StatusChanged, CancellationReason::DeliveryFailed, 'Никого нет дома', $operator);
         $this->detail($failed)->assertOk()->assertJsonPath('data.cancellation_note', null);
+        $this->assertNull($failed->customerCancellation);
     }
 
     public function test_the_detail_reads_the_note_in_one_query(): void
@@ -96,7 +99,7 @@ final class CancellationNoteApiTest extends TestCase
     /**
      * A history row, written as the action that owns it writes it.
      */
-    private function writeHistory(Order $order, OrderHistoryEvent $event, CancellationReason $reason, string $note): void
+    private function writeHistory(Order $order, OrderHistoryEvent $event, CancellationReason $reason, string $note, ?User $actor = null): void
     {
         DB::table('order_history')->insert([
             'id' => (string) Str::uuid(),
@@ -104,7 +107,8 @@ final class CancellationNoteApiTest extends TestCase
             'event_type' => $event->value,
             'from_status' => OrderStatus::ReadyForDelivery->value,
             'to_status' => OrderStatus::Cancelled->value,
-            'actor_type' => 'system',
+            'actor_type' => $actor === null ? 'system' : 'user',
+            'actor_user_id' => $actor?->id,
             'reason_code' => $reason->value,
             'note' => $note,
             'created_at' => now(),

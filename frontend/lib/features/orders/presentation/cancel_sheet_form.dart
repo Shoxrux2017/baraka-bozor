@@ -149,8 +149,12 @@ class CancelReasonForm extends StatelessWidget {
               _ChipButton(
                 key: ValueKey<String>('cancel-chip-${chip.name}'),
                 label: cancelChipLabel(l10n, chip),
-                position: l10n.cancelChipPosition(chip.index + 1, 5),
+                position: l10n.cancelChipPosition(
+                  chip.index + 1,
+                  CancelChip.values.length,
+                ),
                 chosen: draft.chip == chip,
+                enabled: !locked,
                 onTap: () => _tapChip(context, l10n, chip),
               ),
           ],
@@ -264,6 +268,7 @@ class _ChipButton extends StatelessWidget {
     required this.label,
     required this.position,
     required this.chosen,
+    required this.enabled,
     required this.onTap,
     super.key,
   });
@@ -271,6 +276,7 @@ class _ChipButton extends StatelessWidget {
   final String label;
   final String position;
   final bool chosen;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -278,6 +284,7 @@ class _ChipButton extends StatelessWidget {
     const Duration fade = Duration(milliseconds: 200);
     return Semantics(
       button: true,
+      enabled: enabled,
       selected: chosen,
       label: label,
       hint: position,
@@ -397,18 +404,11 @@ class _Tip extends StatelessWidget {
           );
     final double buttonWidth = buttonText == null
         ? 0
-        : (TextPainter(
-                text: TextSpan(
-                  text: buttonText,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                textDirection: TextDirection.ltr,
-                textScaler: scaler,
-                maxLines: 1,
-              )..layout()).width +
+        : textWidth(
+                context,
+                buttonText!,
+                const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              ) +
               24;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {

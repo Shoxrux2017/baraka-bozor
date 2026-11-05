@@ -1,17 +1,17 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
-import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/localization/failure_text.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
-import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/orders/presentation/cancel_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,6 +21,17 @@ import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
 import '../../../support/nonlinear_text_scaler.dart';
+
+/// The account the tests switch under a sheet without leaving the page.
+class _Account extends Notifier<String?> {
+  @override
+  String? build() => 'c';
+
+  void switchTo(String id) => state = id;
+}
+
+final NotifierProvider<_Account, String?> _account =
+    NotifierProvider<_Account, String?>(_Account.new);
 
 /// The cancel sheet of `DL-133` through the real router and screens, with
 /// the repositories faked.
@@ -54,6 +65,7 @@ void main() {
     Size size = const Size(800, 2400),
     Locale device = const Locale('uz'),
     TextScaler? textScaler,
+    List<Override> overrides = const <Override>[],
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -66,6 +78,7 @@ void main() {
         cart: cart,
         device: device,
         textScaler: textScaler,
+        overrides: overrides,
       ),
     );
     await tester.pumpAndSettle();
@@ -336,6 +349,26 @@ void main() {
     );
   });
 
+  group('the sheet keeps the order current', () {
+    testWidgets('its refresh waits after a failed load', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.customerOrder(orderOne));
+      await openSheet(tester);
+      orders.loadFailure = const NetworkFailure();
+      await tester.pump(const Duration(seconds: 15));
+      await tester.pumpAndSettle();
+      final int afterFailure = orderLoads();
+
+      for (int i = 0; i < 3; i++) {
+        await tester.pump(const Duration(seconds: 15));
+        await tester.pump();
+      }
+
+      expect(orderLoads(), afterFailure);
+    });
+  });
+
   group('sending', () {
     testWidgets(
       'the sheet stays while cancelling and says Заказ отменён before it closes',
@@ -461,7 +494,15 @@ void main() {
     testWidgets(
       'an answer dropped for another account closes the sheet quietly',
       (WidgetTester tester) async {
-        await open(tester, at: AppPaths.customerOrder(orderOne));
+        await open(
+          tester,
+          at: AppPaths.customerOrder(orderOne),
+          overrides: <Override>[
+            customerAccountProvider.overrideWith(
+              (Ref ref) => ref.watch(_account),
+            ),
+          ],
+        );
         await openSheet(tester);
         orders
           ..answer = cancelledRow()
@@ -470,19 +511,112 @@ void main() {
         await tester.pump();
         final AppLocalizations words = l10n(tester);
 
-        await ProviderScope.containerOf(
-          tester.element(find.byType(Scaffold).first),
-        ).read(sessionControllerProvider.notifier).logout(SessionMode.customer);
-        await tester.pumpAndSettle();
+        ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+            .read(_account.notifier)
+            .switchTo('c-2');
+        await tester.pump();
         tester.takeAnnouncements();
         orders.hold!.complete();
+        await tester.pump();
+        await tester.pump();
         await tester.pumpAndSettle();
 
         expect(byKey('cancel-sheet'), findsNothing);
+        expect(exited, isTrue);
+        expect(exit, isNull);
         expect(find.text(words.cancelSheetRequested), findsNothing);
         final List<String> spoken = announced(tester);
         expect(spoken, isNot(contains(words.orderStateCancelled)));
         expect(spoken, isNot(contains(words.cancelSheetRequested)));
+      },
+    );
+
+    testWidgets(
+      'while sending the send button and the chips are off for a reader and the button stays red',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+        await openSheet(tester);
+        orders
+          ..answer = cancelledRow()
+          ..hold = Completer<void>();
+
+        await tester.tap(byKey('cancel-confirm'));
+        await tester.pump();
+
+        final FilledButton send = tester.widget<FilledButton>(
+          byKey('cancel-confirm'),
+        );
+        expect(send.onPressed, isNull);
+        final Set<WidgetState> off = <WidgetState>{WidgetState.disabled};
+        expect(send.style!.backgroundColor!.resolve(off), KitColors.danger);
+        expect(send.style!.foregroundColor!.resolve(off), Colors.white);
+        expect(
+          tester.getSemantics(byKey('cancel-chip-other')),
+          isSemantics(isButton: true, isEnabled: false),
+        );
+
+        orders.hold!.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.widget<FilledButton>(byKey('cancel-confirm')).onPressed,
+          isNull,
+        );
+        await tester.pumpAndSettle();
+        handle.dispose();
+      },
+    );
+
+    testWidgets('a route pushed over the sheet stays when the sheet ends', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.customerOrder(orderOne));
+      await openSheet(tester);
+      orders
+        ..answer = cancelledRow()
+        ..hold = Completer<void>();
+      await tester.tap(byKey('cancel-confirm'));
+      await tester.pump();
+      unawaited(
+        showDialog<void>(
+          context: anywhere(tester),
+          useRootNavigator: false,
+          builder: (BuildContext _) => const AlertDialog(
+            key: ValueKey<String>('over'),
+            title: Text('over'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      orders.hold!.complete();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+
+      expect(byKey('over'), findsOneWidget);
+      expect(byKey('cancel-sheet'), findsNothing);
+      expect(exit, CancelSheetExit.cancelled);
+    });
+
+    testWidgets(
+      'a replay the Operator already rejected closes the sheet with no outcome',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+        await openSheet(tester);
+        orders.failure = const NetworkFailure();
+        await send(tester);
+        expect(byKey('cancel-unsure'), findsOneWidget);
+
+        orders.rows = <Map<String, Object?>>[shoppingRow(request: 'rejected')];
+        await send(tester);
+
+        expect(byKey('cancel-sheet'), findsNothing);
+        expect(exited, isTrue);
+        expect(exit, isNull);
+        expect(find.text(l10n(tester).cancelSheetRequested), findsNothing);
       },
     );
   });
@@ -856,6 +990,28 @@ void main() {
       },
     );
 
+    testWidgets(
+      'at large text the strip and the buttons stay above the keyboard',
+      (WidgetTester tester) async {
+        keyboardUp(tester);
+        await open(
+          tester,
+          at: AppPaths.customerOrder(orderOne),
+          size: phone,
+          device: const Locale('ru'),
+          textScaler: const NonlinearTextScaler(2),
+        );
+        await openSheet(tester);
+        orders.failure = const ApiRefusal(
+          ApiError(status: 429, code: 'rate_limited'),
+        );
+        await send(tester);
+
+        expect(byKey('cancel-strip'), findsOneWidget);
+        expectFooterAbove(tester);
+      },
+    );
+
     testWidgets('a reader hears the field by its name', (
       WidgetTester tester,
     ) async {
@@ -951,7 +1107,16 @@ void main() {
       '100 %': null,
       'large text': const NonlinearTextScaler(2),
     };
-    final List<String> faces = <String>['direct', 'request', 'retry', 'closed'];
+    final List<String> faces = <String>[
+      'direct',
+      'request',
+      'retry',
+      'closed',
+      'raced',
+      'sending',
+      'done',
+      'strip',
+    ];
 
     for (final MapEntry<String, TextScaler?> scale in scales.entries) {
       for (final String face in faces) {
@@ -979,8 +1144,35 @@ void main() {
             orders.failure = const NetworkFailure();
             await send(tester);
             expect(byKey('cancel-unsure'), findsOneWidget);
+          } else if (face == 'raced') {
+            orders.rows = <Map<String, Object?>>[shoppingRow()];
+            await tester.pump(const Duration(seconds: 15));
+            await tester.pumpAndSettle();
+            expect(byKey('cancel-raced'), findsOneWidget);
+          } else if (face == 'sending' || face == 'done') {
+            orders
+              ..answer = cancelledRow()
+              ..hold = Completer<void>();
+            await tester.tap(byKey('cancel-confirm'));
+            await tester.pump();
+            if (face == 'done') {
+              orders.hold!.complete();
+              await tester.pump();
+              await tester.pump();
+              expect(inConfirm(find.byIcon(Icons.check)), findsOneWidget);
+            }
+          } else if (face == 'strip') {
+            orders.failure = const ApiRefusal(
+              ApiError(status: 429, code: 'rate_limited'),
+            );
+            await send(tester);
+            expect(byKey('cancel-strip'), findsOneWidget);
           }
           await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          if (orders.hold != null && !orders.hold!.isCompleted) {
+            orders.hold!.complete();
+          }
+          await tester.pumpAndSettle();
           handle.dispose();
         });
       }
