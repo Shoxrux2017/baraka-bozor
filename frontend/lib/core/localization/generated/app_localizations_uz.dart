@@ -2184,14 +2184,93 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderEditKeepLine => 'Qaytarish';
 
   @override
-  String get orderEditAtLeastOne =>
-      'Buyurtmada kamida bitta mahsulot qolishi kerak';
-
-  @override
-  String get orderEditSaving => 'Saqlanmoqda';
-
-  @override
   String get orderEditClosed => 'Bu buyurtmani endi o\'zgartirib bo\'lmaydi';
+
+  @override
+  String orderEditWasSame(String amount) {
+    return 'Avval $amount edi · yetkazish va xizmat haqi o\'zgarmadi';
+  }
+
+  @override
+  String orderEditWas(String amount) {
+    return 'Avval $amount edi';
+  }
+
+  @override
+  String orderEditFeesIncluded(String delivery, String fee) {
+    return 'Yetkazish $delivery va xizmat haqi $fee kiritilgan';
+  }
+
+  @override
+  String orderEditMinimum(String minimum, String shortfall) {
+    return '$minimum minimal summagacha $shortfall yetmayapti';
+  }
+
+  @override
+  String get orderEditAdd => 'Qo\'shish';
+
+  @override
+  String orderEditGone(String names) {
+    return '$names: sotuvda yo\'q — saqlash uchun olib tashlang';
+  }
+
+  @override
+  String get orderEditRemoveShort => 'Olib tashlash';
+
+  @override
+  String get orderEditNoChanges => 'O\'zgarish yo\'q';
+
+  @override
+  String orderEditSaveChanges(int count) {
+    return 'O\'zgarishlarni saqlash ($count)';
+  }
+
+  @override
+  String get orderEditSavingBusy => 'Saqlanmoqda…';
+
+  @override
+  String get orderEditSaved => 'Saqlandi';
+
+  @override
+  String orderEditShortfall(String amount) {
+    return '$amount yetmayapti';
+  }
+
+  @override
+  String orderEditRemoveFirst(String name) {
+    return 'Avval olib tashlang: $name';
+  }
+
+  @override
+  String orderEditRemoveFirstMore(String name, int count) {
+    return 'Avval olib tashlang: $name va yana $count ta';
+  }
+
+  @override
+  String get orderEditKeepOne => 'Kamida bitta mahsulot qoldiring';
+
+  @override
+  String get orderEditedTitle => 'Buyurtma o\'zgartirildi';
+
+  @override
+  String orderEditedTotal(String amount) {
+    return 'Jami $amount';
+  }
+
+  @override
+  String orderEditedSpoken(String amount) {
+    return 'Buyurtma o\'zgartirildi. Jami $amount';
+  }
+
+  @override
+  String orderEditNotSaved(String what) {
+    return 'Saqlanmadi. $what';
+  }
+
+  @override
+  String orderEditTotalSpoken(String what, String amount) {
+    return '$what. Jami $amount';
+  }
 
   @override
   String get orderEditCloseSpoken => 'Buyurtmani o\'zgartirishni yopish';

@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_edit_words.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,51 @@ import '../../../support/fake_catalog_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
 import '../../../support/nonlinear_text_scaler.dart';
+
+/// The order of the test page: tomatoes 2,5 kg at 14 000, flatbread 3 at
+/// 3 000 and apples 1,5 kg at 18 000, delivery 15 000 and fee 5 000.
+const String lineApple = '0192f0a0-0000-7000-8000-00000000c014';
+const String productApple = '0192f0a0-0000-7000-8000-00000000c024';
+
+Map<String, Object?> pageOrder() => customerOrderJson(
+  lines: <Object?>[
+    orderLineJson(
+      quantity: '2.500',
+      patch: <String, Object?>{
+        'customer_unit_price_uzs': 14000,
+        'line_total_uzs': 35000,
+      },
+    ),
+    orderLineJson(
+      id: lineBread,
+      productId: productBread,
+      unit: 'piece',
+      quantity: '3',
+      patch: <String, Object?>{
+        'customer_unit_price_uzs': 3000,
+        'line_total_uzs': 9000,
+      },
+    ),
+    orderLineJson(
+      id: lineApple,
+      productId: productApple,
+      quantity: '1.500',
+      patch: <String, Object?>{
+        'name_uz': 'Olma',
+        'name_ru': 'Яблоки',
+        'customer_unit_price_uzs': 18000,
+        'line_total_uzs': 27000,
+      },
+    ),
+  ],
+  totals: <String, Object?>{
+    'merchandise_subtotal_uzs': 71000,
+    'service_fee_uzs': 5000,
+    'delivery_fee_uzs': 15000,
+    'total_uzs': 91000,
+    'total_kind': 'estimate',
+  },
+);
 
 /// The order's editor (`docs/09` section 21, `DL-43`, `DL-132`) through the
 /// real router and screens, with the repositories faked.
@@ -115,11 +161,14 @@ void main() {
         await tapAndSettle(tester, byKey('order-edit'));
         expect(byKey('order-editor'), findsOneWidget);
 
-        await tapAndSettle(tester, byKey('edit-save'));
-        expect(orders.edits, isEmpty, reason: 'nothing changed');
-        expect(byKey('order-editor'), findsNothing);
+        expect(
+          tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+          isNull,
+          reason: 'nothing changed: the button says so and waits',
+        );
+        expect(orders.edits, isEmpty);
+        expect(byKey('order-editor'), findsOneWidget);
 
-        await tapAndSettle(tester, byKey('order-edit'));
         await removeLine(tester, lineBread);
         // 1,5 kg steps by half a kilo: two plus taps make 2,5.
         await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
@@ -157,9 +206,15 @@ void main() {
 
       await removeLine(tester, lineTomato);
       await removeLine(tester, lineBread);
-      await tapAndSettle(tester, byKey('edit-save'));
 
-      expect(byKey('edit-none-left'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('edit-save'),
+          matching: find.text(l10n(tester).orderEditKeepOne),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
       expect(orders.edits, isEmpty);
     });
 
@@ -221,12 +276,10 @@ void main() {
               .matchedLocation;
 
       await open(tester, at: AppPaths.customerOrderEdit(orderOne), alone: true);
-      await tapAndSettle(tester, byKey('edit-save'));
+      expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
       expect(orders.edits, isEmpty, reason: 'nothing changed');
-      expect(top(), AppPaths.customerOrder(orderOne));
+      expect(top(), AppPaths.customerOrderEdit(orderOne));
 
-      GoRouter.of(anywhere(tester)).go(AppPaths.customerOrderEdit(orderOne));
-      await tester.pumpAndSettle();
       await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
       orders.answer = customerOrderJson(note: 'Ertalab');
       await tapAndSettle(tester, byKey('edit-save'));
@@ -234,6 +287,11 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(top(), AppPaths.customerOrder(orderOne));
       expect(byKey('order-status'), findsOneWidget);
+      expect(
+        byKey('edit-banner'),
+        findsNothing,
+        reason: 'an editor opened by its address says nothing on the order',
+      );
     });
 
     testWidgets('an order gone meanwhile is said so, not edited', (
@@ -450,72 +508,6 @@ void main() {
       expect(orders.edits.single.$2.single.productId, productBread);
     });
 
-    testWidgets(
-      'the editor shows the goods preview and no delivery, fee or total',
-      (WidgetTester tester) async {
-        String id(int i) => '0192f0a0-0000-7000-8000-00000000c10$i';
-        orders.rows = <Map<String, Object?>>[
-          customerOrderJson(
-            lines: <Object?>[
-              // 1,5 kg at 18 400, 2 at 4 000, 3 at 4 000 and 1 at 31 400.
-              orderLineJson(),
-              orderLineJson(
-                id: lineBread,
-                productId: productBread,
-                unit: 'piece',
-                quantity: '2',
-              ),
-              orderLineJson(
-                id: id(1),
-                productId: id(2),
-                unit: 'piece',
-                quantity: '3',
-              ),
-              orderLineJson(
-                id: id(3),
-                productId: id(4),
-                unit: 'piece',
-                quantity: '1',
-                patch: <String, Object?>{'customer_unit_price_uzs': 31400},
-              ),
-            ],
-          ),
-        ];
-        await open(
-          tester,
-          at: AppPaths.customerOrderEdit(orderOne),
-          device: const Locale('ru'),
-        );
-
-        final AppLocalizations words = l10n(tester);
-        String estimate(int amount) =>
-            words.cartLineEstimate(MoneyFormat.uzs(amount, AppLanguage.ru));
-        expect(find.text('Товары (4)'), findsOneWidget);
-        expect(
-          find.descendant(
-            of: byKey('edit-line-$lineTomato'),
-            matching: find.text(estimate(27600)),
-          ),
-          findsOneWidget,
-        );
-        expect(find.text(estimate(79000)), findsOneWidget);
-        expect(find.text('Доставка'), findsNothing);
-        expect(find.text('Сервисный сбор'), findsNothing);
-        expect(find.text('Итого'), findsNothing);
-        expect(
-          find.text('Доставку, сбор и итог пересчитаем после сохранения'),
-          findsOneWidget,
-        );
-
-        await tapAndSettle(tester, byKey('line-plus-$lineBread'));
-        expect(find.text('Товары (4)'), findsOneWidget);
-        expect(find.text(estimate(83000)), findsOneWidget);
-        await removeLine(tester, lineBread);
-        expect(find.text('Товары (3)'), findsOneWidget);
-        expect(find.text(estimate(71000)), findsOneWidget);
-      },
-    );
-
     testWidgets('only an estimate price carries "≈" in the editor', (
       WidgetTester tester,
     ) async {
@@ -668,6 +660,7 @@ void main() {
     testWidgets('one save at a time', (WidgetTester tester) async {
       await open(tester, at: AppPaths.customerOrderEdit(orderOne));
       await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+      await tester.pump();
       final Completer<void> hold = Completer<void>();
       orders
         ..hold = hold
@@ -894,26 +887,6 @@ void main() {
       await tapAndSettle(tester, byKey('line-minus-$lineTomato'));
       expect(byKey('edit-removed-$lineTomato'), findsOneWidget);
       expect(haptics, hasLength(2), reason: 'the minus at the minimum');
-    });
-
-    testWidgets('a removal and a restore are announced', (
-      WidgetTester tester,
-    ) async {
-      await open(
-        tester,
-        at: AppPaths.customerOrderEdit(orderOne),
-        device: const Locale('ru'),
-      );
-      List<String> announced() => tester
-          .takeAnnouncements()
-          .map((CapturedAccessibilityAnnouncement a) => a.message)
-          .toList();
-      announced();
-
-      await removeLine(tester, lineTomato);
-      expect(announced(), <String>['Помидоры — убрали из заказа']);
-      await tapAndSettle(tester, byKey('edit-restore-$lineTomato'));
-      expect(announced(), <String>['Помидоры снова в заказе']);
     });
 
     testWidgets(
@@ -1223,5 +1196,577 @@ void main() {
         },
       );
     }
+  });
+
+  group('the sums, the minimum and the save', () {
+    String uzs(int amount) => MoneyFormat.uzs(amount, AppLanguage.ru);
+    String est(int amount) =>
+        lookupAppLocalizations(const Locale('ru'))
+            .cartLineEstimate(uzs(amount));
+    String textOf(WidgetTester tester, String key) =>
+        tester.widget<Text>(byKey(key)).data!;
+    Finder inButton(String text) =>
+        find.descendant(of: byKey('edit-save'), matching: find.text(text));
+
+    /// The preview that answers 3 kg of tomatoes: 7 000 more than before.
+    Map<String, Object?> threeKilos(String id, List<OrderEditLine> lines) =>
+        editPreviewJson(
+          merchandise: 78000,
+          total: 98000,
+          before: 91000,
+          change: 7000,
+        );
+
+    Future<void> openPage(
+      WidgetTester tester, {
+      Size size = const Size(800, 2400),
+      TextScaler? scaler,
+      bool alone = false,
+    }) async {
+      orders.rows = <Map<String, Object?>>[pageOrder()];
+      await open(
+        tester,
+        at: AppPaths.customerOrderEdit(orderOne),
+        alone: alone,
+        size: size,
+        scaler: scaler,
+        device: const Locale('ru'),
+      );
+    }
+
+    /// Waits for the draft to be quiet and the server's answer.
+    Future<void> answered(WidgetTester tester) async {
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pumpAndSettle();
+    }
+
+    List<String> announced(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .map((CapturedAccessibilityAnnouncement a) => a.message)
+        .toList();
+
+    testWidgets(
+      "the list and the footer show the order's sums before any change",
+      (WidgetTester tester) async {
+        await openPage(tester);
+
+        expect(textOf(tester, 'edit-goods'), est(71000));
+        expect(textOf(tester, 'edit-delivery'), uzs(15000));
+        expect(textOf(tester, 'edit-fee'), uzs(5000));
+        expect(textOf(tester, 'edit-total'), est(91000));
+        expect(find.text('Товары (3)'), findsOneWidget);
+        expect(textOf(tester, 'edit-footer-total'), est(91000));
+        expect(byKey('edit-change'), findsNothing, reason: 'hidden at 0');
+        expect(
+          textOf(tester, 'edit-was'),
+          'Доставка ${uzs(15000)} и сбор ${uzs(5000)} включены',
+        );
+        expect(byKey('edit-recount'), findsNothing);
+        expect(orders.previewCalls, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'a change shows the previewed delivery, fee and total, the change and Было',
+      (WidgetTester tester) async {
+        orders.previews = threeKilos;
+        await openPage(tester);
+
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+
+        expect(textOf(tester, 'edit-goods'), est(78000));
+        expect(textOf(tester, 'edit-delivery'), uzs(15000));
+        expect(textOf(tester, 'edit-fee'), uzs(5000));
+        expect(textOf(tester, 'edit-total'), est(98000));
+        expect(textOf(tester, 'edit-footer-total'), est(98000));
+        expect(textOf(tester, 'edit-change'), '+7 000 сум');
+        expect(
+          textOf(tester, 'edit-was'),
+          'Было ${est(91000)} · доставка и сбор те же',
+        );
+        expect(orders.previewCalls, hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'a lower total shows the change down, and a new fee says Было',
+      (WidgetTester tester) async {
+        orders.previews = (String id, List<OrderEditLine> lines) =>
+            editPreviewJson(
+              merchandise: 62000,
+              deliveryFee: 12000,
+              total: 79000,
+              before: 91000,
+              change: -12000,
+            );
+        await openPage(tester);
+
+        await tapAndSettle(tester, byKey('line-minus-$lineTomato'));
+        await answered(tester);
+
+        expect(textOf(tester, 'edit-change'), '−12 000 сум');
+        expect(textOf(tester, 'edit-delivery'), uzs(12000));
+        expect(textOf(tester, 'edit-was'), 'Было ${est(91000)}');
+        final DecoratedBox pill = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: byKey('edit-change'),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        expect((pill.decoration as BoxDecoration).color, KitColors.primaryWash);
+      },
+    );
+
+    testWidgets('while a newer preview waits the sums stay dimmed', (
+      WidgetTester tester,
+    ) async {
+      orders.previews = threeKilos;
+      await openPage(tester);
+      double opacity() => tester
+          .widget<AnimatedOpacity>(
+            find
+                .ancestor(
+                  of: byKey('edit-footer-total'),
+                  matching: find.byType(AnimatedOpacity),
+                )
+                .first,
+          )
+          .opacity;
+      expect(opacity(), 1);
+
+      final Completer<void> hold = Completer<void>();
+      orders.holdPreview = hold;
+      await tester.tap(byKey('line-plus-$lineTomato'));
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(opacity(), 0.45);
+      expect(textOf(tester, 'edit-footer-total'), est(91000));
+
+      orders.holdPreview = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(opacity(), 1);
+      expect(textOf(tester, 'edit-footer-total'), est(98000));
+    });
+
+    testWidgets('sums roll to the new answer', (WidgetTester tester) async {
+      orders.previews = threeKilos;
+      await openPage(tester);
+
+      await tester.tap(byKey('line-plus-$lineTomato'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 100));
+      final String between = textOf(tester, 'edit-footer-total');
+      expect(between, isNot(est(91000)));
+      expect(between, isNot(est(98000)));
+
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(textOf(tester, 'edit-footer-total'), est(98000));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'offline the footer says the totals come after saving and the save still goes',
+      (WidgetTester tester) async {
+        orders.previewFailure = const NetworkFailure();
+        await openPage(tester);
+
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+
+        expect(textOf(tester, 'edit-recount'), l10n(tester).orderEditRecount);
+        expect(byKey('edit-footer-total'), findsNothing);
+        expect(byKey('edit-change'), findsNothing);
+        expect(textOf(tester, 'edit-goods'), '—');
+        expect(textOf(tester, 'edit-total'), '—');
+        expect(
+          tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+          isNotNull,
+        );
+
+        orders.answer = pageOrder();
+        await tapAndSettle(tester, byKey('edit-save'));
+        expect(orders.edits.single.$2.first.quantity, '3');
+      },
+    );
+
+    testWidgets(
+      'a shortfall shows the strip and greys the button with the sum',
+      (WidgetTester tester) async {
+        orders.previews = (String id, List<OrderEditLine> lines) =>
+            editPreviewJson(
+              merchandise: 9000,
+              total: 29000,
+              before: 91000,
+              change: -62000,
+              minimum: 50000,
+              shortfall: 41000,
+            );
+        await openPage(tester);
+        expect(byKey('edit-minimum'), findsNothing);
+
+        await tapAndSettle(tester, byKey('line-minus-$lineTomato'));
+        await answered(tester);
+
+        expect(
+          find.descendant(
+            of: byKey('edit-minimum'),
+            matching: find.text(
+              'До минимальной суммы ${uzs(50000)} не хватает ${uzs(41000)}',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(inButton('Не хватает ${uzs(41000)}'), findsOneWidget);
+        expect(
+          tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+          isNull,
+        );
+        expect(tester.getSize(byKey('edit-minimum-add')).height, 44);
+
+        await tapAndSettle(tester, byKey('edit-minimum-add'));
+        expect(
+          GoRouter.of(anywhere(tester))
+              .routerDelegate
+              .currentConfiguration
+              .last
+              .matchedLocation,
+          AppPaths.customerOrderAdd(orderOne),
+          reason: 'the picker opens',
+        );
+      },
+    );
+
+    testWidgets(
+      'a save refused for the minimum shows the strip from its details',
+      (WidgetTester tester) async {
+        await openPage(tester);
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        orders.failure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'minimum_order_not_reached',
+            details: <String, Object?>{
+              'minimum_order_uzs': 50000,
+              'shortfall_uzs': 41000,
+            },
+          ),
+        );
+        announced(tester);
+
+        await tapAndSettle(tester, byKey('edit-save'));
+
+        final String words =
+            'До минимальной суммы ${uzs(50000)} не хватает ${uzs(41000)}';
+        expect(
+          find.descendant(
+            of: byKey('edit-minimum'),
+            matching: find.text(words),
+          ),
+          findsOneWidget,
+        );
+        expect(inButton('Не хватает ${uzs(41000)}'), findsOneWidget);
+        expect(
+          find.text(l10n(tester).errorMinimumOrderPlain),
+          findsNothing,
+          reason: 'the strip says it, not the red line',
+        );
+        expect(announced(tester), contains('Не сохранено. $words'));
+      },
+    );
+
+    testWidgets('the button says Нет изменений, then Сохранить изменения (3)', (
+      WidgetTester tester,
+    ) async {
+      await openPage(tester);
+      expect(inButton('Нет изменений'), findsOneWidget);
+      expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
+
+      await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+      expect(inButton('Сохранить изменения (1)'), findsOneWidget);
+      await removeLine(tester, lineBread);
+      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+      await tester.pumpAndSettle();
+
+      expect(inButton('Сохранить изменения (3)'), findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets(
+      'with no line kept the button says Оставьте хотя бы один товар',
+      (WidgetTester tester) async {
+        await openPage(tester);
+        await removeLine(tester, lineTomato);
+        await removeLine(tester, lineBread);
+        await removeLine(tester, lineApple);
+
+        expect(inButton('Оставьте хотя бы один товар'), findsOneWidget);
+        expect(
+          tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+          isNull,
+        );
+        expect(byKey('edit-none-left'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'saving says Сохраняем…, then ✓ Сохранено, buzzes and returns with the order',
+      (WidgetTester tester) async {
+        final List<String> haptics = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (MethodCall call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              haptics.add(call.arguments as String);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        orders.rows = <Map<String, Object?>>[pageOrder()];
+        await open(tester, device: const Locale('ru'));
+        final Future<CustomerOrder?> result = GoRouter.of(anywhere(tester))
+            .push<CustomerOrder>(AppPaths.customerOrderEdit(orderOne));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('line-plus-$lineTomato'));
+        await tester.pump();
+        final Completer<void> hold = Completer<void>();
+        orders
+          ..hold = hold
+          ..answer = pageOrder();
+        announced(tester);
+        haptics.clear();
+
+        await tester.tap(byKey('edit-save'));
+        await tester.pump();
+        expect(inButton('Сохраняем…'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: byKey('edit-save'),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsOneWidget,
+        );
+        expect(haptics, isEmpty);
+
+        orders.hold = null;
+        hold.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 10));
+        expect(inButton('Сохранено'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: byKey('edit-save'),
+            matching: find.byIcon(Icons.check),
+          ),
+          findsOneWidget,
+        );
+        expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+        expect(announced(tester), <String>[
+          'Заказ изменён. Итого ${est(91000)}',
+        ]);
+
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(byKey('order-editor'), findsOneWidget, reason: 'stands 650 ms');
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
+        expect(byKey('order-editor'), findsNothing);
+        expect((await result)!.id, orderOne);
+      },
+    );
+
+    testWidgets(
+      'a product the server no longer sells is named, and Убрать takes it out',
+      (WidgetTester tester) async {
+        orders.previewFailure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'product_unavailable',
+            details: <String, Object?>{
+              'product_ids': <Object?>[productApple],
+            },
+          ),
+        );
+        await openPage(tester);
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+
+        expect(
+          find.descendant(
+            of: byKey('edit-gone'),
+            matching: find.text(
+              'Яблоки: нет в продаже — уберите, чтобы сохранить',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(inButton('Сначала уберите: Яблоки'), findsOneWidget);
+        expect(
+          tester.widget<FilledButton>(byKey('edit-save')).onPressed,
+          isNull,
+        );
+
+        await tapAndSettle(tester, byKey('edit-gone-remove'));
+        expect(byKey('edit-gone'), findsNothing);
+        expect(byKey('edit-removed-$lineApple'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a step is announced with the new total once its preview answers',
+      (WidgetTester tester) async {
+        orders.previews = threeKilos;
+        await openPage(tester);
+        announced(tester);
+
+        await tester.tap(byKey('line-plus-$lineTomato'));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          announced(tester),
+          isEmpty,
+          reason: 'the total is not known yet',
+        );
+
+        await answered(tester);
+        expect(announced(tester), <String>[
+          'Помидоры, 3 кг. Итого ${est(98000)}',
+        ]);
+      },
+    );
+
+    testWidgets('of quick steps only the last is announced', (
+      WidgetTester tester,
+    ) async {
+      orders.previews = threeKilos;
+      await openPage(tester);
+      announced(tester);
+
+      await tester.tap(byKey('line-plus-$lineTomato'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('line-plus-$lineTomato'));
+      await answered(tester);
+
+      expect(announced(tester), <String>[
+        'Помидоры, 3,5 кг. Итого ${est(98000)}',
+      ]);
+    });
+
+    testWidgets('a removal and a restore are announced with the total', (
+      WidgetTester tester,
+    ) async {
+      await openPage(tester);
+      announced(tester);
+
+      await removeLine(tester, lineBread);
+      await answered(tester);
+      expect(announced(tester), <String>[
+        'Хлеб — убрали из заказа. Итого ${est(91000)}',
+      ]);
+
+      await tapAndSettle(tester, byKey('edit-restore-$lineBread'));
+      expect(announced(tester), <String>[
+        'Хлеб снова в заказе. Итого ${est(91000)}',
+      ]);
+    });
+
+    testWidgets('a failed preview leaves the change to be said alone', (
+      WidgetTester tester,
+    ) async {
+      orders.previewFailure = const NetworkFailure();
+      await openPage(tester);
+      announced(tester);
+
+      await removeLine(tester, lineBread);
+      await answered(tester);
+
+      expect(announced(tester), <String>['Хлеб — убрали из заказа']);
+    });
+
+    for (final (String, TextScaler) scale in <(String, TextScaler)>[
+      ('100 %', TextScaler.noScaling),
+      ('200 %', const NonlinearTextScaler(2)),
+    ]) {
+      testWidgets(
+        'every button state and both strips meet the guideline at ${scale.$1}',
+        (WidgetTester tester) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          orders.previews = (String id, List<OrderEditLine> lines) =>
+              editPreviewJson(
+                merchandise: 9000,
+                total: 29000,
+                before: 91000,
+                change: -62000,
+                minimum: 50000,
+                shortfall: 41000,
+              );
+          await openPage(tester, size: const Size(360, 2400), scaler: scale.$2);
+          expect(inButton('Нет изменений'), findsOneWidget);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+          await tapAndSettle(tester, byKey('line-minus-$lineTomato'));
+          await answered(tester);
+          expect(byKey('edit-minimum'), findsOneWidget);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+          orders.previewFailure = const ApiRefusal(
+            ApiError(
+              status: 409,
+              code: 'product_unavailable',
+              details: <String, Object?>{
+                'product_ids': <Object?>[productApple],
+              },
+            ),
+          );
+          await tapAndSettle(tester, byKey('line-plus-$lineBread'));
+          await answered(tester);
+          expect(byKey('edit-gone'), findsOneWidget);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+          await tapAndSettle(tester, byKey('edit-gone-remove'));
+          await removeLine(tester, lineTomato);
+          await removeLine(tester, lineBread);
+          expect(inButton('Оставьте хотя бы один товар'), findsOneWidget);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          expect(tester.takeException(), isNull);
+          handle.dispose();
+        },
+      );
+    }
+
+    testWidgets(
+      'at 200 % on 360 dp the footer total, its pill and Было do not overflow',
+      (WidgetTester tester) async {
+        orders.previews = threeKilos;
+        await openPage(
+          tester,
+          size: const Size(360, 800),
+          scaler: const NonlinearTextScaler(2),
+        );
+        await tapAndSettle(tester, byKey('line-plus-$lineTomato'));
+        await answered(tester);
+
+        expect(tester.takeException(), isNull);
+        for (final String key in <String>[
+          'edit-footer-total',
+          'edit-change',
+          'edit-was',
+          'edit-save',
+        ]) {
+          final Rect box = tester.getRect(byKey(key));
+          expect(box.left, greaterThanOrEqualTo(0), reason: key);
+          expect(box.right, lessThanOrEqualTo(360), reason: key);
+        }
+      },
+    );
   });
 }

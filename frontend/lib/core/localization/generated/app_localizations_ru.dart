@@ -2215,14 +2215,93 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderEditKeepLine => 'Вернуть';
 
   @override
-  String get orderEditAtLeastOne =>
-      'В заказе должен остаться хотя бы один товар';
-
-  @override
-  String get orderEditSaving => 'Сохраняем';
-
-  @override
   String get orderEditClosed => 'Этот заказ уже нельзя изменить';
+
+  @override
+  String orderEditWasSame(String amount) {
+    return 'Было $amount · доставка и сбор те же';
+  }
+
+  @override
+  String orderEditWas(String amount) {
+    return 'Было $amount';
+  }
+
+  @override
+  String orderEditFeesIncluded(String delivery, String fee) {
+    return 'Доставка $delivery и сбор $fee включены';
+  }
+
+  @override
+  String orderEditMinimum(String minimum, String shortfall) {
+    return 'До минимальной суммы $minimum не хватает $shortfall';
+  }
+
+  @override
+  String get orderEditAdd => 'Добавить';
+
+  @override
+  String orderEditGone(String names) {
+    return '$names: нет в продаже — уберите, чтобы сохранить';
+  }
+
+  @override
+  String get orderEditRemoveShort => 'Убрать';
+
+  @override
+  String get orderEditNoChanges => 'Нет изменений';
+
+  @override
+  String orderEditSaveChanges(int count) {
+    return 'Сохранить изменения ($count)';
+  }
+
+  @override
+  String get orderEditSavingBusy => 'Сохраняем…';
+
+  @override
+  String get orderEditSaved => 'Сохранено';
+
+  @override
+  String orderEditShortfall(String amount) {
+    return 'Не хватает $amount';
+  }
+
+  @override
+  String orderEditRemoveFirst(String name) {
+    return 'Сначала уберите: $name';
+  }
+
+  @override
+  String orderEditRemoveFirstMore(String name, int count) {
+    return 'Сначала уберите: $name и ещё $count';
+  }
+
+  @override
+  String get orderEditKeepOne => 'Оставьте хотя бы один товар';
+
+  @override
+  String get orderEditedTitle => 'Заказ изменён';
+
+  @override
+  String orderEditedTotal(String amount) {
+    return 'Итого $amount';
+  }
+
+  @override
+  String orderEditedSpoken(String amount) {
+    return 'Заказ изменён. Итого $amount';
+  }
+
+  @override
+  String orderEditNotSaved(String what) {
+    return 'Не сохранено. $what';
+  }
+
+  @override
+  String orderEditTotalSpoken(String what, String amount) {
+    return '$what. Итого $amount';
+  }
 
   @override
   String get orderEditCloseSpoken => 'Закрыть изменение заказа';

@@ -1091,9 +1091,130 @@
   "orderPickInOrder": "В заказе",
   "orderEditRemoveLine": "Убрать из заказа",
   "orderEditKeepLine": "Вернуть",
-  "orderEditAtLeastOne": "В заказе должен остаться хотя бы один товар",
-  "orderEditSaving": "Сохраняем",
   "orderEditClosed": "Этот заказ уже нельзя изменить",
+  "orderEditWasSame": "Было {amount} · доставка и сбор те же",
+  "@orderEditWasSame": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditWas": "Было {amount}",
+  "@orderEditWas": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditFeesIncluded": "Доставка {delivery} и сбор {fee} включены",
+  "@orderEditFeesIncluded": {
+    "placeholders": {
+      "delivery": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditMinimum": "До минимальной суммы {minimum} не хватает {shortfall}",
+  "@orderEditMinimum": {
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      },
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditAdd": "Добавить",
+  "orderEditGone": "{names}: нет в продаже — уберите, чтобы сохранить",
+  "@orderEditGone": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveShort": "Убрать",
+  "orderEditNoChanges": "Нет изменений",
+  "orderEditSaveChanges": "Сохранить изменения ({count})",
+  "@orderEditSaveChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditSavingBusy": "Сохраняем…",
+  "orderEditSaved": "Сохранено",
+  "orderEditShortfall": "Не хватает {amount}",
+  "@orderEditShortfall": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveFirst": "Сначала уберите: {name}",
+  "@orderEditRemoveFirst": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveFirstMore": "Сначала уберите: {name} и ещё {count}",
+  "@orderEditRemoveFirstMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditKeepOne": "Оставьте хотя бы один товар",
+  "orderEditedTitle": "Заказ изменён",
+  "orderEditedTotal": "Итого {amount}",
+  "@orderEditedTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditedSpoken": "Заказ изменён. Итого {amount}",
+  "@orderEditedSpoken": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditNotSaved": "Не сохранено. {what}",
+  "@orderEditNotSaved": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditTotalSpoken": "{what}. Итого {amount}",
+  "@orderEditTotalSpoken": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "orderEditCloseSpoken": "Закрыть изменение заказа",
   "orderEditComment": "Комментарий",
   "orderEditOptions": "{note} · {rule}",

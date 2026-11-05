@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:baraka_bozor/core/formatting/money_format.dart';
+import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
@@ -8,6 +10,8 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
+import 'package:baraka_bozor/features/orders/presentation/order_edited_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -554,5 +558,158 @@ void main() {
       expect(byKey('order-$orderOne'), findsOneWidget);
       expect(byKey('order-$otherOrder'), findsOneWidget);
     });
+  });
+
+  group('the edited banner', () {
+    /// An edit saved from the order page: the wish changed and the editor
+    /// answers. Stops when the editor has gone back to the order.
+    Future<void> editAndSave(
+      WidgetTester tester, {
+      double textScale = 1,
+    }) async {
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        size: const Size(360, 2400),
+        textScale: textScale,
+      );
+      await tapAndSettle(tester, byKey('order-edit'));
+      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+      await tester.pumpAndSettle();
+      orders.answer = customerOrderJson(note: 'Ertalab');
+      await tester.tap(byKey('edit-save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 650));
+    }
+
+    testWidgets('the order page shows Заказ изменён with the total for 4 s', (
+      WidgetTester tester,
+    ) async {
+      await editAndSave(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(byKey('order-status'), findsOneWidget);
+      expect(byKey('edit-banner'), findsOneWidget);
+      final AppLocalizations words = l10n(tester);
+      expect(
+        find.descendant(
+          of: byKey('edit-banner'),
+          matching: find.text(words.orderEditedTitle),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('edit-banner'),
+          matching: find.text(
+            words.orderEditedTotal(
+              words.cartLineEstimate(MoneyFormat.uzs(55600, AppLanguage.uz)),
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pump(const Duration(milliseconds: 3000));
+      expect(byKey('edit-banner'), findsOneWidget, reason: 'still there');
+      await tester.pump(const Duration(milliseconds: 1000));
+      expect(byKey('edit-banner'), findsNothing, reason: 'gone after 4,3 s');
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the banner does not announce, the editor already did', (
+      WidgetTester tester,
+    ) async {
+      await editAndSave(tester);
+      tester.takeAnnouncements();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(byKey('edit-banner'), findsOneWidget);
+      expect(tester.takeAnnouncements(), isEmpty);
+      await tester.pumpAndSettle();
+    });
+
+    Widget bannerApp() => MaterialApp(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Stack(
+          children: <Widget>[
+            Positioned(
+              top: 8,
+              left: 12,
+              right: 12,
+              child: OrderEditedBanner(
+                order: CustomerOrdersApi.parseOrder(customerOrderJson()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    Finder fade() =>
+        find.ancestor(of: byKey('edit-banner'), matching: find.byType(Opacity));
+
+    testWidgets('it comes down from above in 420 ms and goes up in 300 ms', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(bannerApp());
+      final double top = tester.getTopLeft(byKey('edit-banner')).dy;
+      expect(top, lessThan(0), reason: 'starts above the page');
+
+      await tester.pump(const Duration(milliseconds: 420));
+      expect(tester.getTopLeft(byKey('edit-banner')).dy, 8);
+      expect(tester.widget<Opacity>(fade()).opacity, 1);
+
+      await tester.pump(const Duration(milliseconds: 3580 + 150));
+      expect(tester.getTopLeft(byKey('edit-banner')).dy, lessThan(8));
+      expect(tester.widget<Opacity>(fade()).opacity, lessThan(1));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('edit-banner'), findsNothing);
+    });
+
+    testWidgets('with reduced motion it only fades', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pumpWidget(bannerApp());
+      expect(tester.getTopLeft(byKey('edit-banner')).dy, 8);
+      expect(tester.widget<Opacity>(fade()).opacity, lessThan(0.1));
+
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(tester.widget<Opacity>(fade()).opacity, 1);
+      await tester.pump(const Duration(milliseconds: 3750 + 125));
+      expect(tester.getTopLeft(byKey('edit-banner')).dy, 8);
+      expect(tester.widget<Opacity>(fade()).opacity, lessThan(1));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('edit-banner'), findsNothing);
+    });
+
+    for (final (String, double) scale in <(String, double)>[
+      ('100 %', 1.0),
+      ('200 %', 2.0),
+    ]) {
+      testWidgets(
+        'the order page with its banner meets the guideline at ${scale.$1}',
+        (WidgetTester tester) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          await editAndSave(tester, textScale: scale.$2);
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(byKey('edit-banner'), findsOneWidget);
+
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          expect(tester.takeException(), isNull);
+          await tester.pumpAndSettle();
+          handle.dispose();
+        },
+      );
+    }
   });
 }

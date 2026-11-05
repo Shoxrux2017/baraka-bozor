@@ -1184,9 +1184,130 @@
   "orderPickInOrder": "Buyurtmada",
   "orderEditRemoveLine": "Buyurtmadan olib tashlash",
   "orderEditKeepLine": "Qaytarish",
-  "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
-  "orderEditSaving": "Saqlanmoqda",
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
+  "orderEditWasSame": "Avval {amount} edi · yetkazish va xizmat haqi o'zgarmadi",
+  "@orderEditWasSame": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditWas": "Avval {amount} edi",
+  "@orderEditWas": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditFeesIncluded": "Yetkazish {delivery} va xizmat haqi {fee} kiritilgan",
+  "@orderEditFeesIncluded": {
+    "placeholders": {
+      "delivery": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditMinimum": "{minimum} minimal summagacha {shortfall} yetmayapti",
+  "@orderEditMinimum": {
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      },
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditAdd": "Qo'shish",
+  "orderEditGone": "{names}: sotuvda yo'q — saqlash uchun olib tashlang",
+  "@orderEditGone": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveShort": "Olib tashlash",
+  "orderEditNoChanges": "O'zgarish yo'q",
+  "orderEditSaveChanges": "O'zgarishlarni saqlash ({count})",
+  "@orderEditSaveChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditSavingBusy": "Saqlanmoqda…",
+  "orderEditSaved": "Saqlandi",
+  "orderEditShortfall": "{amount} yetmayapti",
+  "@orderEditShortfall": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveFirst": "Avval olib tashlang: {name}",
+  "@orderEditRemoveFirst": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveFirstMore": "Avval olib tashlang: {name} va yana {count} ta",
+  "@orderEditRemoveFirstMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditKeepOne": "Kamida bitta mahsulot qoldiring",
+  "orderEditedTitle": "Buyurtma o'zgartirildi",
+  "orderEditedTotal": "Jami {amount}",
+  "@orderEditedTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditedSpoken": "Buyurtma o'zgartirildi. Jami {amount}",
+  "@orderEditedSpoken": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditNotSaved": "Saqlanmadi. {what}",
+  "@orderEditNotSaved": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditTotalSpoken": "{what}. Jami {amount}",
+  "@orderEditTotalSpoken": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "orderEditCloseSpoken": "Buyurtmani o'zgartirishni yopish",
   "orderEditComment": "Izoh",
   "orderEditOptions": "{note} · {rule}",

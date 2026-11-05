@@ -16,18 +16,19 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
-import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/fold.dart';
-import '../../cart/presentation/cart_summary.dart';
 import '../../catalog/domain/catalog.dart';
 import '../../catalog/presentation/quantity_sheet.dart';
 import '../application/customer_orders_controllers.dart';
 import '../application/order_draft.dart';
+import '../application/order_edit_summary.dart';
 import '../domain/customer_orders.dart';
 import 'line_flash.dart';
+import 'order_edit_footer.dart';
 import 'order_edit_line.dart';
+import 'order_edit_words.dart';
 import 'order_line_sheet.dart';
 
 /// The order's editor (`docs/09` section 21, `DL-43`): the lines the
@@ -39,7 +40,7 @@ import 'order_line_sheet.dart';
 /// [orderMaxLines]. An order the server no longer lets change (`can_edit`)
 /// is not edited: after a refusal the order loads again and the editor gives
 /// way to saying so.
-class OrderEditScreen extends ConsumerWidget {
+class OrderEditScreen extends ConsumerStatefulWidget {
   const OrderEditScreen({required this.orderId, this.adding, super.key});
 
   final String orderId;
@@ -48,7 +49,23 @@ class OrderEditScreen extends ConsumerWidget {
   final CatalogProduct? adding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrderEditScreen> createState() => _OrderEditScreenState();
+}
+
+class _OrderEditScreenState extends ConsumerState<OrderEditScreen> {
+  /// The ✓ «Сохранено» moment, in which the editor cannot be closed.
+  final ValueNotifier<bool> _holding = ValueNotifier<bool>(false);
+
+  String get orderId => widget.orderId;
+
+  @override
+  void dispose() {
+    _holding.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<CustomerOrder> order = ref.watch(
       customerOrderProvider(orderId),
@@ -61,13 +78,16 @@ class OrderEditScreen extends ConsumerWidget {
       appBar: kitAppBar(
         title: number == null ? '' : l10n.orderEditKitTitle(number),
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          key: const ValueKey<String>('edit-close'),
-          icon: const Icon(Icons.close, color: KitColors.ink),
-          tooltip: l10n.orderEditCloseSpoken,
-          onPressed: saving
-              ? null
-              : () => _backToOrder(GoRouter.of(context), orderId),
+        leading: ValueListenableBuilder<bool>(
+          valueListenable: _holding,
+          builder: (BuildContext context, bool holding, _) => IconButton(
+            key: const ValueKey<String>('edit-close'),
+            icon: const Icon(Icons.close, color: KitColors.ink),
+            tooltip: l10n.orderEditCloseSpoken,
+            onPressed: saving || holding
+                ? null
+                : () => _backToOrder(GoRouter.of(context), orderId),
+          ),
         ),
       ),
       body: SafeArea(
@@ -95,7 +115,8 @@ class OrderEditScreen extends ConsumerWidget {
                   _Editor(
                     key: ValueKey<String>(value.id),
                     order: value,
-                    adding: adding,
+                    adding: widget.adding,
+                    holding: _holding,
                   ),
                 _ => const Center(child: CircularProgressIndicator()),
               },
@@ -108,10 +129,11 @@ class OrderEditScreen extends ConsumerWidget {
 }
 
 /// Leaves the editor for the order: back to it when the editor was opened
-/// over it, to it when the editor was opened by its address alone.
-void _backToOrder(GoRouter router, String orderId) {
+/// over it, with the order [saved] for its banner, to it when the editor was
+/// opened by its address alone, with no banner (`DL-132`).
+void _backToOrder(GoRouter router, String orderId, [CustomerOrder? saved]) {
   if (router.canPop()) {
-    router.pop();
+    router.pop(saved);
   } else {
     router.go(AppPaths.customerOrder(orderId));
   }
@@ -144,17 +166,26 @@ class _Closed extends StatelessWidget {
 }
 
 class _Editor extends ConsumerStatefulWidget {
-  const _Editor({required this.order, this.adding, super.key});
+  const _Editor({
+    required this.order,
+    required this.holding,
+    this.adding,
+    super.key,
+  });
 
   /// The order as last loaded, which a reload replaces under the draft.
   final CustomerOrder order;
   final CatalogProduct? adding;
 
+  /// Told when the ✓ «Сохранено» moment starts.
+  final ValueNotifier<bool> holding;
+
   @override
   ConsumerState<_Editor> createState() => _EditorState();
 }
 
-class _EditorState extends ConsumerState<_Editor> {
+class _EditorState extends ConsumerState<_Editor>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   late final TextEditingController _wish = TextEditingController(
     text: widget.order.deliveryTimeNote ?? '',
@@ -162,7 +193,21 @@ class _EditorState extends ConsumerState<_Editor> {
 
   /// Each line's row, to bring into view.
   final Map<String, GlobalKey> _cards = <String, GlobalKey>{};
-  bool _noneLeft = false;
+
+  /// The ✓ «Сохранено» moment: it stands 650 ms, then the editor returns.
+  late final AnimationController _hold = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 650),
+    animationBehavior: AnimationBehavior.preserve,
+  );
+  bool _saved = false;
+
+  /// The wish as the server would keep it, to count it among the changes.
+  String _wishSeen = '';
+
+  /// What the latest change says, until the preview of its sums answers; a
+  /// later change replaces it (`DL-132`).
+  String? _waiting;
 
   OrderDraftController get _draft =>
       ref.read(orderDraftProvider(widget.order.id).notifier);
@@ -170,6 +215,8 @@ class _EditorState extends ConsumerState<_Editor> {
   @override
   void initState() {
     super.initState();
+    _wishSeen = trimLikeServer(_wish.text);
+    _wish.addListener(_wishChanged);
     final CatalogProduct? adding = widget.adding;
     if (adding != null) {
       // The draft is changed after the build, not while it runs.
@@ -183,8 +230,17 @@ class _EditorState extends ConsumerState<_Editor> {
 
   @override
   void dispose() {
+    _wish.removeListener(_wishChanged);
     _wish.dispose();
+    _hold.dispose();
     super.dispose();
+  }
+
+  void _wishChanged() {
+    final String now = trimLikeServer(_wish.text);
+    if (now != _wishSeen) {
+      setState(() => _wishSeen = now);
+    }
   }
 
   GlobalKey _card(String key) => _cards.putIfAbsent(key, GlobalKey.new);
@@ -198,7 +254,6 @@ class _EditorState extends ConsumerState<_Editor> {
         .lines
         .any((DraftLine line) => line.productId.toLowerCase() == id);
     final DraftLine line = _draft.add(product);
-    _noneLeft = false;
     if (present) {
       _showPresent(line.key);
     }
@@ -240,12 +295,93 @@ class _EditorState extends ConsumerState<_Editor> {
     });
   }
 
+  /// Says [words] with the total the lines now come to. A change that
+  /// brings the lines back to the order's own needs no preview and is said
+  /// at once, with the order's total; any other waits for the next answer of
+  /// the sums, and a later change replaces what still waits.
+  void _say(String words) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final CustomerOrder order = widget.order;
+    if (!linesChange(ref.read(orderDraftProvider(order.id)), order)) {
+      _waiting = null;
+      final OrderEditPreview own = OrderEditPreview.ofOrder(order);
+      announce(
+        context,
+        l10n.orderEditTotalSpoken(
+          words,
+          totalWords(l10n, language, own.totalKind, own.totalUzs),
+        ),
+      );
+      return;
+    }
+    _waiting = words;
+  }
+
+  /// The words waiting go out once the sums are known; after a failed
+  /// preview the change is said alone.
+  void _answered(EditSummary summary) {
+    final String? words = _waiting;
+    if (words == null || summary.waiting) {
+      return;
+    }
+    _waiting = null;
+    if (summary.locked) {
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    announce(
+      context,
+      summary.failed
+          ? words
+          : l10n.orderEditTotalSpoken(
+              words,
+              totalWords(
+                l10n,
+                interfaceLanguage(context),
+                summary.shown.totalKind,
+                summary.shown.totalUzs,
+              ),
+            ),
+    );
+  }
+
+  DraftLine? _lineOf(String key) {
+    for (final DraftLine line
+        in ref.read(orderDraftProvider(widget.order.id)).lines) {
+      if (line.key == key) {
+        return line;
+      }
+    }
+    return null;
+  }
+
+  /// «Помидоры, 3 кг».
+  String _quantityWords(DraftLine line) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return '${line.name(interfaceLanguage(context))}, '
+        '${quantityWords(l10n, line.unit, line.quantity)}';
+  }
+
+  /// Says the line's new quantity when [before] differs from it.
+  void _sayQuantity(DraftLine before) {
+    final DraftLine? now = _lineOf(before.key);
+    if (now != null && !now.removed && now.quantity != before.quantity) {
+      _say(_quantityWords(now));
+    }
+  }
+
+  /// One step of the line's quantity.
+  void _step(DraftLine line, {required bool up}) {
+    _draft.step(line.key, up: up);
+    _sayQuantity(line);
+  }
+
   /// Takes a line out, with a light buzz, and says so.
   void _remove(DraftLine line) {
     _draft.remove(line.key);
     unawaited(HapticFeedback.lightImpact());
-    announce(
-      context,
+    _say(
       AppLocalizations.of(context)
           .orderEditRemoved(line.name(interfaceLanguage(context))),
     );
@@ -254,8 +390,7 @@ class _EditorState extends ConsumerState<_Editor> {
   /// Keeps a line again, and says so.
   void _restore(DraftLine line) {
     _draft.restore(line.key);
-    announce(
-      context,
+    _say(
       AppLocalizations.of(context)
           .orderEditRestored(line.name(interfaceLanguage(context))),
     );
@@ -272,6 +407,7 @@ class _EditorState extends ConsumerState<_Editor> {
     );
     if (quantity != null && mounted) {
       _draft.setQuantity(line.key, quantity);
+      _sayQuantity(line);
     }
   }
 
@@ -292,12 +428,12 @@ class _EditorState extends ConsumerState<_Editor> {
       return;
     }
     _draft.setOptions(line.key, choice);
+    _sayQuantity(line);
   }
 
   Future<void> _save() async {
     final OrderDraft draft = ref.read(orderDraftProvider(widget.order.id));
     final List<DraftLine> kept = draft.kept;
-    setState(() => _noneLeft = kept.isEmpty);
     if (kept.isEmpty || kept.length > orderMaxLines) {
       return;
     }
@@ -328,16 +464,6 @@ class _EditorState extends ConsumerState<_Editor> {
     final String? deliveryTimeNote = wish.isEmpty ? null : wish;
     final GoRouter router = GoRouter.of(context);
 
-    // Nothing to change: nothing is sent (`DL-28` (9)). While the order
-    // loads again it is not yet known what it holds, and the edit goes: the
-    // server answers a list that changes nothing as it is (`DL-37` (9)).
-    final bool known = !ref
-        .read(customerOrderProvider(widget.order.id))
-        .isLoading;
-    if (known && draftChanges(draft, widget.order, deliveryTimeNote).isEmpty) {
-      _backToOrder(router, widget.order.id);
-      return;
-    }
     // What the server said of an earlier attempt goes with it.
     _draft.setUnavailable(const <String>{});
     final CustomerOrder? answer = await ref
@@ -347,21 +473,95 @@ class _EditorState extends ConsumerState<_Editor> {
       return;
     }
     if (answer != null) {
-      _backToOrder(router, widget.order.id);
+      _saysSaved(answer, router);
       return;
     }
-    // The products the server names as no longer orderable are marked.
     final ApiFailure? failure = ref
         .read(orderEditProvider(widget.order.id))
         .failure;
-    if (failure is ApiRefusal && failure.code == 'product_unavailable') {
-      final Object? named = failure.error.details['product_ids'];
-      _draft.setUnavailable(<String>{
-        if (named is List<Object?>)
-          for (final Object? id in named)
-            if (id is String) id.toLowerCase(),
-      });
+    if (failure is! ApiRefusal) {
+      return;
     }
+    if (failure.code == 'product_unavailable') {
+      // The products the server names as no longer orderable are marked.
+      _draft.setUnavailable(_named(failure.error.details['product_ids']));
+    } else if (failure.code == 'minimum_order_not_reached') {
+      _refusedMinimum(failure);
+    }
+  }
+
+  /// ✓ «Сохранено»: a light buzz, the new total said, and 650 ms later the
+  /// editor goes back to the order with the order saved.
+  void _saysSaved(CustomerOrder answer, GoRouter router) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    setState(() => _saved = true);
+    widget.holding.value = true;
+    _waiting = null;
+    unawaited(HapticFeedback.lightImpact());
+    final int? total = answer.totalUzs;
+    announce(
+      context,
+      total == null
+          ? l10n.orderEditSaved
+          : l10n.orderEditedSpoken(
+              totalWords(
+                l10n,
+                interfaceLanguage(context),
+                answer.totalKind,
+                total,
+              ),
+            ),
+    );
+    _hold
+      ..addStatusListener((AnimationStatus status) {
+        if (status == AnimationStatus.completed && mounted) {
+          _backToOrder(router, widget.order.id, answer);
+        }
+      })
+      ..forward();
+  }
+
+  /// A save refused for the minimum: the strip says by how much, from the
+  /// refusal's own details, and the words are announced.
+  void _refusedMinimum(ApiRefusal failure) {
+    final Object? minimum = failure.error.details['minimum_order_uzs'];
+    final Object? shortfall = failure.error.details['shortfall_uzs'];
+    if (minimum is! int || shortfall is! int) {
+      return;
+    }
+    ref
+        .read(orderEditSummaryProvider(widget.order.id).notifier)
+        .refusedMinimum(minimumUzs: minimum, shortfallUzs: shortfall);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    announce(
+      context,
+      l10n.orderEditNotSaved(
+        l10n.orderEditMinimum(
+          MoneyFormat.uzs(minimum, language),
+          MoneyFormat.uzs(shortfall, language),
+        ),
+      ),
+    );
+  }
+
+  /// The product ids of a refusal's details, in lower case.
+  Set<String> _named(Object? ids) => <String>{
+    if (ids is List<Object?>)
+      for (final Object? id in ids)
+        if (id is String) id.toLowerCase(),
+  };
+
+  /// The failure of the last save worth a red line over the button: not a
+  /// minimum the strip already says.
+  ApiFailure? _lineFailure(ApiFailure? failure) {
+    if (failure is ApiRefusal &&
+        failure.code == 'minimum_order_not_reached' &&
+        failure.error.details['minimum_order_uzs'] is int &&
+        failure.error.details['shortfall_uzs'] is int) {
+      return null;
+    }
+    return failure;
   }
 
   @override
@@ -370,29 +570,48 @@ class _EditorState extends ConsumerState<_Editor> {
     final AppLanguage language = interfaceLanguage(context);
     final MutationState saving = ref.watch(orderEditProvider(widget.order.id));
     final OrderDraft draft = ref.watch(orderDraftProvider(widget.order.id));
-    // The warning under the lines goes with the next change of the draft.
-    ref.listen<OrderDraft>(orderDraftProvider(widget.order.id), (
-      OrderDraft? before,
-      OrderDraft after,
-    ) {
-      if (_noneLeft && before?.version != after.version) {
-        setState(() => _noneLeft = false);
-      }
-    });
+    final EditSummary answered = ref.watch(
+      orderEditSummaryProvider(widget.order.id),
+    );
+    ref.listen<EditSummary>(
+      orderEditSummaryProvider(widget.order.id),
+      (EditSummary? _, EditSummary after) => _answered(after),
+    );
     final List<DraftLine> kept = draft.kept;
     final bool full = kept.length >= orderMaxLines;
-    // A line without a quantity has no preview: no sum stands for the goods.
-    final bool countable = kept.every(
-      (DraftLine line) => line.previewUzs != null,
-    );
-    final int goods = kept.fold<int>(
-      0,
-      (int sum, DraftLine line) => sum + (line.previewUzs ?? 0),
-    );
+    // A line without a quantity has no preview: no sums stand for the lines.
+    final bool countable =
+        kept.isNotEmpty &&
+        kept.every((DraftLine line) => line.previewUzs != null);
+    final EditSummary summary = countable
+        ? answered
+        : answered.copyWith(failed: true);
+    // A quantity to be set anew is a change to make before saving.
+    final List<DraftChange> changes = <DraftChange>[
+      ...draftChanges(
+        draft,
+        widget.order,
+        _wishSeen.isEmpty ? null : _wishSeen,
+      ),
+      for (final DraftLine line in kept)
+        if (!line.quantityValid)
+          (
+            kind: DraftChangeKind.quantity,
+            nameUz: line.name(AppLanguage.uz),
+            nameRu: line.name(AppLanguage.ru),
+            unit: line.unit,
+            from: line.line?.quantity,
+            to: null,
+            rule: null,
+          ),
+    ];
+    final bool orderKnown = !ref
+        .watch(customerOrderProvider(widget.order.id))
+        .isLoading;
     const TextStyle warning = TextStyle(fontSize: 12, color: KitColors.danger);
 
     return PopScope(
-      canPop: !saving.isBusy,
+      canPop: !saving.isBusy && !_saved,
       child: Form(
         key: _form,
         child: Column(
@@ -424,9 +643,9 @@ class _EditorState extends ConsumerState<_Editor> {
                                   draft: line,
                                   adds:
                                       !line.removed && line.adds(widget.order),
-                                  busy: saving.isBusy,
+                                  busy: saving.isBusy || _saved,
                                   onStep: ({required bool up}) =>
-                                      _draft.step(line.key, up: up),
+                                      _step(line, up: up),
                                   onQuantity: () => _exactQuantity(line),
                                   onOptions: () => _options(line, language),
                                   onRemove: () => _remove(line),
@@ -458,7 +677,7 @@ class _EditorState extends ConsumerState<_Editor> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      onPressed: saving.isBusy || full ? null : _add,
+                      onPressed: saving.isBusy || _saved || full ? null : _add,
                     ),
                     if (full)
                       Padding(
@@ -472,97 +691,23 @@ class _EditorState extends ConsumerState<_Editor> {
                     const SizedBox(height: 20),
                     _WishField(controller: _wish),
                     const SizedBox(height: 16),
-                    DecoratedBox(
-                      decoration: const BoxDecoration(
-                        border: Border(top: BorderSide(color: KitColors.line)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            SummaryAmountRow(
-                              valueKey: 'edit-goods',
-                              label: l10n.cartGoods(kept.length),
-                              value: countable
-                                  ? l10n.cartLineEstimate(
-                                      MoneyFormat.uzs(goods, language),
-                                    )
-                                  : '—',
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.orderEditRecount,
-                              key: const ValueKey<String>('edit-recount'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                height: 1.35,
-                                color: KitColors.muted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    OrderEditTotals(keptCount: kept.length, summary: summary),
                   ],
                 ),
               ),
             ),
-            DecoratedBox(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: KitColors.line)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    if (_noneLeft)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          l10n.orderEditAtLeastOne,
-                          key: const ValueKey<String>('edit-none-left'),
-                          style: warning,
-                        ),
-                      ),
-                    if (saving.failure != null) ...<Widget>[
-                      FailureMessage(saving.failure),
-                      const SizedBox(height: 8),
-                    ],
-                    FilledButton(
-                      key: const ValueKey<String>('edit-save'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: KitColors.primary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: saving.isBusy ? null : _save,
-                      child: saving.isBusy
-                          ? SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                                semanticsLabel: l10n.orderEditSaving,
-                              ),
-                            )
-                          : Text(
-                              l10n.saveButton,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
+            OrderEditFooter(
+              order: widget.order,
+              draft: draft,
+              summary: summary,
+              changes: changes,
+              saving: saving.isBusy,
+              saved: _saved,
+              orderKnown: orderKnown,
+              failure: _lineFailure(saving.failure),
+              onSave: _save,
+              onAdd: _add,
+              onRemoveMarked: _draft.removeMarked,
             ),
           ],
         ),

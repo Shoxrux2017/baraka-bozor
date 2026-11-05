@@ -254,9 +254,16 @@ void main() {
     await removeLine(tester, 'added-$productMilk');
     expect(byKey('edit-line-added-$productMilk'), findsNothing);
 
-    await tapAndSettle(tester, byKey('edit-save'));
+    expect(
+      find.descendant(
+        of: byKey('edit-save'),
+        matching: find.text(l10n(tester).orderEditNoChanges),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
     expect(orders.edits, isEmpty);
-    expect(top(tester), AppPaths.customerOrder(orderOne));
+    expect(top(tester), AppPaths.customerOrderEdit(orderOne));
   });
 
   testWidgets('a product the server no longer sells is marked, the edit kept', (
@@ -391,10 +398,17 @@ void main() {
       WidgetTester tester,
     ) async {
       await lose(tester);
-      await tapAndSettle(tester, byKey('edit-save'));
 
+      expect(
+        find.descendant(
+          of: byKey('edit-save'),
+          matching: find.text(l10n(tester).orderEditNoChanges),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
       expect(orders.edits, hasLength(1));
-      expect(top(tester), AppPaths.customerOrder(orderOne));
+      expect(top(tester), AppPaths.customerOrderEdit(orderOne));
     });
   });
 
@@ -449,6 +463,7 @@ void main() {
   ) async {
     await open(tester);
     await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+    await tester.pump();
     expect(tester.testTextInput.isVisible, isTrue);
     final Completer<void> hold = Completer<void>();
     orders
@@ -739,7 +754,15 @@ void main() {
           )
           .first,
     );
-    await tapAndSettle(tester, byKey('edit-save'));
+    expect(
+      find.descendant(
+        of: byKey('edit-save'),
+        matching: find.text(l10n(tester).orderAddFull(100)),
+      ),
+      findsOneWidget,
+      reason: 'the button says why it waits',
+    );
+    expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
     expect(orders.edits, isEmpty);
     expect(byKey('order-editor'), findsOneWidget);
   });
