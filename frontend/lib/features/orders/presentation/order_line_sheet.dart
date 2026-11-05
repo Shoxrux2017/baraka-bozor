@@ -7,14 +7,9 @@ import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../cart/presentation/cart_widgets.dart';
+import '../application/order_draft.dart';
 
-/// What the Customer settled in the line's sheet: the quantity as the API
-/// takes it, the note (`null` when empty) and the rule.
-typedef OrderLineChoice = ({
-  String quantity,
-  String? note,
-  SubstitutionPolicy policy,
-});
+export '../application/order_draft.dart' show OrderLineChoice;
 
 /// Opens the options of one editor line (drawing 29и): its quantity, note
 /// and rule, on copies of the line's values. "Сохранить" checks them and
