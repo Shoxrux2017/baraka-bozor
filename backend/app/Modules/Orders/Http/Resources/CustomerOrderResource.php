@@ -31,7 +31,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * the Customer may do with it now, its open questions (`DL-59` (2)), and its
  * instants, and the payment once made: the cash the Courier took at the door
  * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
- * rated (`DL-91` (4)). A direct cancel carries the Customer's reason as
+ * rated (`DL-91` (4)), and when an Operator or Admin reviewed it as
+ * `reviewed_at` — never who (`DL-134` (1)). A direct cancel carries the Customer's reason as
  * `cancellation_note` (`DL-133` (1)). Refunds arrive with Wave 5; until then
  * the list is empty.
  *
@@ -97,6 +98,7 @@ final class CustomerOrderResource extends JsonResource
                 'reasons' => $order->rating->reasons,
                 'comment' => $order->rating->comment,
                 'created_at' => self::instant($order->rating->created_at),
+                'reviewed_at' => self::instant($order->rating->reviewed_at),
             ],
             'can_rate' => OrderRatings::canRate($order, $now),
             'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order, $now))->all(),
