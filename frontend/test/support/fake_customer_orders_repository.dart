@@ -302,6 +302,10 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
 
   /// Holds an order's load back until the test completes it.
   Completer<void>? loadHold;
+
+  /// Holds the order page's detail reads only, not the answers of the
+  /// mutations, until the test completes it.
+  Completer<void>? holdOrder;
   Completer<void>? hold;
 
   /// Holds the list's loads only, until the test completes it.
@@ -354,7 +358,7 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
           if (row['id'] == id) next else row,
       ];
     }
-    return order(id);
+    return _read(id);
   }
 
   /// When set, the list shows these summaries (as `orderSummaryJson` builds
@@ -404,6 +408,11 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
 
   @override
   Future<CustomerOrder> order(String id) async {
+    await holdOrder?.future;
+    return _read(id);
+  }
+
+  Future<CustomerOrder> _read(String id) async {
     loads.add('order:$id');
     await loadHold?.future;
     final ApiFailure? failure = loadFailure;
@@ -558,7 +567,7 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
       rateFailure = null;
       throw failure;
     }
-    return order(orderId);
+    return _read(orderId);
   }
 
   @override

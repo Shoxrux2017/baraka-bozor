@@ -99,10 +99,19 @@ Future<void> dialOrSay(
 /// icon, its title and hint, the four stages with the times reached, and,
 /// while the order may still change, that it may.
 class OrderStatusCard extends StatelessWidget {
-  const OrderStatusCard({required this.order, required this.now, super.key});
+  const OrderStatusCard({
+    required this.order,
+    required this.now,
+    this.focusNode,
+    super.key,
+  });
 
   final CustomerOrder order;
   final DateTime now;
+
+  /// The node the page moves focus to when the cancel's outcome shows, so a
+  /// screen reader lands on the title and hint (`DL-133`).
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -139,47 +148,71 @@ class OrderStatusCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        key: const ValueKey<String>('order-status-title'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: KitColors.ink,
-                        ),
+                  // The title and its hint are one header for a screen reader.
+                  child: Focus(
+                    key: const ValueKey<String>('order-status-focus'),
+                    focusNode: focusNode,
+                    child: Semantics(
+                      container: true,
+                      header: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            key: const ValueKey<String>('order-status-title'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: KitColors.ink,
+                            ),
+                          ),
+                          if (hint != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                hint,
+                                key: const ValueKey<String>(
+                                  'order-status-hint',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: KitColors.ink2,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      if (hint != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            hint,
-                            key: const ValueKey<String>('order-status-hint'),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: KitColors.ink2,
-                            ),
-                          ),
-                        ),
-                      if (reason != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            reason,
-                            key: const ValueKey<String>('order-status-reason'),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: KitColors.ink2,
-                            ),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
+            if (reason != null)
+              // The words stand under the head row, set off by a hairline.
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: KitColors.danger.withValues(alpha: 0.16),
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      reason,
+                      key: const ValueKey<String>('order-status-reason'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: KitColors.ink2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (!cancelled)
               Padding(
                 padding: EdgeInsets.only(
@@ -271,8 +304,9 @@ class OrderStatusCard extends StatelessWidget {
     };
   }
 
-  /// Why a cancelled order ended: the words of an approved request, or the
-  /// business's reason; a cancel by the Customer says only when.
+  /// Why a cancelled order ended: the words the Customer gave, those of an
+  /// approved request, or the business's reason; a cancel by the Customer
+  /// with no words says only when (`DL-133`).
   String? _reasonLine(AppLocalizations l10n) {
     final CancellationReason? reason = order.cancellationReason;
     final CustomerCancellationRequest? request = order.cancellationRequest;
@@ -280,7 +314,13 @@ class OrderStatusCard extends StatelessWidget {
         request != null) {
       return l10n.orderCancelReasonQuoted(request.reason);
     }
-    if (reason != null && reason != CancellationReason.customerCancelled) {
+    if (reason == CancellationReason.customerCancelled) {
+      final String? note = order.cancellationNote;
+      return note == null || note.isEmpty
+          ? null
+          : l10n.orderCancelReasonQuoted(note);
+    }
+    if (reason != null) {
       return l10n.requestReason(OrderLabels.cancellationReason(l10n, reason));
     }
     return null;

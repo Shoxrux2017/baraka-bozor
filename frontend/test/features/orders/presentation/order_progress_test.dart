@@ -732,6 +732,10 @@ void main() {
         await tapAndSettle(tester, byKey('order-request-cancel'));
         expect(find.text(words.requestSheetTitle(1001)), findsOneWidget);
         expect(find.text(words.requestSheetHint), findsOneWidget);
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+        expect(orders.cancels, isEmpty);
+
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), '   ');
         await tapAndSettle(tester, byKey('cancel-confirm'));
         expect(orders.cancels, isEmpty);
@@ -807,7 +811,7 @@ void main() {
           ),
         ];
       await tapAndSettle(tester, byKey('order-request-cancel'));
-      await tester.enterText(byKey('cancel-reason'), 'Kech qoldi');
+      await tapAndSettle(tester, byKey('cancel-chip-tooSlow'));
       await tapAndSettle(tester, byKey('cancel-confirm'));
 
       expect(byKey('failure-message'), findsNothing);

@@ -28,6 +28,7 @@ import '../../../core/widgets/stale_data_line.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
 import 'cancel_sheet.dart';
+import 'cancel_outcome.dart';
 import 'order_edited_banner.dart';
 import 'order_questions.dart';
 import 'order_rating_card.dart';
@@ -62,6 +63,20 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   CustomerOrder? _edited;
   int _banners = 0;
 
+  /// What the cancel sheet answered, while its banner shows (`DL-133`), the
+  /// order's number it names, and how many came, so a newer one starts anew.
+  CancelSheetExit? _outcome;
+  int _outcomeNumber = 0;
+  int _outcomes = 0;
+
+  /// The outcome whose entrance waits for the order to say it, and how many
+  /// entrances were played.
+  CancelSheetExit? _awaiting;
+  int _entrance = 0;
+
+  /// The status card's focus, which the outcome moves to.
+  final FocusNode _statusFocus = FocusNode(debugLabel: 'order status');
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +85,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       (AsyncValue<CustomerOrder>? _, AsyncValue<CustomerOrder> next) {
         if (next.hasValue && !next.hasError && !next.isLoading) {
           _shownAt = ref.read(clockProvider)();
+          _playEntrance(next.value!);
         }
       },
       fireImmediately: true,
@@ -130,10 +146,98 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
-  /// Opens the cancel sheet, which sends the cancel itself (`DL-133`); what
-  /// it answers is shown on the page by a later task.
-  Future<void> _cancel(BuildContext context) =>
-      showCancelSheet(context, orderId: orderId);
+  @override
+  void dispose() {
+    _statusFocus.dispose();
+    super.dispose();
+  }
+
+  /// Opens the cancel sheet, which sends the cancel itself (`DL-133`). A sure
+  /// outcome is played on the page; «Изменить заказ» in its tip opens the
+  /// editor.
+  Future<void> _cancel(BuildContext context) async {
+    final String id = orderId;
+    final int? number = ref.read(customerOrderProvider(id)).value?.orderNumber;
+    final CancelSheetExit? exit = await showCancelSheet(context, orderId: id);
+    if (!context.mounted || id != orderId || exit == null) {
+      return;
+    }
+    if (exit == CancelSheetExit.edit) {
+      await _edit(context, id);
+    } else if (number != null) {
+      _playOutcome(exit, number);
+    }
+  }
+
+  /// The sure outcome of the sheet: the top into view, the banner, a buzz and
+  /// the words; the card changes once the order shown says it.
+  void _playOutcome(CancelSheetExit exit, int number) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScrollController? primary = PrimaryScrollController.maybeOf(context);
+    if (primary != null && primary.hasClients) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        primary.jumpTo(0);
+      } else {
+        primary.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+    setState(() {
+      _outcome = exit;
+      _outcomeNumber = number;
+      _outcomes++;
+      _awaiting = exit;
+    });
+    HapticFeedback.lightImpact();
+    announce(
+      context,
+      exit == CancelSheetExit.cancelled
+          ? l10n.cancelBannerTitle(number)
+          : '${l10n.cancelSheetRequested}. ${l10n.requestBannerHint}',
+    );
+    final CustomerOrder? shown = ref.read(customerOrderProvider(orderId)).value;
+    if (shown != null) {
+      _playEntrance(shown);
+    }
+  }
+
+  /// Plays the entrance once the order shown says the outcome awaited: it is
+  /// cancelled, or carries a request still pending.
+  void _playEntrance(CustomerOrder order) {
+    final CancelSheetExit? awaiting = _awaiting;
+    final bool says = switch (awaiting) {
+      CancelSheetExit.cancelled => order.status == OrderStatus.cancelled,
+      CancelSheetExit.requested =>
+        order.cancellationRequest?.status == CancellationRequestStatus.pending,
+      _ => false,
+    };
+    if (!says || !mounted) {
+      return;
+    }
+    setState(() {
+      _awaiting = null;
+      _entrance++;
+    });
+    _focusStatus();
+  }
+
+  /// Moves focus to the status card once the sheet has left and the page's
+  /// own scope holds focus again; until then the sheet's scope would keep it.
+  void _focusStatus([int tries = 0]) {
+    if (!mounted) {
+      return;
+    }
+    if (FocusScope.of(context).hasFocus) {
+      _statusFocus.requestFocus();
+    } else if (tries < 120) {
+      WidgetsBinding.instance
+        ..addPostFrameCallback((_) => _focusStatus(tries + 1))
+        ..ensureVisualUpdate();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,11 +263,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             : l10n.customerOrderTitle(order.value!.orderNumber),
       ),
       bottomNavigationBar: shown != null && OrderFooter.shows(shown)
-          ? OrderFooter(
-              order: shown,
-              onEdit: () => _edit(context, shown.id),
-              onCancel: () => _cancel(context),
-              onRequestCancel: () => _cancel(context),
+          ? OutcomeEntrance(
+              play: _entrance,
+              move: OutcomeMove.bar,
+              child: OrderFooter(
+                order: shown,
+                onEdit: () => _edit(context, shown.id),
+                onCancel: () => _cancel(context),
+                onRequestCancel: () => _cancel(context),
+              ),
             )
           : null,
       body: SafeArea(
@@ -214,7 +322,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                 child: RefreshIndicator(
                                   color: KitColors.primary,
                                   onRefresh: _refresh,
-                                  child: _Order(order: shown),
+                                  child: _Order(
+                                    order: shown,
+                                    entrance: _entrance,
+                                    statusFocus: _statusFocus,
+                                  ),
                                 ),
                               ),
                             ],
@@ -233,6 +345,17 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   order: _edited!,
                 ),
               ),
+            if (_outcome != null)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 10,
+                child: OrderCancelledBanner(
+                  key: ValueKey<int>(_outcomes),
+                  outcome: _outcome!,
+                  orderNumber: _outcomeNumber,
+                ),
+              ),
           ],
         ),
       ),
@@ -245,9 +368,20 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 /// the way the facts come right after them, for the payment due and the
 /// address to hand.
 class _Order extends ConsumerStatefulWidget {
-  const _Order({required this.order});
+  const _Order({
+    required this.order,
+    required this.entrance,
+    required this.statusFocus,
+  });
 
   final CustomerOrder order;
+
+  /// How many times the cancel's outcome was played on the status card and
+  /// the request card (`DL-133`).
+  final int entrance;
+
+  /// The status card's focus.
+  final FocusNode statusFocus;
 
   @override
   ConsumerState<_Order> createState() => _OrderState();
@@ -635,11 +769,31 @@ class _OrderState extends ConsumerState<_Order> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: <Widget>[
-        slot('status', OrderStatusCard(order: order, now: now)),
-        if (request != null) ...<Widget>[
-          slot('request-gap', const SizedBox(height: 16)),
-          slot('request', CancellationRequestCard(request: request)),
-        ],
+        slot(
+          'status',
+          OutcomeEntrance(
+            play: widget.entrance,
+            move: OutcomeMove.card,
+            child: OrderStatusCard(
+              order: order,
+              now: now,
+              focusNode: widget.statusFocus,
+            ),
+          ),
+        ),
+        if (request != null) slot('request-gap', const SizedBox(height: 16)),
+        // The slot stays when there is no request, so the card that comes
+        // with the outcome finds the entrance already there to play it.
+        slot(
+          'request',
+          OutcomeEntrance(
+            play: widget.entrance,
+            move: OutcomeMove.request,
+            child: request == null
+                ? const SizedBox.shrink()
+                : CancellationRequestCard(request: request),
+          ),
+        ),
         if (courier != null) ...<Widget>[
           slot('courier-gap', const SizedBox(height: 16)),
           slot('courier', CourierCard(courier: courier)),
