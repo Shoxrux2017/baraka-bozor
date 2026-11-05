@@ -721,6 +721,108 @@ void main() {
       },
     );
 
+    test('an edit preview sends the lines and reads its sums', () async {
+      answer = editPreviewJson(
+        merchandise: 40000,
+        total: 60000,
+        before: 55600,
+        change: 4400,
+        minimum: 50000,
+      );
+      final OrderEditPreview preview = await repository.previewEdit(
+        orderOne,
+        const <OrderEditLine>[
+          OrderEditLine(
+            productId: productTomato,
+            quantity: '2',
+            customerNote: null,
+            substitutionPolicy: SubstitutionPolicy.contactBefore,
+          ),
+        ],
+      );
+
+      final RequestOptions request = adapter.requests.single;
+      expect(
+        '${request.method} ${request.path}',
+        'POST /customer/orders/$orderOne/items/preview',
+      );
+      expect(request.data, <String, Object?>{
+        'items': <Map<String, Object?>>[
+          <String, Object?>{
+            'product_id': productTomato,
+            'quantity': '2',
+            'customer_note': null,
+            'substitution_policy': 'contact_before_substitution',
+          },
+        ],
+      });
+      expect(
+        RequestSlot.resolve(request, () => SessionSlot.staff),
+        SessionSlot.customer,
+      );
+      expect(preview.merchandiseSubtotalUzs, 40000);
+      expect(preview.serviceFeeUzs, 5000);
+      expect(preview.deliveryFeeUzs, 15000);
+      expect(preview.totalUzs, 60000);
+      expect(preview.totalKind, TotalKind.estimate);
+      expect(preview.totalBeforeUzs, 55600);
+      expect(preview.totalChangeUzs, 4400);
+      expect(preview.minimumOrderUzs, 50000);
+      expect(preview.minimumShortfallUzs, 0);
+    });
+
+    test('an edit preview off the contract is a format failure', () async {
+      final Map<String, Map<String, Object?>> broken =
+          <String, Map<String, Object?>>{
+            'a missing key': editPreviewJson()..remove('delivery_fee_uzs'),
+            'no total kind': editPreviewJson(kind: 'none'),
+            'a negative shortfall': editPreviewJson(shortfall: -1),
+            'a total off its parts': editPreviewJson(total: 55601),
+            'a change off the totals': editPreviewJson(change: 5),
+            'a shortfall without a minimum': editPreviewJson(
+              shortfall: 100,
+              minimum: null,
+            ),
+          };
+      for (final MapEntry<String, Map<String, Object?>> entry
+          in broken.entries) {
+        answer = entry.value;
+        await expectLater(
+          repository.previewEdit(orderOne, const <OrderEditLine>[]),
+          throwsA(isA<ApiFailure>()),
+          reason: entry.key,
+        );
+        expect(
+          () => CustomerOrdersApi.parsePreview(entry.value),
+          throwsFormatException,
+          reason: entry.key,
+        );
+      }
+    });
+
+    test('a preview of the order itself shows no change', () {
+      final OrderEditPreview preview = OrderEditPreview.ofOrder(
+        CustomerOrdersApi.parseOrder(customerOrderJson()),
+      );
+
+      expect(preview.merchandiseSubtotalUzs, 35600);
+      expect(preview.serviceFeeUzs, 5000);
+      expect(preview.deliveryFeeUzs, 15000);
+      expect(preview.totalUzs, 55600);
+      expect(preview.totalBeforeUzs, 55600);
+      expect(preview.totalKind, TotalKind.estimate);
+      expect(preview.totalChangeUzs, 0);
+      expect(preview.minimumShortfallUzs, 0);
+      expect(
+        () => OrderEditPreview.ofOrder(
+          CustomerOrdersApi.parseOrder(
+            customerOrderJson(status: 'cancelled', changeable: false),
+          ),
+        ),
+        throwsStateError,
+      );
+    });
+
     test(
       'a cancel from shopping on answers the order carrying its request',
       () async {

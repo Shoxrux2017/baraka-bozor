@@ -1,47 +1,52 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/accessibility/announce.dart';
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
-import '../../../core/routing/app_paths.dart';
 import '../../../core/state/loaded.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/product_image.dart';
+import '../../cart/application/card_quantity.dart';
 import '../../catalog/application/catalog_controllers.dart';
 import '../../catalog/domain/catalog.dart';
 import '../../catalog/presentation/catalog_widgets.dart';
+import '../../catalog/presentation/category_tile.dart';
 import '../../catalog/presentation/search_screen.dart';
 import '../application/customer_orders_controllers.dart';
+import '../application/order_draft.dart';
 import '../domain/customer_orders.dart';
+import 'order_edit_words.dart';
 
-/// Picks a product to add to an order (`docs/03` section 11, `DL-52`): a
-/// search over the whole catalog the Customer sees, or one category's
-/// products, each marked when it is already in the order. It answers the
-/// product picked; the editor decides what that means.
+/// What the editor hands the picker when it opens it. A picker opened by its
+/// address alone has no editor to add to, and its route sends it to the
+/// order's editor (`DL-132`).
+final class OrderPickerOpening {
+  const OrderPickerOpening();
+}
+
+/// Adds products to an order's draft (`docs/03` section 11, `DL-52`,
+/// `DL-132`): photo tiles for the sections or a search over the whole catalog,
+/// and for every product a plus that grows into a stepper in the row. It stays
+/// open as products are added; a bar counts what this visit added and «Готово»
+/// returns to the editor, which brings the new lines in.
 class OrderProductPickerScreen extends ConsumerStatefulWidget {
-  const OrderProductPickerScreen({
-    required this.orderId,
-    this.productIds,
-    super.key,
-  });
+  const OrderProductPickerScreen({required this.orderId, super.key});
 
   final String orderId;
-
-  /// The products the editor keeps in the order, in lower case; `null` when
-  /// the picker was opened by its address alone, and the order's open lines
-  /// stand in.
-  final Set<String>? productIds;
 
   @override
   ConsumerState<OrderProductPickerScreen> createState() =>
@@ -59,6 +64,9 @@ class _OrderProductPickerScreenState
   Timer? _pause;
   String _query = '';
   CatalogCategory? _category;
+
+  OrderDraftController get _draft =>
+      ref.read(orderDraftProvider(widget.orderId).notifier);
 
   @override
   void dispose() {
@@ -82,43 +90,99 @@ class _OrderProductPickerScreenState
     setState(() => _query = '');
   }
 
-  /// Back to the editor with [product]; opened by its address alone, the
-  /// picker has no editor to answer and opens the order's with it.
+  /// The lines this visit added and the order still keeps.
+  List<DraftLine> _added(OrderDraft draft) => <DraftLine>[
+    for (final DraftLine line in draft.kept)
+      if (draft.arriving.contains(line.key)) line,
+  ];
+
+  /// Adds [product] to the draft as a line arriving in the editor, with a
+  /// light buzz, and says so.
   void _pick(CatalogProduct product) {
-    final GoRouter router = GoRouter.of(context);
-    if (router.canPop()) {
-      router.pop(product);
-    } else {
-      router.go(AppPaths.customerOrderEdit(widget.orderId), extra: product);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final String id = product.id.toLowerCase();
+    final bool restored = ref
+        .read(orderDraftProvider(widget.orderId))
+        .lines
+        .any(
+          (DraftLine line) =>
+              line.removed && line.productId.toLowerCase() == id,
+        );
+    final DraftLine line = _draft.add(product, arriving: true);
+    unawaited(HapticFeedback.lightImpact());
+    // A line the editor took out and the plus keeps again is not an added
+    // one: it says it is back (`DL-132`).
+    announce(
+      context,
+      restored
+          ? l10n.orderEditRestored(line.name(language))
+          : l10n.orderPickAddedSpoken(
+              line.name(language),
+              quantityWords(l10n, line.unit, line.quantity),
+              _added(ref.read(orderDraftProvider(widget.orderId))).length,
+            ),
+    );
+  }
+
+  /// One step of a line's quantity; the bin at the minimum takes it out.
+  void _step(DraftLine line, {required bool up}) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String name = line.name(interfaceLanguage(context));
+    _draft.step(line.key, up: up);
+    DraftLine? now;
+    for (final DraftLine other
+        in ref.read(orderDraftProvider(widget.orderId)).lines) {
+      if (other.key == line.key) {
+        now = other;
+      }
+    }
+    if (now == null || now.removed) {
+      unawaited(HapticFeedback.lightImpact());
+      announce(context, l10n.orderEditRemoved(name));
+    } else if (now.quantity != line.quantity) {
+      announce(
+        context,
+        '$name, ${quantityWords(l10n, now.unit, now.quantity)}',
+      );
     }
   }
 
-  /// The products the order keeps, in lower case: what the editor sent, or
-  /// the order's open lines when there is no editor.
-  Set<String> _inOrder() {
-    final Set<String>? sent = widget.productIds;
-    if (sent != null) {
-      return sent;
+  /// The order loaded as no longer editable: there is nothing to add to.
+  void _closeOnLock(AsyncValue<CustomerOrder> order) {
+    final CustomerOrder? value = order.value;
+    if (value == null || value.canEdit || order.isLoading) {
+      return;
     }
-    final List<CustomerOrderLine> lines =
-        ref.watch(customerOrderProvider(widget.orderId)).value?.openLines ??
-        const <CustomerOrderLine>[];
-    return <String>{
-      for (final CustomerOrderLine line in lines) line.productId.toLowerCase(),
-    };
+    final GoRouter router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+    }
   }
+
+  void _done() => GoRouter.of(context).pop();
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
+    final OrderDraft draft = ref.watch(orderDraftProvider(widget.orderId));
+    ref.listen<AsyncValue<CustomerOrder>>(
+      customerOrderProvider(widget.orderId),
+      (AsyncValue<CustomerOrder>? _, AsyncValue<CustomerOrder> after) =>
+          _closeOnLock(after),
+    );
     // A search looks through the whole catalog, as the catalog's does; the
-    // category chosen comes back once the search is cleared.
+    // section chosen comes back once the search is cleared.
     final CatalogCategory? category = _query.isEmpty ? _category : null;
-    final Set<String> inOrder = _inOrder();
+    final Map<String, DraftLine> inOrder = <String, DraftLine>{
+      for (final DraftLine line in draft.kept)
+        line.productId.toLowerCase(): line,
+    };
+    final List<DraftLine> added = _added(draft);
+    final bool full = draft.kept.length >= orderMaxLines;
 
     return PopScope(
-      // Back from a category's products returns to the categories.
+      // Back from a section's products returns to the tiles.
       canPop: category == null,
       onPopInvokedWithResult: (bool didPop, Object? _) {
         if (!didPop) {
@@ -173,21 +237,13 @@ class _OrderProductPickerScreenState
                 ),
               ),
               if (category != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: InputChip(
-                      key: const ValueKey<String>('pick-category'),
-                      label: Text(category.name(language)),
-                      deleteButtonTooltipMessage: l10n.catalogCategoriesTitle,
-                      onDeleted: () => setState(() => _category = null),
-                    ),
-                  ),
+                _Crumb(
+                  category: category,
+                  onBack: () => setState(() => _category = null),
                 ),
               Expanded(
                 child: _query.isEmpty && category == null
-                    ? _PickCategories(
+                    ? _PickTiles(
                         onPick: (CatalogCategory picked) =>
                             setState(() => _category = picked),
                       )
@@ -197,16 +253,36 @@ class _OrderProductPickerScreenState
                           search: _query,
                         ),
                         itemBuilder:
-                            (BuildContext context, CatalogProduct product) =>
-                                _PickRow(
-                                  product: product,
-                                  inOrder: inOrder.contains(
-                                    product.id.toLowerCase(),
-                                  ),
-                                  onPick: () => _pick(product),
-                                ),
+                            (BuildContext context, CatalogProduct product) {
+                              final DraftLine? line =
+                                  inOrder[product.id.toLowerCase()];
+                              return _PickRow(
+                                key: ValueKey<String>('pick-row-${product.id}'),
+                                product: product,
+                                line: line,
+                                justAdded:
+                                    line != null &&
+                                    draft.arriving.contains(line.key),
+                                full: full,
+                                onAdd: () => _pick(product),
+                                onStep: (bool up) => _step(line!, up: up),
+                              );
+                            },
                       ),
               ),
+              if (added.isNotEmpty)
+                _PickBar(
+                  count: added.length,
+                  sumUzs: added.fold<int>(
+                    0,
+                    (int sum, DraftLine line) => sum + (line.previewUzs ?? 0),
+                  ),
+                  estimate: added.any(
+                    (DraftLine line) => line.priceMode == PriceMode.estimate,
+                  ),
+                  full: full,
+                  onDone: _done,
+                ),
             ],
           ),
         ),
@@ -215,198 +291,661 @@ class _OrderProductPickerScreenState
   }
 }
 
-/// The catalog's sections, to choose one to pick from.
-class _PickCategories extends ConsumerWidget {
-  const _PickCategories({required this.onPick});
+/// «‹ Все разделы» and the name of the section open, which stand one over the
+/// other at large text.
+class _Crumb extends StatelessWidget {
+  const _Crumb({required this.category, required this.onBack});
+
+  final CatalogCategory category;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool stacked =
+        textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
+    final Widget back = InkWell(
+      key: const ValueKey<String>('pick-all-sections'),
+      borderRadius: BorderRadius.circular(12),
+      onTap: onBack,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 2, end: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(
+                Icons.chevron_left,
+                size: 22,
+                color: KitColors.primaryDark,
+              ),
+              Flexible(
+                child: Text(
+                  l10n.orderPickAllSections,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: KitColors.primaryDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    final Widget name = Text(
+      category.name(interfaceLanguage(context)),
+      key: const ValueKey<String>('pick-crumb-name'),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: KitColors.ink,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 20, 6),
+      child: stacked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[back, name],
+            )
+          : Row(
+              children: <Widget>[
+                Flexible(child: back),
+                const SizedBox(width: 6),
+                Expanded(child: name),
+              ],
+            ),
+    );
+  }
+}
+
+/// The catalog's sections as photo tiles, in two columns, or one at large
+/// text, to choose one to pick from.
+class _PickTiles extends ConsumerWidget {
+  const _PickTiles({required this.onPick});
 
   final ValueChanged<CatalogCategory> onPick;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
     final AsyncValue<Loaded<List<CatalogCategory>>> sections = ref.watch(
       catalogCategoriesProvider,
     );
     // The categories kept from the last load stand when a refresh failed.
-    final List<CatalogCategory>? kept = sections.value?.data;
-    if (kept == null) {
-      return sections.when(
-        data: (Loaded<List<CatalogCategory>> _) => const SizedBox.shrink(),
-        error: (Object error, StackTrace _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: LoadFailure(
-            error: error,
-            onRetry: () => ref.invalidate(catalogCategoriesProvider),
+    return switch (sections.value?.data) {
+      final List<CatalogCategory> categories =>
+        categories.isEmpty
+            ? Center(child: Text(l10n.catalogNoProducts))
+            : _tiles(context, categories),
+      null => switch (sections) {
+        AsyncError<Loaded<List<CatalogCategory>>>(:final Object error) =>
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: LoadFailure(
+              error: error,
+              onRetry: () => ref.invalidate(catalogCategoriesProvider),
+            ),
           ),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-      );
-    }
-    final List<CatalogCategory> categories = kept;
-    return categories.isEmpty
-        ? Center(child: Text(l10n.catalogNoProducts))
-        : ListView(
-            key: const ValueKey<String>('pick-categories'),
-            children: <Widget>[
-              for (final CatalogCategory category in categories)
-                ListTile(
-                  key: ValueKey<String>('pick-category-${category.id}'),
-                  leading: const Icon(Icons.category_outlined),
-                  title: Text(category.name(language)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => onPick(category),
-                ),
-            ],
-          );
+        _ => const Center(child: CircularProgressIndicator()),
+      },
+    };
+  }
+
+  Widget _tiles(BuildContext context, List<CatalogCategory> categories) {
+    final int columns = textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3
+        ? 1
+        : 2;
+    return ListView(
+      key: const ValueKey<String>('pick-tiles'),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      children: <Widget>[
+        for (int start = 0; start < categories.length; start += columns)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = 0; i < columns; i++) ...<Widget>[
+                    if (i > 0) const SizedBox(width: 12),
+                    Expanded(
+                      child: start + i < categories.length
+                          ? _PickTile(
+                              category: categories[start + i],
+                              onTap: () => onPick(categories[start + i]),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
-/// One product to pick (drawing 29к): picture, name, the price and its unit,
-/// and at the right the round plus — or, for a product already in the order,
-/// the mark saying so. The whole row picks it; the editor says when it was
-/// already there.
-class _PickRow extends StatelessWidget {
-  const _PickRow({
-    required this.product,
-    required this.inOrder,
-    required this.onPick,
-  });
+/// One section: its name at the top start and its picture at the bottom end.
+class _PickTile extends StatelessWidget {
+  const _PickTile({required this.category, required this.onTap});
 
-  final CatalogProduct product;
-  final bool inOrder;
-  final VoidCallback onPick;
+  final CatalogCategory category;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
-
-    return InkWell(
-      key: ValueKey<String>('product-${product.id}'),
-      onTap: onPick,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Row(
-          children: <Widget>[
-            SizedBox.square(
-              dimension: 56,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: KitColors.card,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                  child: ProductImage(url: product.imageUrl, size: 44),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+    final String name = category.name(interfaceLanguage(context));
+    return Semantics(
+      button: true,
+      label: l10n.orderPickSection(name),
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Material(
+        color: KitColors.chip,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: ValueKey<String>('pick-section-${category.id}'),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 118),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   Text(
-                    product.name(language),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    name,
                     style: const TextStyle(
                       fontSize: 14,
+                      height: 1.3,
                       fontWeight: FontWeight.w600,
                       color: KitColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      product.priceMode == PriceMode.estimate
-                          ? l10n.cartLineEstimate(
-                              MoneyFormat.uzs(
-                                product.customerUnitPriceUzs,
-                                language,
-                              ),
-                            )
-                          : MoneyFormat.uzs(
-                              product.customerUnitPriceUzs,
-                              language,
-                            ),
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: KitColors.ink,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    l10n.catalogPerUnit(
-                      CatalogLabels.unit(l10n, product.unitCode),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: KitColors.muted,
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: AlignmentDirectional.bottomEnd,
+                    child: CategoryPictureWell(
+                      category: category,
+                      size: 60,
+                      radius: 14,
+                      pictureSize: 60,
+                      color: category.imageUrl == null
+                          ? null
+                          : Colors.transparent,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            if (inOrder)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 96),
-                child: InkWell(
-                  key: ValueKey<String>('pick-in-order-${product.id}'),
-                  onTap: onPick,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        const Icon(
-                          Icons.check,
-                          size: 16,
-                          color: KitColors.primaryDark,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One product to pick: picture, name, the price and its unit, a tag when it is
+/// in the order, and at the end the round plus, which grows into the stepper
+/// (124 × 44) once the product is in the order. At large text the stepper
+/// takes the row's width under the words. The row picks the product when it is
+/// not in the order.
+class _PickRow extends StatefulWidget {
+  const _PickRow({
+    required this.product,
+    required this.line,
+    required this.justAdded,
+    required this.full,
+    required this.onAdd,
+    required this.onStep,
+    super.key,
+  });
+
+  final CatalogProduct product;
+
+  /// The order's line for the product, or `null` when it is not in the order.
+  final DraftLine? line;
+
+  /// The line was added in this visit.
+  final bool justAdded;
+
+  /// The order already holds its most lines.
+  final bool full;
+  final VoidCallback onAdd;
+  final void Function(bool up) onStep;
+
+  @override
+  State<_PickRow> createState() => _PickRowState();
+}
+
+class _PickRowState extends State<_PickRow>
+    with SingleTickerProviderStateMixin {
+  static const Cubic _grow = Cubic(0.2, 0.8, 0.2, 1);
+
+  /// The plus growing into the stepper: 260 ms for the width, the contents
+  /// fading in over 200 ms after 80 (a 180 ms fade with reduced motion).
+  late final AnimationController _morph = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    value: 1,
+  );
+
+  @override
+  void didUpdateWidget(_PickRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.line == null && widget.line != null) {
+      _morph.duration = Duration(
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 180 : 280,
+      );
+      _morph.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _morph.dispose();
+    super.dispose();
+  }
+
+  Widget _stepper(DraftLine line, {required bool expanded}) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool atMinimum =
+        line.quantityValid &&
+        CardQuantity.previous(line.unit, line.quantity) == null;
+    const TextStyle quantityStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    );
+    final String quantityText = quantityWords(l10n, line.unit, line.quantity);
+    // The pill grows to hold its quantity, never cutting it (`DL-132`).
+    final double pill = math.max(
+      124,
+      88 + textWidth(context, quantityText, quantityStyle) + 8,
+    );
+    final Widget content = Row(
+      children: <Widget>[
+        _StepButton(
+          buttonKey: ValueKey<String>('pick-minus-${widget.product.id}'),
+          icon: atMinimum ? Icons.delete_outline : Icons.remove,
+          tooltip: atMinimum ? l10n.orderEditRemoveShort : l10n.cartStepMinus,
+          onPressed: () => widget.onStep(false),
+        ),
+        Expanded(
+          child: ExcludeSemantics(
+            child: Text(
+              quantityText,
+              textAlign: TextAlign.center,
+              softWrap: false,
+              style: quantityStyle,
+            ),
+          ),
+        ),
+        _StepButton(
+          buttonKey: ValueKey<String>('pick-plus-${widget.product.id}'),
+          icon: Icons.add,
+          tooltip: l10n.cartStepPlus,
+          onPressed: () => widget.onStep(true),
+        ),
+      ],
+    );
+    return AnimatedBuilder(
+      animation: _morph,
+      builder: (BuildContext context, Widget? _) {
+        final bool reduced = MediaQuery.disableAnimationsOf(context);
+        final double t = _morph.value;
+        final double growth = reduced || expanded
+            ? 1
+            : _grow.transform(math.min(1, t * 280 / 260));
+        final double fade = reduced
+            ? Curves.easeOut.transform(t)
+            : const Interval(80 / 280, 1).transform(t);
+        return SizedBox(
+          key: ValueKey<String>('pick-step-${widget.product.id}'),
+          width: expanded ? double.infinity : 44 + (pill - 44) * growth,
+          height: 44,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: KitColors.primary,
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: expanded
+                  ? Opacity(opacity: fade, child: content)
+                  : OverflowBox(
+                      minWidth: pill,
+                      maxWidth: pill,
+                      child: Opacity(opacity: fade, child: content),
+                    ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _plus() {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String name = widget.product.name(interfaceLanguage(context));
+    return IconButton(
+      key: ValueKey<String>('pick-${widget.product.id}'),
+      tooltip: l10n.orderPickAdd(name),
+      iconSize: 22,
+      style: IconButton.styleFrom(
+        backgroundColor: KitColors.primary,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: KitColors.buttonOff,
+        disabledForegroundColor: KitColors.muted,
+        fixedSize: const Size(44, 44),
+        minimumSize: const Size(44, 44),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const CircleBorder(),
+      ),
+      icon: const Icon(Icons.add),
+      onPressed: widget.full ? null : widget.onAdd,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final CatalogProduct product = widget.product;
+    final DraftLine? line = widget.line;
+    final bool large = textScaleAt(MediaQuery.textScalerOf(context), 13) > 1.3;
+    final String unit = CatalogLabels.unit(l10n, product.unitCode);
+    final String amount = MoneyFormat.uzs(
+      product.customerUnitPriceUzs,
+      language,
+    );
+    final String price = product.priceMode == PriceMode.estimate
+        ? l10n.cartLineEstimate(amount)
+        : amount;
+    final String name = product.name(language);
+    final bool tappable = line == null && !widget.full;
+
+    final Widget words = ExcludeSemantics(
+      child: Row(
+        children: <Widget>[
+          SizedBox.square(
+            dimension: 56,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: KitColors.card,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Center(
+                child: ProductImage(url: product.imageUrl, size: 44),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: KitColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // The price wraps at large text instead of shrinking.
+                Text(
+                  price,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: KitColors.ink,
+                  ),
+                ),
+                Text(
+                  l10n.catalogPerUnit(unit),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: KitColors.muted),
+                ),
+                if (line != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: DecoratedBox(
+                      key: ValueKey<String>('pick-tag-${product.id}'),
+                      decoration: BoxDecoration(
+                        color: KitColors.primaryWash,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
                         ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            l10n.orderPickInOrder,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: KitColors.primaryDark,
-                            ),
+                        child: Text(
+                          widget.justAdded
+                              ? l10n.orderPickAddedNow
+                              : l10n.orderPickAlreadyIn,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: KitColors.primaryDark,
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              )
-            else
-              SizedBox.square(
-                dimension: 36,
-                child: IconButton(
-                  key: ValueKey<String>('pick-${product.id}'),
-                  tooltip: l10n.orderAddProduct,
-                  padding: EdgeInsets.zero,
-                  iconSize: 20,
-                  style: IconButton.styleFrom(
-                    backgroundColor: KitColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: const CircleBorder(),
-                  ),
-                  icon: const Icon(Icons.add),
-                  onPressed: onPick,
-                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final Widget body = large && line != null
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              words,
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 68, top: 8),
+                child: _stepper(line, expanded: true),
               ),
-          ],
+            ],
+          )
+        : Row(
+            children: <Widget>[
+              Expanded(child: words),
+              const SizedBox(width: 12),
+              if (line == null) _plus() else _stepper(line, expanded: false),
+            ],
+          );
+
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      button: tappable,
+      label: line == null
+          ? l10n.orderPickRowSpoken(name, price, unit)
+          : l10n.orderPickInOrderSpoken(
+              name,
+              quantityWords(l10n, line.unit, line.quantity),
+            ),
+      onTap: tappable ? widget.onAdd : null,
+      child: Material(
+        color: line == null ? Colors.transparent : KitColors.primaryWash,
+        child: InkWell(
+          key: ValueKey<String>('product-${product.id}'),
+          excludeFromSemantics: true,
+          onTap: tappable ? widget.onAdd : null,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 76),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: body,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A 44 button of the stepper: a white icon on its green.
+class _StepButton extends StatelessWidget {
+  const _StepButton({
+    required this.buttonKey,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final Key buttonKey;
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      key: buttonKey,
+      tooltip: tooltip,
+      iconSize: 20,
+      style: IconButton.styleFrom(
+        foregroundColor: Colors.white,
+        fixedSize: const Size(44, 44),
+        minimumSize: const Size(44, 44),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const CircleBorder(),
+      ),
+      icon: Icon(icon),
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// What this visit added — how many lines, and what they come to — and
+/// «Готово», which returns to the editor. It rises 16 px with a fade in 280 ms
+/// (a 200 ms fade with reduced motion). When the order holds its most lines it
+/// says so instead of the sum.
+class _PickBar extends StatelessWidget {
+  const _PickBar({
+    required this.count,
+    required this.sumUzs,
+    required this.estimate,
+    required this.full,
+    required this.onDone,
+  });
+
+  final int count;
+  final int sumUzs;
+
+  /// A line of this visit has an estimate price, so the sum carries "≈".
+  final bool estimate;
+  final bool full;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    // At large text «Готово» goes under the words, at the end.
+    final bool stacked =
+        textScaleAt(MediaQuery.textScalerOf(context), 15) > 1.3;
+    final Widget words = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          l10n.orderPickAdded(count),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: KitColors.ink,
+          ),
+        ),
+        Text(
+          full
+              ? l10n.orderAddFull(orderMaxLines)
+              : estimate
+              ? l10n.cartLineEstimate(MoneyFormat.uzs(sumUzs, language))
+              : MoneyFormat.uzs(sumUzs, language),
+          style: const TextStyle(fontSize: 13, color: KitColors.muted),
+        ),
+      ],
+    );
+    final Widget button = FilledButton(
+      key: const ValueKey<String>('pick-done'),
+      style: FilledButton.styleFrom(
+        backgroundColor: KitColors.primary,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 22),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      onPressed: onDone,
+      child: Text(
+        l10n.doneButton,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+    );
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: reduced ? 200 : 280),
+      curve: reduced ? Curves.easeOut : const Cubic(0.2, 0.8, 0.2, 1),
+      builder: (BuildContext context, double t, Widget? child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, reduced ? 0 : 16 * (1 - t)),
+          child: child,
+        ),
+      ),
+      child: DecoratedBox(
+        key: const ValueKey<String>('pick-bar'),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: KitColors.line)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    words,
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: button,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: <Widget>[
+                    Expanded(child: words),
+                    const SizedBox(width: 12),
+                    button,
+                  ],
+                ),
         ),
       ),
     );

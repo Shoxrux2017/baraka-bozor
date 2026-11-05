@@ -18,9 +18,11 @@ use App\Modules\Orders\Http\Requests\CancelOrderRequest;
 use App\Modules\Orders\Http\Requests\CreateOrderRequest;
 use App\Modules\Orders\Http\Requests\EditOrderItemsRequest;
 use App\Modules\Orders\Http\Requests\ListCustomerOrdersRequest;
+use App\Modules\Orders\Http\Requests\PreviewOrderItemsRequest;
 use App\Modules\Orders\Http\Requests\RateOrderRequest;
 use App\Modules\Orders\Http\Resources\CustomerOrderResource;
 use App\Modules\Orders\Http\Resources\CustomerOrderSummaryResource;
+use App\Modules\Orders\Http\Resources\EditPreviewResource;
 use App\Modules\Orders\OrderLineSums;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -90,6 +92,14 @@ final class CustomerOrderController extends Controller
         $note = $request->validated('delivery_time_note');
 
         return $this->resource($edit->edit($this->customer($request), $order, $items, is_string($note) ? $note : null));
+    }
+
+    public function previewItems(PreviewOrderItemsRequest $request, string $order, EditOrderItems $edit): EditPreviewResource
+    {
+        /** @var list<array{product_id: string, quantity: string, customer_note?: string|null, substitution_policy?: string}> $items */
+        $items = $request->validated('items');
+
+        return new EditPreviewResource($edit->preview($this->customer($request), $order, $items));
     }
 
     public function cancel(CancelOrderRequest $request, string $order, CancelOrder $cancel): CustomerOrderResource

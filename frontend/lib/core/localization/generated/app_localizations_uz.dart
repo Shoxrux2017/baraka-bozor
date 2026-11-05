@@ -2175,33 +2175,188 @@ class AppLocalizationsUz extends AppLocalizations {
       'Yetkazish, yig\'im va jamini saqlagandan keyin qayta hisoblaymiz';
 
   @override
-  String get orderPickInOrder => 'Buyurtmada';
-
-  @override
   String get orderEditRemoveLine => 'Buyurtmadan olib tashlash';
 
   @override
   String get orderEditKeepLine => 'Qaytarish';
 
   @override
-  String get orderEditAtLeastOne =>
-      'Buyurtmada kamida bitta mahsulot qolishi kerak';
-
-  @override
-  String get orderEditSaving => 'Saqlanmoqda';
-
-  @override
   String get orderEditClosed => 'Bu buyurtmani endi o\'zgartirib bo\'lmaydi';
+
+  @override
+  String orderEditWasSame(String amount) {
+    return 'Avval $amount edi · yetkazish va xizmat haqi o\'zgarmadi';
+  }
+
+  @override
+  String orderEditWas(String amount) {
+    return 'Avval $amount edi';
+  }
+
+  @override
+  String orderEditFeesIncluded(String delivery, String fee) {
+    return 'Yetkazish $delivery va xizmat haqi $fee kiritilgan';
+  }
+
+  @override
+  String orderEditMinimum(String minimum, String shortfall) {
+    return '$minimum minimal summagacha $shortfall yetmayapti';
+  }
+
+  @override
+  String get orderEditAdd => 'Qo\'shish';
+
+  @override
+  String orderEditGone(String names) {
+    return '$names: sotuvda yo\'q — saqlash uchun olib tashlang';
+  }
+
+  @override
+  String get orderEditRemoveShort => 'Olib tashlash';
+
+  @override
+  String get orderEditNoChanges => 'O\'zgarish yo\'q';
+
+  @override
+  String orderEditSaveChanges(int count) {
+    return 'O\'zgarishlarni saqlash ($count)';
+  }
+
+  @override
+  String get orderEditSavingBusy => 'Saqlanmoqda…';
+
+  @override
+  String get orderEditSaved => 'Saqlandi';
+
+  @override
+  String orderEditShortfall(String amount) {
+    return '$amount yetmayapti';
+  }
+
+  @override
+  String orderEditRemoveFirst(String name) {
+    return 'Avval olib tashlang: $name';
+  }
+
+  @override
+  String orderEditRemoveFirstMore(String name, int count) {
+    return 'Avval olib tashlang: $name va yana $count ta';
+  }
+
+  @override
+  String get orderEditKeepOne => 'Kamida bitta mahsulot qoldiring';
+
+  @override
+  String get orderEditedTitle => 'Buyurtma o\'zgartirildi';
+
+  @override
+  String orderEditedTotal(String amount) {
+    return 'Jami $amount';
+  }
+
+  @override
+  String orderEditedSpoken(String amount) {
+    return 'Buyurtma o\'zgartirildi. Jami $amount';
+  }
+
+  @override
+  String orderEditNotSaved(String what) {
+    return 'Saqlanmadi. $what';
+  }
+
+  @override
+  String orderEditTotalSpoken(String what, String amount) {
+    return '$what. Jami $amount';
+  }
+
+  @override
+  String get orderEditCloseSpoken => 'Buyurtmani o\'zgartirishni yopish';
+
+  @override
+  String get orderEditComment => 'Izoh';
+
+  @override
+  String orderEditOptions(String note, String rule) {
+    return '$note · $rule';
+  }
+
+  @override
+  String orderEditOptionsSpoken(String value) {
+    return 'Izoh va almashtirish: $value';
+  }
+
+  @override
+  String get substitutionShortSimilar => 'o\'xshashiga almashtirish';
+
+  @override
+  String get substitutionShortContact => 'almashtirishdan oldin qo\'ng\'iroq';
+
+  @override
+  String get substitutionShortRemove => 'yo\'q bo\'lsa — olib tashlash';
+
+  @override
+  String orderEditRemoved(String name) {
+    return '$name — buyurtmadan olib tashlandi';
+  }
+
+  @override
+  String orderEditRestored(String name) {
+    return '$name yana buyurtmada';
+  }
+
+  @override
+  String orderEditLineSpoken(String name, String quantity, String sum) {
+    return '$name, $quantity, $sum';
+  }
+
+  @override
+  String orderEditLineNewSpoken(String name, String quantity, String sum) {
+    return '$name, joriy narxdagi yangi mahsulot, $quantity, $sum';
+  }
+
+  @override
+  String orderChangeAdded(String name, String quantity) {
+    return '+ $name, $quantity';
+  }
+
+  @override
+  String orderChangeRemoved(String name) {
+    return '− $name';
+  }
+
+  @override
+  String orderChangeQuantity(String name, String from, String to) {
+    return '$name: $from → $to';
+  }
+
+  @override
+  String orderChangeNote(String name, String note) {
+    return '$name: izoh «$note»';
+  }
+
+  @override
+  String orderChangeNoNote(String name) {
+    return '$name: izohsiz';
+  }
+
+  @override
+  String orderChangeRule(String name, String rule) {
+    return '$name: $rule';
+  }
+
+  @override
+  String orderChangeWish(String wish) {
+    return 'Yetkazish istagi: «$wish»';
+  }
+
+  @override
+  String get orderChangeNoWish => 'Yetkazish istagi olib tashlandi';
 
   @override
   String get orderAddProduct => 'Mahsulot qo\'shish';
 
   @override
   String get orderAddTitle => 'Buyurtmaga qo\'shish';
-
-  @override
-  String get orderAddAlreadyIn =>
-      'Bu mahsulot buyurtmada bor, uni o\'zgartirishingiz mumkin';
 
   @override
   String orderAddFull(int count) {
@@ -4824,5 +4979,87 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String orderQuestionsExpiredAnnounced(int number) {
     return 'Buyurtma № $number bo\'yicha savolga javob vaqti tugadi';
+  }
+
+  @override
+  String get orderEditInfoAssigned =>
+      'Yig\'uvchi tayinlangan va tez orada xarid qilishni boshlaydi — shundan keyin buyurtmani o\'zgartirib bo\'lmaydi. O\'zgarishlarni darhol saqlang. Buyurtmadagi mahsulotlar narxi o\'zgarmaydi.';
+
+  @override
+  String get orderEditLeaveTitle => 'Saqlamasdan chiqasizmi?';
+
+  @override
+  String orderEditLeaveCount(int count) {
+    return '$count ta o\'zgarish saqlanmaydi:';
+  }
+
+  @override
+  String get orderEditKeepEditing => 'O\'zgartirishni davom ettirish';
+
+  @override
+  String get orderEditLeave => 'Saqlamasdan chiqish';
+
+  @override
+  String get orderEditLockedTitle => 'Yig\'uvchi xarid qilishni boshladi';
+
+  @override
+  String get orderEditLockedCancelled => 'Buyurtma bekor qilindi';
+
+  @override
+  String get orderEditLockedText =>
+      'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi. Muhim narsa bo\'lsa, qo\'llab-quvvatlash xizmatiga qo\'ng\'iroq qiling.';
+
+  @override
+  String get orderEditLockedTextNoPhone =>
+      'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi.';
+
+  @override
+  String get orderEditLost => 'Nima saqlanmadi';
+
+  @override
+  String get orderCallSupport => 'Qo\'llab-quvvatlashga qo\'ng\'iroq qilish';
+
+  @override
+  String orderEditLockedSpoken(String title, int count) {
+    return 'Saqlanmadi: $title. Saqlanmagan o\'zgarishlar: $count';
+  }
+
+  @override
+  String get orderPickAllSections => 'Barcha bo\'limlar';
+
+  @override
+  String orderPickSection(String name) {
+    return '$name, bo\'lim';
+  }
+
+  @override
+  String get orderPickAlreadyIn => 'Buyurtmada bor';
+
+  @override
+  String get orderPickAddedNow => 'Hozir qo\'shildi';
+
+  @override
+  String orderPickAdd(String name) {
+    return 'Qo\'shish: $name';
+  }
+
+  @override
+  String orderPickRowSpoken(String name, String price, String unit) {
+    return '$name, $unit uchun $price';
+  }
+
+  @override
+  String orderPickInOrderSpoken(String name, String quantity) {
+    return '$name, buyurtmada $quantity';
+  }
+
+  @override
+  String orderPickAdded(int count) {
+    return 'Qo\'shildi: $count ta mahsulot';
+  }
+
+  @override
+  String orderPickAddedSpoken(String name, String quantity, int count) {
+    return 'Qo\'shildi: $name, $quantity. Qo\'shilgan mahsulotlar: $count';
   }
 }

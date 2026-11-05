@@ -10,20 +10,25 @@ void main() {
   Color colour(WidgetTester tester) =>
       ((tester.widget<DecoratedBox>(rect).decoration) as BoxDecoration).color!;
 
-  Future<void> show(WidgetTester tester, int flash, {bool reduced = false}) =>
-      tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: MediaQueryData(disableAnimations: reduced),
-            child: Center(
-              child: LineFlash(
-                flash: flash,
-                child: const SizedBox(width: 100, height: 40),
-              ),
-            ),
+  Future<void> show(
+    WidgetTester tester,
+    int flash, {
+    bool reduced = false,
+    Color? color,
+  }) => tester.pumpWidget(
+    MaterialApp(
+      home: MediaQuery(
+        data: MediaQueryData(disableAnimations: reduced),
+        child: Center(
+          child: LineFlash(
+            flash: flash,
+            color: color ?? KitColors.lineFlash,
+            child: const SizedBox(width: 100, height: 40),
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   testWidgets('there is no flash on the first build', (
     WidgetTester tester,
@@ -61,5 +66,14 @@ void main() {
     await show(tester, 1, reduced: true);
     await tester.pump();
     expect(colour(tester).a, 0);
+  });
+
+  testWidgets('a flash takes the colour it is given', (
+    WidgetTester tester,
+  ) async {
+    await show(tester, 0, color: KitColors.dangerWash);
+    await show(tester, 1, color: KitColors.dangerWash);
+    await tester.pump();
+    expect(colour(tester), KitColors.dangerWash);
   });
 }

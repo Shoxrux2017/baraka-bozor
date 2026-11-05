@@ -34,6 +34,10 @@ abstract final class KitColors {
   /// Filled chips and wells at rest (`DL-127`).
   static const Color chip = Color(0xFFF1F3F1);
 
+  /// The grey of a button that cannot be pressed yet, with `muted` text
+  /// (`DL-132`).
+  static const Color buttonOff = Color(0xFFE3E6E4);
+
   /// Text field background.
   static const Color field = Color(0xFFF9F9F9);
 

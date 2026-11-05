@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
@@ -8,10 +9,17 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/fold.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
+import 'package:baraka_bozor/features/catalog/presentation/category_tile.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
+import 'package:baraka_bozor/features/orders/presentation/line_flash.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:flutter/semantics.dart' show SemanticsNode;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,10 +28,11 @@ import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_catalog_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 
 /// Adding products to a placed order (`docs/03` section 11, `docs/09`
-/// section 21, `DL-52`) through the real router, editor and picker, with the
-/// repositories faked.
+/// section 21, `DL-52`, `DL-132`) through the real router, editor and picker,
+/// with the repositories faked.
 void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository auth;
@@ -46,6 +55,7 @@ void main() {
           .matchedLocation;
 
   const String productRice = '0192f0a0-0000-7000-8000-00000000c024';
+  final String tomato = productTomato.toUpperCase();
 
   Finder editorScroll() => find
       .descendant(of: byKey('order-editor'), matching: find.byType(Scrollable))
@@ -64,7 +74,10 @@ void main() {
       ..identities[SessionSlot.customer] = user(id: 'c');
     orders = FakeCustomerOrdersRepository();
     catalog = FakeCatalogRepository(
-      categories: <CatalogCategory>[catalogCategory()],
+      categories: <CatalogCategory>[
+        catalogCategory(),
+        catalogCategory(id: 'c-2', nameUz: 'Mevalar', nameRu: 'Фрукты'),
+      ],
       products: <CatalogProduct>[
         catalogProduct(
           id: productMilk,
@@ -75,12 +88,13 @@ void main() {
           customerUnitPriceUzs: 12000,
         ),
         // The order's tomato, its id in another case.
-        catalogProduct(id: productTomato.toUpperCase()),
+        catalogProduct(id: tomato),
         catalogProduct(
           id: productRice,
           categoryId: 'c-2',
           nameUz: 'Guruch',
           nameRu: 'Рис',
+          customerUnitPriceUzs: 8000,
         ),
       ],
     );
@@ -91,14 +105,12 @@ void main() {
     String at = '',
     bool alone = false,
     Size size = const Size(800, 2400),
-    double textScale = 1,
+    TextScaler scaler = TextScaler.noScaling,
     Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    tester.platformDispatcher.textScaleFactorTestValue = textScale;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(
       appUnderTest(
         tokens: tokens,
@@ -106,6 +118,7 @@ void main() {
         catalog: catalog,
         orders: orders,
         device: device,
+        textScaler: scaler == TextScaler.noScaling ? null : scaler,
       ),
     );
     await tester.pumpAndSettle();
@@ -152,10 +165,76 @@ void main() {
     await tapAndSettle(tester, byKey('edit-remove-$key'));
   }
 
-  Future<void> addMilk(WidgetTester tester) async {
+  /// Opens the picker from the editor, and the first section.
+  Future<void> openSection(WidgetTester tester) async {
     await tapAndSettle(tester, byKey('edit-add-product'));
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
-    await tapAndSettle(tester, byKey('product-$productMilk'));
+    await tapAndSettle(tester, byKey('pick-section-c-1'));
+  }
+
+  /// Leaves the picker by the system back, which returns from a section to
+  /// the tiles first.
+  Future<void> backToEditor(WidgetTester tester) async {
+    while (byKey('pick-search').evaluate().isNotEmpty) {
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+    }
+  }
+
+  /// The semantics node that reads a picker row.
+  SemanticsNode rowNode(WidgetTester tester, String id) => tester.getSemantics(
+    find
+        .ancestor(
+          of: byKey('product-$id'),
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is Semantics && w.properties.label != null,
+          ),
+        )
+        .first,
+  );
+
+  /// The milk added in the picker, which then returns to the editor.
+  Future<void> addMilk(WidgetTester tester) async {
+    await openSection(tester);
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    await tapAndSettle(tester, byKey('pick-done'));
+  }
+
+  List<String> announced(WidgetTester tester) => tester
+      .takeAnnouncements()
+      .map((CapturedAccessibilityAnnouncement a) => a.message)
+      .toList();
+
+  /// The width the stepper of [id] stands at when it has grown: 124, or more
+  /// when its quantity needs it (`DL-132`).
+  double pillOf(WidgetTester tester, String id) {
+    final RenderParagraph quantity = tester.renderObject<RenderParagraph>(
+      find.descendant(of: byKey('pick-step-$id'), matching: find.byType(Text)),
+    );
+    return math.max(
+      124,
+      88 + quantity.getMaxIntrinsicWidth(double.infinity) + 8,
+    );
+  }
+
+  /// Every light buzz the platform is asked for.
+  List<String> catchHaptics(WidgetTester tester) {
+    final List<String> haptics = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          haptics.add(call.arguments as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    return haptics;
   }
 
   testWidgets(
@@ -210,16 +289,17 @@ void main() {
   testWidgets('a search finds the product to add', (WidgetTester tester) async {
     await open(tester);
     await tapAndSettle(tester, byKey('edit-add-product'));
-    expect(byKey('pick-categories'), findsOneWidget);
+    expect(byKey('pick-tiles'), findsOneWidget);
 
     await search(tester, 'sut');
     expect(catalog.requests.last, startsWith('sut|null|'));
-    await tapAndSettle(tester, byKey('product-$productMilk'));
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    await tapAndSettle(tester, byKey('pick-done'));
 
     expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
   });
 
-  testWidgets('a product already in the order keeps its line, and says so', (
+  testWidgets('a product taken out in the editor is kept again by its plus', (
     WidgetTester tester,
   ) async {
     await open(tester);
@@ -228,9 +308,15 @@ void main() {
 
     await tapAndSettle(tester, byKey('edit-add-product'));
     await search(tester, 'pom');
-    await tapAndSettle(tester, byKey('product-${productTomato.toUpperCase()}'));
+    await tapAndSettle(tester, byKey('pick-$tomato'));
+    expect(byKey('pick-minus-$tomato'), findsOneWidget);
+    expect(
+      byKey('pick-bar'),
+      findsNothing,
+      reason: 'not a line this visit adds',
+    );
+    await backToEditor(tester);
 
-    expect(find.text(l10n(tester).orderAddAlreadyIn), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (Widget w) =>
@@ -254,9 +340,16 @@ void main() {
     await removeLine(tester, 'added-$productMilk');
     expect(byKey('edit-line-added-$productMilk'), findsNothing);
 
-    await tapAndSettle(tester, byKey('edit-save'));
+    expect(
+      find.descendant(
+        of: byKey('edit-save'),
+        matching: find.text(l10n(tester).orderEditNoChanges),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
     expect(orders.edits, isEmpty);
-    expect(top(tester), AppPaths.customerOrder(orderOne));
+    expect(top(tester), AppPaths.customerOrderEdit(orderOne));
   });
 
   testWidgets('a product the server no longer sells is marked, the edit kept', (
@@ -391,10 +484,17 @@ void main() {
       WidgetTester tester,
     ) async {
       await lose(tester);
-      await tapAndSettle(tester, byKey('edit-save'));
 
+      expect(
+        find.descendant(
+          of: byKey('edit-save'),
+          matching: find.text(l10n(tester).orderEditNoChanges),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
       expect(orders.edits, hasLength(1));
-      expect(top(tester), AppPaths.customerOrder(orderOne));
+      expect(top(tester), AppPaths.customerOrderEdit(orderOne));
     });
   });
 
@@ -428,12 +528,12 @@ void main() {
 
       expect(
         find.descendant(
-          of: byKey('edit-remove-$lineTomato'),
+          of: byKey('edit-restore-$lineTomato'),
           matching: find.text(l10n(tester).orderEditKeepLine),
         ),
         findsOneWidget,
       );
-      await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
+      await tapAndSettle(tester, byKey('edit-restore-$lineTomato'));
       expect(byKey('edit-adds-$lineTomato'), findsOneWidget);
       orders.answer = customerOrderJson(note: 'Ertalab');
       await tapAndSettle(tester, byKey('edit-save'));
@@ -449,6 +549,7 @@ void main() {
   ) async {
     await open(tester);
     await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+    await tester.pump();
     expect(tester.testTextInput.isVisible, isTrue);
     final Completer<void> hold = Completer<void>();
     orders
@@ -461,30 +562,6 @@ void main() {
     orders.hold = null;
     hold.complete();
     await tester.pumpAndSettle();
-  });
-
-  testWidgets('a product already in the order is brought into view', (
-    WidgetTester tester,
-  ) async {
-    await open(tester, size: const Size(360, 500));
-    await tester.scrollUntilVisible(
-      byKey('edit-add-product'),
-      300,
-      scrollable: editorScroll(),
-    );
-    expect(
-      tester.getRect(byKey('edit-line-$lineTomato')).top,
-      lessThan(0),
-      reason: 'out of sight when the picker opens',
-    );
-    await tapAndSettle(tester, byKey('edit-add-product'));
-    await search(tester, 'pom');
-    await tapAndSettle(tester, byKey('product-${productTomato.toUpperCase()}'));
-
-    expect(
-      tester.getRect(byKey('edit-line-$lineTomato')).top,
-      greaterThanOrEqualTo(0),
-    );
   });
 
   testWidgets(
@@ -592,8 +669,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester, device: const Locale('ru'));
-    await tapAndSettle(tester, byKey('edit-add-product'));
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
+    await openSection(tester);
 
     final AppLocalizations words = l10n(tester);
     expect(
@@ -614,7 +690,7 @@ void main() {
     );
     expect(
       find.descendant(
-        of: byKey('product-${productTomato.toUpperCase()}'),
+        of: byKey('product-$tomato'),
         matching: find.text(
           words.cartLineEstimate(MoneyFormat.uzs(18400, AppLanguage.ru)),
         ),
@@ -623,41 +699,189 @@ void main() {
     );
   });
 
-  testWidgets('the picker marks products already in the order', (
+  testWidgets(
+    'a pick keeps the picker open and turns the plus into a stepper',
+    (WidgetTester tester) async {
+      final List<String> haptics = catchHaptics(tester);
+      await open(tester, device: const Locale('ru'));
+      await openSection(tester);
+      expect(byKey('pick-step-$productMilk'), findsNothing);
+      expect(byKey('pick-bar'), findsNothing);
+      announced(tester);
+
+      await tester.tap(byKey('pick-$productMilk'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 130));
+      final double midway = tester
+          .getSize(byKey('pick-step-$productMilk'))
+          .width;
+      expect(midway, greaterThan(44));
+      await tester.pumpAndSettle();
+      final double grown = pillOf(tester, productMilk);
+      expect(midway, lessThan(grown), reason: 'the plus is growing');
+
+      expect(tester.getSize(byKey('pick-step-$productMilk')).width, grown);
+      expect(tester.getSize(byKey('pick-step-$productMilk')).height, 44);
+      expect(
+        byKey('pick-$productMilk'),
+        findsNothing,
+        reason: 'the plus is gone',
+      );
+      expect(
+        find.descendant(
+          of: byKey('pick-step-$productMilk'),
+          matching: find.text('1 ${l10n(tester).unitPiece}'),
+        ),
+        findsOneWidget,
+      );
+      expect(top(tester), AppPaths.customerOrderAdd(orderOne), reason: 'open');
+      expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+      expect(announced(tester), <String>[
+        'Добавили: Молоко, 1 ${l10n(tester).unitPiece}. Добавлено товаров: 1',
+      ]);
+      expect(
+        find.descendant(
+          of: byKey('product-$productMilk'),
+          matching: find.text(l10n(tester).orderPickAddedNow),
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('pick-bar'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a pick with reduced motion takes the stepper by a fade', (
+    WidgetTester tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await open(tester);
+    await openSection(tester);
+
+    await tester.tap(byKey('pick-$productMilk'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+
+    expect(
+      tester.getSize(byKey('pick-step-$productMilk')).width,
+      pillOf(tester, productMilk),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('the bar counts what this visit added and Готово returns', (
     WidgetTester tester,
   ) async {
     await open(tester, device: const Locale('ru'));
-    await tapAndSettle(tester, byKey('edit-add-product'));
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
-
-    final String tomato = productTomato.toUpperCase();
-    expect(byKey('pick-in-order-$tomato'), findsOneWidget);
+    await openSection(tester);
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    final AppLocalizations words = l10n(tester);
     expect(
       find.descendant(
-        of: byKey('pick-in-order-$tomato'),
-        matching: find.text('В заказе'),
+        of: byKey('pick-bar'),
+        matching: find.text('Добавлено: 1 товар'),
       ),
       findsOneWidget,
     );
-    expect(byKey('pick-$tomato'), findsNothing);
-    expect(byKey('pick-$productMilk'), findsOneWidget);
-    expect(byKey('pick-in-order-$productMilk'), findsNothing);
 
-    await tapAndSettle(tester, byKey('pick-in-order-$tomato'));
-    expect(top(tester), AppPaths.customerOrderEdit(orderOne));
-    expect(find.text(l10n(tester).orderAddAlreadyIn), findsOneWidget);
-  });
+    // The rice stands in another section: a search finds it.
+    await search(tester, 'guruch');
+    await tapAndSettle(tester, byKey('pick-$productRice'));
 
-  testWidgets('the plus in the picker adds the product', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    await tapAndSettle(tester, byKey('edit-add-product'));
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
-    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    expect(
+      find.descendant(
+        of: byKey('pick-bar'),
+        matching: find.text('Добавлено: 2 товара'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('pick-bar'),
+        matching: find.text(
+          words.cartLineEstimate(MoneyFormat.uzs(20000, AppLanguage.ru)),
+        ),
+      ),
+      findsOneWidget,
+    );
 
+    await tapAndSettle(tester, byKey('pick-done'));
     expect(top(tester), AppPaths.customerOrderEdit(orderOne));
     expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
+    expect(byKey('edit-line-added-$productRice'), findsOneWidget);
+  });
+
+  testWidgets(
+    'a product already in the order shows its stepper and Уже в заказе',
+    (WidgetTester tester) async {
+      await open(tester, device: const Locale('ru'));
+      await openSection(tester);
+
+      expect(byKey('pick-$tomato'), findsNothing);
+      expect(byKey('pick-minus-$tomato'), findsOneWidget);
+      expect(byKey('pick-plus-$tomato'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('product-$tomato'),
+          matching: find.text('Уже в заказе'),
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('pick-bar'), findsNothing, reason: 'nothing added here');
+      expect(byKey('pick-$productMilk'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('product-$productMilk'),
+          matching: find.text('Уже в заказе'),
+        ),
+        findsNothing,
+      );
+
+      // The stepper steps the editor's own line.
+      final Finder quantity = find.descendant(
+        of: byKey('pick-step-$tomato'),
+        matching: find.byType(Text),
+      );
+      final String before = tester.widget<Text>(quantity).data!;
+      await tapAndSettle(tester, byKey('pick-plus-$tomato'));
+      expect(tester.widget<Text>(quantity).data, isNot(before));
+      await backToEditor(tester);
+      expect(byKey('edit-line-$lineTomato'), findsOneWidget);
+      expect(byKey('pick-search'), findsNothing, reason: 'the picker is gone');
+    },
+  );
+
+  testWidgets('the stepper\'s bin takes the product out again', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await openSection(tester);
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    announced(tester);
+    expect(byKey('pick-bar'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('pick-minus-$productMilk'),
+        matching: find.byIcon(Icons.delete_outline),
+      ),
+      findsOneWidget,
+      reason: 'a piece cannot go below 1',
+    );
+    expect(find.byTooltip(l10n(tester).orderEditRemoveShort), findsOneWidget);
+
+    await tapAndSettle(tester, byKey('pick-minus-$productMilk'));
+
+    expect(
+      byKey('pick-$productMilk'),
+      findsOneWidget,
+      reason: 'the plus again',
+    );
+    expect(byKey('pick-step-$productMilk'), findsNothing);
+    expect(byKey('pick-bar'), findsNothing);
+    expect(announced(tester), <String>['Молоко — убрали из заказа']);
+    await backToEditor(tester);
+    expect(byKey('edit-line-added-$productMilk'), findsNothing);
   });
 
   testWidgets('a line taken out in the editor is not marked in the picker', (
@@ -665,24 +889,10 @@ void main() {
   ) async {
     await open(tester);
     await removeLine(tester, lineTomato);
-    await tapAndSettle(tester, byKey('edit-add-product'));
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
+    await openSection(tester);
 
-    expect(byKey('pick-${productTomato.toUpperCase()}'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsNothing);
-  });
-
-  testWidgets('a picker opened alone marks the order\'s own products', (
-    WidgetTester tester,
-  ) async {
-    await open(tester, at: AppPaths.customerOrderAdd(orderOne), alone: true);
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
-
-    expect(
-      byKey('pick-in-order-${productTomato.toUpperCase()}'),
-      findsOneWidget,
-    );
-    expect(byKey('pick-$productMilk'), findsOneWidget);
+    expect(byKey('pick-$tomato'), findsOneWidget);
+    expect(byKey('pick-step-$tomato'), findsNothing);
   });
 
   testWidgets('an order holds at most 100 lines', (WidgetTester tester) async {
@@ -706,12 +916,7 @@ void main() {
     await tester.scrollUntilVisible(
       byKey('edit-add-product'),
       2000,
-      scrollable: find
-          .descendant(
-            of: byKey('order-editor'),
-            matching: find.byType(Scrollable),
-          )
-          .first,
+      scrollable: editorScroll(),
     );
     expect(
       tester.widget<OutlinedButton>(byKey('edit-add-product')).onPressed,
@@ -726,93 +931,396 @@ void main() {
     );
     expect(byKey('edit-full'), findsNothing);
 
-    // One added in its place, then the line kept again: one too many.
-    await addMilk(tester);
-    await tapAndSettle(tester, byKey('edit-remove-${id(1, 99)}'));
+    // The picker fills the place: the plus is off for the rest, and the bar
+    // says why.
+    await openSection(tester);
+    expect(
+      tester.widget<IconButton>(byKey('pick-$tomato')).onPressed,
+      isNotNull,
+    );
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    expect(tester.widget<IconButton>(byKey('pick-$tomato')).onPressed, isNull);
+    expect(
+      find.descendant(
+        of: byKey('pick-bar'),
+        matching: find.text(l10n(tester).orderAddFull(100)),
+      ),
+      findsOneWidget,
+    );
+    await tapAndSettle(tester, byKey('pick-done'));
+
+    // The line kept again: one too many.
+    await tapAndSettle(tester, byKey('edit-restore-${id(1, 99)}'));
     await tester.scrollUntilVisible(
       byKey('edit-full'),
       300,
-      scrollable: find
-          .descendant(
-            of: byKey('order-editor'),
-            matching: find.byType(Scrollable),
-          )
-          .first,
+      scrollable: editorScroll(),
     );
-    await tapAndSettle(tester, byKey('edit-save'));
+    expect(
+      find.descendant(
+        of: byKey('edit-save'),
+        matching: find.text(l10n(tester).orderAddFull(100)),
+      ),
+      findsOneWidget,
+      reason: 'the button says why it waits',
+    );
+    expect(tester.widget<FilledButton>(byKey('edit-save')).onPressed, isNull);
     expect(orders.edits, isEmpty);
     expect(byKey('order-editor'), findsOneWidget);
   });
 
+  testWidgets('back from a section returns to the tiles, then to the editor', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await openSection(tester);
+    expect(byKey('product-$productMilk'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(byKey('pick-tiles'), findsOneWidget);
+    expect(top(tester), AppPaths.customerOrderAdd(orderOne));
+
+    // «‹ Все разделы» goes back to the tiles as well.
+    await tapAndSettle(tester, byKey('pick-section-c-1'));
+    await tapAndSettle(tester, byKey('pick-all-sections'));
+    expect(byKey('pick-tiles'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(byKey('order-editor'), findsOneWidget);
+    expect(byKey('edit-line-added-$productMilk'), findsNothing);
+  });
+
   testWidgets(
-    'back from a category shows the categories, and then the editor',
+    'sections are photo tiles, and a section shows Все разделы and its name',
     (WidgetTester tester) async {
-      await open(tester);
+      await open(tester, device: const Locale('ru'));
       await tapAndSettle(tester, byKey('edit-add-product'));
-      await tapAndSettle(tester, byKey('pick-category-c-1'));
-      expect(byKey('product-$productMilk'), findsOneWidget);
 
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(byKey('pick-categories'), findsOneWidget);
+      expect(find.byType(ListTile), findsNothing);
+      for (final String id in const <String>['c-1', 'c-2']) {
+        expect(
+          find.descendant(
+            of: byKey('pick-section-$id'),
+            matching: find.byType(CategoryPictureWell),
+          ),
+          findsOneWidget,
+        );
+      }
+      final Rect first = tester.getRect(byKey('pick-section-c-1'));
+      final Rect second = tester.getRect(byKey('pick-section-c-2'));
+      expect(first.top, second.top, reason: 'two in a row');
+      expect(second.left, greaterThan(first.right));
+      expect(first.height, greaterThanOrEqualTo(118));
+      expect(
+        find.descendant(
+          of: byKey('pick-section-c-1'),
+          matching: find.text('Овощи'),
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('pick-all-sections'), findsNothing);
 
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(byKey('order-editor'), findsOneWidget);
-      expect(byKey('edit-line-added-$productMilk'), findsNothing);
+      await tapAndSettle(tester, byKey('pick-section-c-1'));
+
+      expect(byKey('pick-tiles'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('pick-all-sections'),
+          matching: find.text('Все разделы'),
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('pick-crumb-name'), findsOneWidget);
+      expect(tester.widget<Text>(byKey('pick-crumb-name')).data, 'Овощи');
+      expect(byKey('pick-category'), findsNothing, reason: 'no chip any more');
     },
   );
+
+  testWidgets('the tiles and rows are read with what they do', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, device: const Locale('ru'));
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    expect(
+      tester.getSemantics(byKey('pick-section-c-1')).label,
+      'Овощи, раздел',
+    );
+    await tapAndSettle(tester, byKey('pick-section-c-1'));
+
+    final AppLocalizations words = l10n(tester);
+    expect(
+      rowNode(tester, productMilk).label,
+      words.orderPickRowSpoken(
+        'Молоко',
+        MoneyFormat.uzs(12000, AppLanguage.ru),
+        words.unitPiece,
+      ),
+    );
+    expect(find.byTooltip('Добавить: Молоко'), findsOneWidget);
+    expect(rowNode(tester, tomato).label, startsWith('Помидор, в заказе '));
+    expect(find.byTooltip(words.cartStepMinus), findsOneWidget);
+    expect(find.byTooltip(words.cartStepPlus), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets(
+    'at large text the tiles stand in one column and the price wraps',
+    (WidgetTester tester) async {
+      catalog.productRows.add(
+        catalogProduct(
+          id: '0192f0a0-0000-7000-8000-00000000c030',
+          nameUz: 'Juda uzun',
+          nameRu: 'Очень длинный',
+          customerUnitPriceUzs: 99999999,
+        ),
+      );
+      await open(
+        tester,
+        size: const Size(360, 800),
+        scaler: const NonlinearTextScaler(2),
+        device: const Locale('ru'),
+      );
+      await tapAndSettle(tester, byKey('edit-add-product'));
+
+      final Rect first = tester.getRect(byKey('pick-section-c-1'));
+      final Rect second = tester.getRect(byKey('pick-section-c-2'));
+      expect(second.left, first.left, reason: 'one column');
+      expect(second.top, greaterThan(first.bottom));
+      expect(tester.takeException(), isNull);
+
+      await tapAndSettle(tester, byKey('pick-section-c-1'));
+      final Finder price = find.descendant(
+        of: byKey('product-0192f0a0-0000-7000-8000-00000000c030'),
+        matching: find.text(
+          l10n(tester)
+              .cartLineEstimate(MoneyFormat.uzs(99999999, AppLanguage.ru)),
+        ),
+      );
+      expect(price, findsOneWidget);
+      expect(
+        tester.getSize(price).height,
+        greaterThan(28 * 1.5),
+        reason: 'wrapped to more than one line',
+      );
+      expect(
+        find.descendant(
+          of: byKey('product-0192f0a0-0000-7000-8000-00000000c030'),
+          matching: find.byType(FittedBox),
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('at large text the stepper takes the row\'s width', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      size: const Size(360, 800),
+      scaler: const NonlinearTextScaler(2),
+    );
+    await openSection(tester);
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+
+    final Rect row = tester.getRect(byKey('product-$productMilk'));
+    final Rect stepper = tester.getRect(byKey('pick-step-$productMilk'));
+    expect(stepper.left, row.left + 20 + 68, reason: 'under the words');
+    expect(stepper.right, row.right - 20);
+    expect(stepper.height, 44);
+    final Rect name = tester.getRect(
+      find
+          .descendant(
+            of: byKey('product-$productMilk'),
+            matching: find.text('Sut'),
+          )
+          .first,
+    );
+    expect(stepper.top, greaterThanOrEqualTo(name.bottom));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'lines added in the picker arrive in the editor, scrolled to and flashed',
+    (WidgetTester tester) async {
+      String id(int group, int i) =>
+          '0192f0a0-0000-7000-800$group-${i.toString().padLeft(12, '0')}';
+      orders.rows = <Map<String, Object?>>[
+        customerOrderJson(
+          lines: <Object?>[
+            for (int i = 0; i < 8; i++)
+              orderLineJson(
+                id: id(1, i),
+                productId: id(2, i),
+                unit: 'piece',
+                quantity: '1',
+              ),
+          ],
+        ),
+      ];
+      await open(
+        tester,
+        size: const Size(360, 640),
+        device: const Locale('ru'),
+      );
+      await openSection(tester);
+      await tapAndSettle(tester, byKey('pick-$productMilk'));
+      // While the picker is open the editor does not show the line yet.
+      expect(byKey('edit-line-added-$productMilk'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 450));
+      announced(tester);
+
+      await tester.tap(byKey('pick-done'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final Finder line = byKey('edit-line-added-$productMilk');
+      expect(line, findsOneWidget);
+      final Finder flash = find.ancestor(
+        of: line,
+        matching: find.byType(LineFlash),
+      );
+      expect(tester.widget<LineFlash>(flash).flash, 1);
+      expect(tester.widget<LineFlash>(flash).color, KitColors.lineFlash);
+      final DecoratedBox wash = tester.widget<DecoratedBox>(
+        find.descendant(of: flash, matching: byKey('line-flash')),
+      );
+      expect(
+        (wash.decoration as BoxDecoration).color!.a,
+        greaterThan(0),
+        reason: 'green while it flashes',
+      );
+      await tester.pumpAndSettle();
+
+      final Rect viewport = tester.getRect(byKey('order-editor'));
+      expect(
+        tester.getRect(flash).top - viewport.top,
+        closeTo(viewport.height / 3, 3),
+        reason: 'a third of the view',
+      );
+      expect(
+        announced(tester).where(
+          (String m) =>
+              m.startsWith('Молоко, 1 ${l10n(tester).unitPiece}. Итого'),
+        ),
+        hasLength(1),
+      );
+    },
+  );
+
+  testWidgets('arriving lines unfold together once the picker is closed', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await openSection(tester);
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    await search(tester, 'guruch');
+    await tapAndSettle(tester, byKey('pick-$productRice'));
+
+    await tester.tap(byKey('pick-done'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    Finder foldOf(String product) => find.ancestor(
+      of: byKey('edit-line-added-$product'),
+      matching: find.byType(Fold),
+    );
+    final double milkMid = tester.getSize(foldOf(productMilk)).height;
+    final double riceMid = tester.getSize(foldOf(productRice)).height;
+    await tester.pumpAndSettle();
+    final double milkFull = tester.getSize(foldOf(productMilk)).height;
+    expect(milkMid, lessThan(milkFull), reason: 'still unfolding');
+    expect(riceMid, closeTo(milkMid, 4), reason: 'together, not staggered');
+  });
 
   testWidgets('a picker opened by its address alone opens the editor', (
     WidgetTester tester,
   ) async {
     await open(tester, at: AppPaths.customerOrderAdd(orderOne), alone: true);
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
-    await tapAndSettle(tester, byKey('product-$productMilk'));
 
     expect(tester.takeException(), isNull);
     expect(top(tester), AppPaths.customerOrderEdit(orderOne));
-    expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
+    expect(byKey('order-editor'), findsOneWidget);
+    expect(byKey('pick-search'), findsNothing);
   });
 
-  testWidgets(
-    'a picker opened alone that picks a product in the order says so',
-    (WidgetTester tester) async {
-      await open(tester, at: AppPaths.customerOrderAdd(orderOne), alone: true);
-      await search(tester, 'pom');
-      await tapAndSettle(
-        tester,
-        byKey('product-${productTomato.toUpperCase()}'),
+  testWidgets('a lock found while the picker is open shows the lock view', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await openSection(tester);
+    // The server has locked the order; the next preview says so.
+    orders
+      ..rows = <Map<String, Object?>>[customerOrderJson(changeable: false)]
+      ..previewFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'order_editing_locked'),
       );
 
-      expect(find.text(l10n(tester).orderAddAlreadyIn), findsOneWidget);
-      expect(
-        find.byWidgetPredicate(
-          (Widget w) =>
-              w.key is ValueKey<String> &&
-              (w.key! as ValueKey<String>).value.startsWith('edit-line-added-'),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    await tester.tap(byKey('pick-$productMilk'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pumpAndSettle();
+
+    expect(byKey('pick-search'), findsNothing, reason: 'the picker closed');
+    expect(byKey('edit-locked'), findsOneWidget);
+    expect(top(tester), AppPaths.customerOrderEdit(orderOne));
+  });
 
   testWidgets('a search in the picker looks through the whole catalog', (
     WidgetTester tester,
   ) async {
     await open(tester);
-    await tapAndSettle(tester, byKey('edit-add-product'));
-    await tapAndSettle(tester, byKey('pick-category-c-1'));
+    await openSection(tester);
 
     await search(tester, 'guruch');
     expect(catalog.requests.last, startsWith('guruch|null|'));
     expect(byKey('product-$productRice'), findsOneWidget);
-    expect(byKey('pick-category'), findsNothing);
+    expect(byKey('pick-all-sections'), findsNothing);
 
     await tapAndSettle(tester, byKey('pick-search-clear'));
-    expect(byKey('pick-category'), findsOneWidget, reason: 'the category back');
+    expect(
+      byKey('pick-all-sections'),
+      findsOneWidget,
+      reason: 'the section back',
+    );
     expect(byKey('product-$productMilk'), findsOneWidget);
   });
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('200 %', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets(
+      'the tiles, a section with plus and stepper rows, and the bar meet the guideline at ${scale.$1}',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(
+          tester,
+          size: const Size(360, 800),
+          scaler: scale.$2,
+          device: const Locale('ru'),
+        );
+        await tapAndSettle(tester, byKey('edit-add-product'));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        await tapAndSettle(tester, byKey('pick-section-c-1'));
+        // The tomato stands with its stepper, the milk with its plus.
+        expect(byKey('pick-minus-$tomato'), findsOneWidget);
+        expect(byKey('pick-$productMilk'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        await tapAndSettle(tester, byKey('pick-$productMilk'));
+        expect(byKey('pick-bar'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      },
+    );
+  }
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
@@ -852,12 +1360,12 @@ void main() {
         await open(
           tester,
           size: const Size(320, 640),
-          textScale: 2,
+          scaler: const NonlinearTextScaler(2),
           device: language,
         );
         expect(tester.takeException(), isNull);
         await tapAndSettle(tester, byKey('edit-add-product'));
-        await tapAndSettle(tester, byKey('pick-category-c-1'));
+        await tapAndSettle(tester, byKey('pick-section-c-1'));
         expect(
           find.byWidgetPredicate(
             (Widget w) =>
@@ -865,14 +1373,147 @@ void main() {
                 w.key is ValueKey<String> &&
                 (w.key! as ValueKey<String>).value.startsWith('product-'),
           ),
-          findsNWidgets(3),
+          findsWidgets,
+          reason: 'the rows in view; the list builds the rest as it scrolls',
         );
         expect(tester.takeException(), isNull);
-        await tapAndSettle(tester, byKey('product-$productMilk'));
+        await tapAndSettle(tester, byKey('pick-$productMilk'));
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('pick-done'));
         expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
         await tester.enterText(byKey('edit-delivery-wish'), 'c' * 160);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'the bar says "≈" only when a line this visit added is an estimate',
+    (WidgetTester tester) async {
+      await open(tester, device: const Locale('ru'));
+      await openSection(tester);
+      await tapAndSettle(tester, byKey('pick-$productMilk'));
+
+      final String fixed = MoneyFormat.uzs(12000, AppLanguage.ru);
+      expect(
+        find.descendant(of: byKey('pick-bar'), matching: find.text(fixed)),
+        findsOneWidget,
+        reason: 'a fixed price, no "≈"',
+      );
+      expect(
+        find.descendant(
+          of: byKey('pick-bar'),
+          matching: find.text(l10n(tester).cartLineEstimate(fixed)),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('the bin and the plus buzz like every other removal and pick', (
+    WidgetTester tester,
+  ) async {
+    final List<String> haptics = catchHaptics(tester);
+    await open(tester, device: const Locale('ru'));
+    await openSection(tester);
+
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+    expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+
+    await tapAndSettle(tester, byKey('pick-minus-$productMilk'));
+    expect(haptics, <String>[
+      'HapticFeedbackType.lightImpact',
+      'HapticFeedbackType.lightImpact',
+    ]);
+  });
+
+  testWidgets('a plus that keeps a removed line again says it is back', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await removeLine(tester, lineTomato);
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await search(tester, 'pom');
+    announced(tester);
+
+    await tapAndSettle(tester, byKey('pick-$tomato'));
+
+    expect(announced(tester), <String>[
+      l10n(tester).orderEditRestored('Помидоры'),
+    ]);
+  });
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('200 %', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets(
+      'the stepper shows its whole quantity in Uzbek at ${scale.$1}',
+      (WidgetTester tester) async {
+        catalog.productRows.add(
+          catalogProduct(
+            id: '0192f0a0-0000-7000-8000-00000000c031',
+            nameUz: 'Qadoqli sut',
+            unitCode: UnitCode.package,
+            priceMode: PriceMode.fixed,
+            customerUnitPriceUzs: 9000,
+          ),
+        );
+        await open(tester, size: const Size(360, 800), scaler: scale.$2);
+        await openSection(tester);
+        const String boxed = '0192f0a0-0000-7000-8000-00000000c031';
+        for (final String id in <String>[productMilk, boxed]) {
+          await tapAndSettle(tester, byKey('pick-$id'));
+          final Finder quantity = find.descendant(
+            of: byKey('pick-step-$id'),
+            matching: find.byType(Text),
+          );
+          final RenderParagraph paragraph = tester
+              .renderObject<RenderParagraph>(quantity);
+          expect(paragraph.didExceedMaxLines, isFalse, reason: id);
+          expect(
+            tester.widget<Text>(quantity).overflow,
+            isNot(TextOverflow.ellipsis),
+            reason: id,
+          );
+          if (scale.$2 == TextScaler.noScaling) {
+            // The test font is as wide as it is high; at 200 % no row could
+            // hold it, so the pill is checked at 100 % only.
+            expect(
+              paragraph.getMaxIntrinsicWidth(double.infinity),
+              lessThanOrEqualTo(paragraph.size.width + 0.01),
+              reason: '$id: the whole quantity',
+            );
+          }
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('200 %', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets(
+      'a search result with plus and stepper rows meets the guideline '
+      'at ${scale.$1}',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(
+          tester,
+          size: const Size(360, 800),
+          scaler: scale.$2,
+          device: const Locale('ru'),
+        );
+        await tapAndSettle(tester, byKey('edit-add-product'));
+        await search(tester, 'о');
+        expect(byKey('product-$productMilk'), findsOneWidget);
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
       },
     );
   }

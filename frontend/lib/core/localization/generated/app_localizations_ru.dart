@@ -2206,33 +2206,188 @@ class AppLocalizationsRu extends AppLocalizations {
       'Доставку, сбор и итог пересчитаем после сохранения';
 
   @override
-  String get orderPickInOrder => 'В заказе';
-
-  @override
   String get orderEditRemoveLine => 'Убрать из заказа';
 
   @override
   String get orderEditKeepLine => 'Вернуть';
 
   @override
-  String get orderEditAtLeastOne =>
-      'В заказе должен остаться хотя бы один товар';
-
-  @override
-  String get orderEditSaving => 'Сохраняем';
-
-  @override
   String get orderEditClosed => 'Этот заказ уже нельзя изменить';
+
+  @override
+  String orderEditWasSame(String amount) {
+    return 'Было $amount · доставка и сбор те же';
+  }
+
+  @override
+  String orderEditWas(String amount) {
+    return 'Было $amount';
+  }
+
+  @override
+  String orderEditFeesIncluded(String delivery, String fee) {
+    return 'Доставка $delivery и сбор $fee включены';
+  }
+
+  @override
+  String orderEditMinimum(String minimum, String shortfall) {
+    return 'До минимальной суммы $minimum не хватает $shortfall';
+  }
+
+  @override
+  String get orderEditAdd => 'Добавить';
+
+  @override
+  String orderEditGone(String names) {
+    return '$names: нет в продаже — уберите, чтобы сохранить';
+  }
+
+  @override
+  String get orderEditRemoveShort => 'Убрать';
+
+  @override
+  String get orderEditNoChanges => 'Нет изменений';
+
+  @override
+  String orderEditSaveChanges(int count) {
+    return 'Сохранить изменения ($count)';
+  }
+
+  @override
+  String get orderEditSavingBusy => 'Сохраняем…';
+
+  @override
+  String get orderEditSaved => 'Сохранено';
+
+  @override
+  String orderEditShortfall(String amount) {
+    return 'Не хватает $amount';
+  }
+
+  @override
+  String orderEditRemoveFirst(String name) {
+    return 'Сначала уберите: $name';
+  }
+
+  @override
+  String orderEditRemoveFirstMore(String name, int count) {
+    return 'Сначала уберите: $name и ещё $count';
+  }
+
+  @override
+  String get orderEditKeepOne => 'Оставьте хотя бы один товар';
+
+  @override
+  String get orderEditedTitle => 'Заказ изменён';
+
+  @override
+  String orderEditedTotal(String amount) {
+    return 'Итого $amount';
+  }
+
+  @override
+  String orderEditedSpoken(String amount) {
+    return 'Заказ изменён. Итого $amount';
+  }
+
+  @override
+  String orderEditNotSaved(String what) {
+    return 'Не сохранено. $what';
+  }
+
+  @override
+  String orderEditTotalSpoken(String what, String amount) {
+    return '$what. Итого $amount';
+  }
+
+  @override
+  String get orderEditCloseSpoken => 'Закрыть изменение заказа';
+
+  @override
+  String get orderEditComment => 'Комментарий';
+
+  @override
+  String orderEditOptions(String note, String rule) {
+    return '$note · $rule';
+  }
+
+  @override
+  String orderEditOptionsSpoken(String value) {
+    return 'Комментарий и замена: $value';
+  }
+
+  @override
+  String get substitutionShortSimilar => 'замена похожим';
+
+  @override
+  String get substitutionShortContact => 'позвонить перед заменой';
+
+  @override
+  String get substitutionShortRemove => 'нет — убрать';
+
+  @override
+  String orderEditRemoved(String name) {
+    return '$name — убрали из заказа';
+  }
+
+  @override
+  String orderEditRestored(String name) {
+    return '$name снова в заказе';
+  }
+
+  @override
+  String orderEditLineSpoken(String name, String quantity, String sum) {
+    return '$name, $quantity, $sum';
+  }
+
+  @override
+  String orderEditLineNewSpoken(String name, String quantity, String sum) {
+    return '$name, новый товар по текущей цене, $quantity, $sum';
+  }
+
+  @override
+  String orderChangeAdded(String name, String quantity) {
+    return '+ $name, $quantity';
+  }
+
+  @override
+  String orderChangeRemoved(String name) {
+    return '− $name';
+  }
+
+  @override
+  String orderChangeQuantity(String name, String from, String to) {
+    return '$name: $from → $to';
+  }
+
+  @override
+  String orderChangeNote(String name, String note) {
+    return '$name: комментарий «$note»';
+  }
+
+  @override
+  String orderChangeNoNote(String name) {
+    return '$name: без комментария';
+  }
+
+  @override
+  String orderChangeRule(String name, String rule) {
+    return '$name: $rule';
+  }
+
+  @override
+  String orderChangeWish(String wish) {
+    return 'Пожелание к доставке: «$wish»';
+  }
+
+  @override
+  String get orderChangeNoWish => 'Пожелание к доставке убрано';
 
   @override
   String get orderAddProduct => 'Добавить товар';
 
   @override
   String get orderAddTitle => 'Добавить в заказ';
-
-  @override
-  String get orderAddAlreadyIn =>
-      'Этот товар уже в заказе — его можно изменить';
 
   @override
   String orderAddFull(int count) {
@@ -4884,5 +5039,103 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String orderQuestionsExpiredAnnounced(int number) {
     return 'Время ответа на вопрос по заказу № $number вышло';
+  }
+
+  @override
+  String get orderEditInfoAssigned =>
+      'Сборщик уже назначен и скоро начнёт покупать — после этого заказ не изменить. Сохраните изменения сразу. Цена товаров, что уже в заказе, не меняется.';
+
+  @override
+  String get orderEditLeaveTitle => 'Выйти без сохранения?';
+
+  @override
+  String orderEditLeaveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Не сохранятся $count изменения:',
+      many: 'Не сохранятся $count изменений:',
+      few: 'Не сохранятся $count изменения:',
+      one: 'Не сохранится $count изменение:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get orderEditKeepEditing => 'Продолжить изменять';
+
+  @override
+  String get orderEditLeave => 'Выйти без сохранения';
+
+  @override
+  String get orderEditLockedTitle => 'Сборщик уже начал покупать';
+
+  @override
+  String get orderEditLockedCancelled => 'Заказ отменён';
+
+  @override
+  String get orderEditLockedText =>
+      'Изменения не сохранились — заказ остался прежним. Если что-то важно, позвоните в поддержку.';
+
+  @override
+  String get orderEditLockedTextNoPhone =>
+      'Изменения не сохранились — заказ остался прежним.';
+
+  @override
+  String get orderEditLost => 'Что не сохранилось';
+
+  @override
+  String get orderCallSupport => 'Позвонить в поддержку';
+
+  @override
+  String orderEditLockedSpoken(String title, int count) {
+    return 'Не сохранено: $title. Не сохранилось изменений: $count';
+  }
+
+  @override
+  String get orderPickAllSections => 'Все разделы';
+
+  @override
+  String orderPickSection(String name) {
+    return '$name, раздел';
+  }
+
+  @override
+  String get orderPickAlreadyIn => 'Уже в заказе';
+
+  @override
+  String get orderPickAddedNow => 'Добавлен сейчас';
+
+  @override
+  String orderPickAdd(String name) {
+    return 'Добавить: $name';
+  }
+
+  @override
+  String orderPickRowSpoken(String name, String price, String unit) {
+    return '$name, $price за $unit';
+  }
+
+  @override
+  String orderPickInOrderSpoken(String name, String quantity) {
+    return '$name, в заказе $quantity';
+  }
+
+  @override
+  String orderPickAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавлено: $count товара',
+      many: 'Добавлено: $count товаров',
+      few: 'Добавлено: $count товара',
+      one: 'Добавлено: $count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String orderPickAddedSpoken(String name, String quantity, int count) {
+    return 'Добавили: $name, $quantity. Добавлено товаров: $count';
   }
 }

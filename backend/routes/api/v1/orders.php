@@ -42,15 +42,21 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
         // Each edit may keep a removed line, so edits are throttled per
         // Customer to bound what a client can pile up (DL-43).
         Route::put('orders/{order}/items', [CustomerOrderController::class, 'editItems'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:30,1,order-edit')
             ->name('customer.orders.items.update');
+        // Asked as the Customer edits the list, so it has a bucket of its
+        // own; a numeric throttle keys by the user alone, so without a
+        // prefix the preview would share the edit's (DL-132 (1)).
+        Route::post('orders/{order}/items/preview', [CustomerOrderController::class, 'previewItems'])
+            ->middleware('throttle:120,1,order-edit-preview')
+            ->name('customer.orders.items.preview');
         Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])
             ->middleware(RequireIdempotencyKey::class)
             ->name('customer.orders.cancel');
         // The identical repeat is the retry (docs/09 section 49), so the
         // call takes no idempotency key.
         Route::post('orders/{order}/rating', [CustomerOrderController::class, 'rate'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:30,1,order-rating')
             ->name('customer.orders.rating.store');
         Route::post('orders/{order}/reorder', [ReorderController::class, 'store'])
             ->middleware(RequireIdempotencyKey::class)

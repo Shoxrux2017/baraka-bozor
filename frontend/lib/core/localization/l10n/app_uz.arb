@@ -1181,15 +1181,274 @@
   "orderEditInfo": "Yig'uvchi xarid qilishni boshlamaguncha o'zgartirish mumkin. Buyurtmadagi mahsulotlarning narxi o'zgarmaydi.",
   "orderEditNew": "Yangi",
   "orderEditRecount": "Yetkazish, yig'im va jamini saqlagandan keyin qayta hisoblaymiz",
-  "orderPickInOrder": "Buyurtmada",
   "orderEditRemoveLine": "Buyurtmadan olib tashlash",
   "orderEditKeepLine": "Qaytarish",
-  "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
-  "orderEditSaving": "Saqlanmoqda",
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
+  "orderEditWasSame": "Avval {amount} edi · yetkazish va xizmat haqi o'zgarmadi",
+  "@orderEditWasSame": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditWas": "Avval {amount} edi",
+  "@orderEditWas": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditFeesIncluded": "Yetkazish {delivery} va xizmat haqi {fee} kiritilgan",
+  "@orderEditFeesIncluded": {
+    "placeholders": {
+      "delivery": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditMinimum": "{minimum} minimal summagacha {shortfall} yetmayapti",
+  "@orderEditMinimum": {
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      },
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditAdd": "Qo'shish",
+  "orderEditGone": "{names}: sotuvda yo'q — saqlash uchun olib tashlang",
+  "@orderEditGone": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveShort": "Olib tashlash",
+  "orderEditNoChanges": "O'zgarish yo'q",
+  "orderEditSaveChanges": "O'zgarishlarni saqlash ({count})",
+  "@orderEditSaveChanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditSavingBusy": "Saqlanmoqda…",
+  "orderEditSaved": "Saqlandi",
+  "orderEditShortfall": "{amount} yetmayapti",
+  "@orderEditShortfall": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveFirst": "Avval olib tashlang: {name}",
+  "@orderEditRemoveFirst": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRemoveFirstMore": "Avval olib tashlang: {name} va yana {count} ta",
+  "@orderEditRemoveFirstMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditKeepOne": "Kamida bitta mahsulot qoldiring",
+  "orderEditedTitle": "Buyurtma o'zgartirildi",
+  "orderEditedTotal": "Jami {amount}",
+  "@orderEditedTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditedSpoken": "Buyurtma o'zgartirildi. Jami {amount}",
+  "@orderEditedSpoken": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditNotSaved": "Saqlanmadi. {what}",
+  "@orderEditNotSaved": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditTotalSpoken": "{what}. Jami {amount}",
+  "@orderEditTotalSpoken": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditCloseSpoken": "Buyurtmani o'zgartirishni yopish",
+  "orderEditComment": "Izoh",
+  "orderEditOptions": "{note} · {rule}",
+  "@orderEditOptions": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      },
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditOptionsSpoken": "Izoh va almashtirish: {value}",
+  "@orderEditOptionsSpoken": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutionShortSimilar": "o'xshashiga almashtirish",
+  "substitutionShortContact": "almashtirishdan oldin qo'ng'iroq",
+  "substitutionShortRemove": "yo'q bo'lsa — olib tashlash",
+  "orderEditRemoved": "{name} — buyurtmadan olib tashlandi",
+  "@orderEditRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRestored": "{name} yana buyurtmada",
+  "@orderEditRestored": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditLineSpoken": "{name}, {quantity}, {sum}",
+  "@orderEditLineSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditLineNewSpoken": "{name}, joriy narxdagi yangi mahsulot, {quantity}, {sum}",
+  "@orderEditLineNewSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeAdded": "+ {name}, {quantity}",
+  "@orderChangeAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeRemoved": "− {name}",
+  "@orderChangeRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeQuantity": "{name}: {from} → {to}",
+  "@orderChangeQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNote": "{name}: izoh «{note}»",
+  "@orderChangeNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNoNote": "{name}: izohsiz",
+  "@orderChangeNoNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeRule": "{name}: {rule}",
+  "@orderChangeRule": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeWish": "Yetkazish istagi: «{wish}»",
+  "@orderChangeWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNoWish": "Yetkazish istagi olib tashlandi",
   "orderAddProduct": "Mahsulot qo'shish",
   "orderAddTitle": "Buyurtmaga qo'shish",
-  "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",
   "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'lishi mumkin",
   "@orderAddFull": {
     "placeholders": {
@@ -3548,6 +3807,101 @@
   "@orderQuestionsExpiredAnnounced": {
     "placeholders": {
       "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditInfoAssigned": "Yig'uvchi tayinlangan va tez orada xarid qilishni boshlaydi — shundan keyin buyurtmani o'zgartirib bo'lmaydi. O'zgarishlarni darhol saqlang. Buyurtmadagi mahsulotlar narxi o'zgarmaydi.",
+  "orderEditLeaveTitle": "Saqlamasdan chiqasizmi?",
+  "orderEditLeaveCount": "{count} ta o'zgarish saqlanmaydi:",
+  "@orderEditLeaveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditKeepEditing": "O'zgartirishni davom ettirish",
+  "orderEditLeave": "Saqlamasdan chiqish",
+  "orderEditLockedTitle": "Yig'uvchi xarid qilishni boshladi",
+  "orderEditLockedCancelled": "Buyurtma bekor qilindi",
+  "orderEditLockedText": "O'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi. Muhim narsa bo'lsa, qo'llab-quvvatlash xizmatiga qo'ng'iroq qiling.",
+  "orderEditLockedTextNoPhone": "O'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi.",
+  "orderEditLost": "Nima saqlanmadi",
+  "orderCallSupport": "Qo'llab-quvvatlashga qo'ng'iroq qilish",
+  "orderEditLockedSpoken": "Saqlanmadi: {title}. Saqlanmagan o'zgarishlar: {count}",
+  "@orderEditLockedSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderPickAllSections": "Barcha bo'limlar",
+  "orderPickSection": "{name}, bo'lim",
+  "@orderPickSection": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickAlreadyIn": "Buyurtmada bor",
+  "orderPickAddedNow": "Hozir qo'shildi",
+  "orderPickAdd": "Qo'shish: {name}",
+  "@orderPickAdd": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickRowSpoken": "{name}, {unit} uchun {price}",
+  "@orderPickRowSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickInOrderSpoken": "{name}, buyurtmada {quantity}",
+  "@orderPickInOrderSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPickAdded": "Qo'shildi: {count} ta mahsulot",
+  "@orderPickAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderPickAddedSpoken": "Qo'shildi: {name}, {quantity}. Qo'shilgan mahsulotlar: {count}",
+  "@orderPickAddedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "count": {
         "type": "int"
       }
     }

@@ -29,6 +29,7 @@ import '../../../core/widgets/stale_data_line.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
 import 'cancel_sheet.dart';
+import 'order_edited_banner.dart';
 import 'order_questions.dart';
 import 'order_rating_card.dart';
 import 'order_sections.dart';
@@ -56,6 +57,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
   /// When the order on screen was loaded, by the phone's clock.
   DateTime? _shownAt;
+
+  /// The order the editor saved, while its banner shows (`DL-132`), and how
+  /// many banners came, so a newer one starts anew.
+  CustomerOrder? _edited;
+  int _banners = 0;
 
   @override
   void initState() {
@@ -111,6 +117,20 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     }
   }
 
+  /// Opens the editor over the order; an order it answers is the one saved,
+  /// and its banner shows (`DL-132`).
+  Future<void> _edit(BuildContext context, String id) async {
+    final CustomerOrder? saved = await context.push<CustomerOrder>(
+      AppPaths.customerOrderEdit(id),
+    );
+    if (saved != null && mounted) {
+      setState(() {
+        _edited = saved;
+        _banners++;
+      });
+    }
+  }
+
   Future<void> _cancel(
     BuildContext context, {
     required int orderNumber,
@@ -159,7 +179,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           ? OrderFooter(
               order: shown,
               cancelling: cancelling,
-              onEdit: () => context.push(AppPaths.customerOrderEdit(shown.id)),
+              onEdit: () => _edit(context, shown.id),
               onCancel: () => _cancel(
                 context,
                 orderNumber: shown.orderNumber,
@@ -173,53 +193,72 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             )
           : null,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: <Widget>[
-            const ActiveModeBar(),
-            Expanded(
-              child: PeriodicRefresh(
-                interval: const Duration(seconds: 15),
-                active: _refreshing(order),
-                // The list loads again too, so it is current on the way back.
-                onRefresh: () => ref
-                  ..invalidate(customerOrderProvider(orderId))
-                  ..invalidate(customerOrdersProvider),
-                child: shown == null
-                    ? (error == null
-                          ? const Center(child: CircularProgressIndicator())
-                          : Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: LoadFailure(
-                                error: error,
-                                onRetry: () => ref.invalidate(
-                                  customerOrderProvider(orderId),
+            Column(
+              children: <Widget>[
+                const ActiveModeBar(),
+                Expanded(
+                  child: PeriodicRefresh(
+                    interval: const Duration(seconds: 15),
+                    active: _refreshing(order),
+                    // The list loads again too, so it is current on the way back.
+                    onRefresh: () => ref
+                      ..invalidate(customerOrderProvider(orderId))
+                      ..invalidate(customerOrdersProvider),
+                    child: shown == null
+                        ? (error == null
+                              ? const Center(child: CircularProgressIndicator())
+                              : Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: LoadFailure(
+                                    error: error,
+                                    onRetry: () => ref.invalidate(
+                                      customerOrderProvider(orderId),
+                                    ),
+                                  ),
+                                ))
+                        : Column(
+                            children: <Widget>[
+                              if (failure != null)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    8,
+                                    20,
+                                    0,
+                                  ),
+                                  child: StaleDataLine(
+                                    key: const ValueKey<String>('stale-line'),
+                                    failure: failure,
+                                    shownAt: _shownAt,
+                                    onRetry: _refresh,
+                                    busy: order.isLoading,
+                                  ),
+                                ),
+                              Expanded(
+                                child: RefreshIndicator(
+                                  color: KitColors.primary,
+                                  onRefresh: _refresh,
+                                  child: _Order(order: shown),
                                 ),
                               ),
-                            ))
-                    : Column(
-                        children: <Widget>[
-                          if (failure != null)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                              child: StaleDataLine(
-                                key: const ValueKey<String>('stale-line'),
-                                failure: failure,
-                                shownAt: _shownAt,
-                                onRetry: _refresh,
-                                busy: order.isLoading,
-                              ),
-                            ),
-                          Expanded(
-                            child: RefreshIndicator(
-                              color: KitColors.primary,
-                              onRefresh: _refresh,
-                              child: _Order(order: shown),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-              ),
+                  ),
+                ),
+              ],
             ),
+            if (_edited != null)
+              Positioned(
+                top: 8,
+                left: 12,
+                right: 12,
+                child: OrderEditedBanner(
+                  key: ValueKey<int>(_banners),
+                  order: _edited!,
+                ),
+              ),
           ],
         ),
       ),

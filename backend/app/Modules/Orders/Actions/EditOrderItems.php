@@ -10,6 +10,7 @@ use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
+use App\Models\Enums\PriceMode;
 use App\Models\Enums\SubstitutionPolicy;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -18,7 +19,9 @@ use App\Models\Product;
 use App\Models\User;
 use App\Modules\Catalog\CustomerCatalogListing;
 use App\Modules\Orders\CustomerOrders;
+use App\Modules\Orders\EditPreview;
 use App\Modules\Orders\OrderPermissions;
+use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
 use App\Modules\Settings\CustomerPriceCalculator;
 use App\Support\Money\MoneyCalculator;
@@ -67,65 +70,8 @@ final class EditOrderItems
                 throw ApiException::conflict('order_editing_locked');
             }
 
-            /** @var array<string, OrderItem> $current */
-            $current = $order->items()
-                ->where('status', '<>', OrderItemStatus::Removed->value)
-                ->get()
-                ->keyBy('product_id')
-                ->all();
-
             $settings = BusinessSettings::current();
-            $prices = new CustomerPriceCalculator(Percentage::fromString($settings->markup_percent));
-            $products = $this->productsToAdd(array_values(array_filter(
-                $items,
-                static fn (array $item): bool => ! isset($current[$item['product_id']])
-            )));
-
-            // Plan: nothing is written until the whole list is judged.
-            $kept = [];
-            $added = [];
-            $before = 0;
-            $after = 0;
-
-            foreach ($current as $line) {
-                $before = MoneyCalculator::sum($before, MoneyCalculator::lineTotal(
-                    $line->customer_unit_price_uzs_snapshot,
-                    Quantity::fromString($line->ordered_quantity),
-                ));
-            }
-
-            foreach ($items as $index => $wanted) {
-                $note = $wanted['customer_note'] ?? null;
-                $policy = SubstitutionPolicy::from($wanted['substitution_policy'] ?? SubstitutionPolicy::AllowSimilar->value);
-                $line = $current[$wanted['product_id']] ?? null;
-
-                if ($line !== null) {
-                    $quantity = QuantityPolicy::parse($line->unit_code_snapshot, $wanted['quantity'], "items.{$index}.quantity");
-                    $kept[] = [$line, $quantity, $note, $policy];
-                    $after = MoneyCalculator::sum($after, MoneyCalculator::lineTotal($line->customer_unit_price_uzs_snapshot, $quantity));
-
-                    continue;
-                }
-
-                $product = $products[$wanted['product_id']];
-                $quantity = QuantityPolicy::parse($product->unit_code, $wanted['quantity'], "items.{$index}.quantity");
-                $price = $prices->priceOf($product->market_price_uzs);
-                $added[] = [$product, $price, $quantity, $note, $policy];
-                $after = MoneyCalculator::sum($after, MoneyCalculator::lineTotal($price, $quantity));
-            }
-
-            $wantedProducts = array_column($items, 'product_id');
-            $removed = array_values(array_filter(
-                $current,
-                static fn (OrderItem $line): bool => ! in_array($line->product_id, $wantedProducts, true)
-            ));
-
-            $changed = array_values(array_filter(
-                $kept,
-                static fn (array $plan): bool => $plan[0]->ordered_quantity !== $plan[1]->toDecimal()
-                    || $plan[0]->customer_note_snapshot !== $plan[2]
-                    || $plan[0]->substitution_policy_snapshot !== $plan[3]
-            ));
+            ['kept' => $kept, 'added' => $added, 'removed' => $removed, 'changed' => $changed, 'before' => $before, 'after' => $after] = $this->plan($order, $items, $settings);
             $wishChanged = $order->delivery_time_note !== $deliveryTimeNote;
 
             if ($added === [] && $removed === [] && $changed === [] && ! $wishChanged) {
@@ -192,6 +138,133 @@ final class EditOrderItems
 
             return $order;
         });
+    }
+
+    /**
+     * `POST /customer/orders/{order}/items/preview` (`DL-132` (1)): the sums
+     * the edit would leave, from the edit's own plan and refusals, with no
+     * transaction, no lock and no write. The minimum's shortfall is answered
+     * exactly when the edit would be refused for it, never as a refusal.
+     *
+     * @param  list<array{product_id: string, quantity: string, customer_note?: string|null, substitution_policy?: string}>  $items
+     */
+    public function preview(User $customer, string $orderId, array $items): EditPreview
+    {
+        $order = ScopedLookup::firstOrNotFound(CustomerOrders::own($customer)->whereKey($orderId));
+        $order->load('currentShopperAssignment');
+
+        if (! OrderPermissions::canChange($order)) {
+            throw ApiException::conflict('order_editing_locked');
+        }
+
+        $settings = BusinessSettings::current();
+        ['current' => $current, 'kept' => $kept, 'added' => $added, 'before' => $before, 'after' => $after] = $this->plan($order, $items, $settings);
+
+        $estimate = false;
+        foreach ($kept as [$line]) {
+            $estimate = $estimate || $line->price_mode_snapshot === PriceMode::Estimate;
+        }
+        foreach ($added as [$product]) {
+            $estimate = $estimate || $product->price_mode === PriceMode::Estimate;
+        }
+
+        $fee = OrderTotals::serviceFeeOn($order, $after);
+        $total = MoneyCalculator::sum($after, $fee, $order->delivery_fee_uzs_snapshot);
+        $totalBefore = OrderTotals::of($order, $current)->totalUzs ?? 0;
+        $minimum = $settings->minimum_order_uzs === null ? null : (int) $settings->minimum_order_uzs;
+
+        return new EditPreview(
+            $after,
+            $fee,
+            $order->delivery_fee_uzs_snapshot,
+            $total,
+            $estimate ? 'estimate' : 'final',
+            $totalBefore,
+            $total - $totalBefore,
+            $minimum,
+            $minimum !== null && $after < $before && $after < $minimum ? $minimum - $after : 0,
+        );
+    }
+
+    /**
+     * Judges the whole list against the lines not removed and writes nothing:
+     * the lines kept, the products added at the current price and markup, the
+     * lines removed and changed, and the merchandise before and after at the
+     * snapshots. A product the Customer may not see, or a quantity its unit
+     * does not allow, is refused here, for the edit and its preview alike.
+     *
+     * @param  list<array{product_id: string, quantity: string, customer_note?: string|null, substitution_policy?: string}>  $items
+     * @return array{
+     *     current: array<string, OrderItem>,
+     *     kept: list<array{0: OrderItem, 1: Quantity, 2: string|null, 3: SubstitutionPolicy}>,
+     *     added: list<array{0: Product, 1: int, 2: Quantity, 3: string|null, 4: SubstitutionPolicy}>,
+     *     removed: list<OrderItem>,
+     *     changed: list<array{0: OrderItem, 1: Quantity, 2: string|null, 3: SubstitutionPolicy}>,
+     *     before: int,
+     *     after: int,
+     * }
+     */
+    private function plan(Order $order, array $items, BusinessSettings $settings): array
+    {
+        /** @var array<string, OrderItem> $current */
+        $current = $order->items()
+            ->where('status', '<>', OrderItemStatus::Removed->value)
+            ->get()
+            ->keyBy('product_id')
+            ->all();
+
+        $prices = new CustomerPriceCalculator(Percentage::fromString($settings->markup_percent));
+        $products = $this->productsToAdd(array_values(array_filter(
+            $items,
+            static fn (array $item): bool => ! isset($current[$item['product_id']])
+        )));
+
+        $kept = [];
+        $added = [];
+        $before = 0;
+        $after = 0;
+
+        foreach ($current as $line) {
+            $before = MoneyCalculator::sum($before, MoneyCalculator::lineTotal(
+                $line->customer_unit_price_uzs_snapshot,
+                Quantity::fromString($line->ordered_quantity),
+            ));
+        }
+
+        foreach ($items as $index => $wanted) {
+            $note = $wanted['customer_note'] ?? null;
+            $policy = SubstitutionPolicy::from($wanted['substitution_policy'] ?? SubstitutionPolicy::AllowSimilar->value);
+            $line = $current[$wanted['product_id']] ?? null;
+
+            if ($line !== null) {
+                $quantity = QuantityPolicy::parse($line->unit_code_snapshot, $wanted['quantity'], "items.{$index}.quantity");
+                $kept[] = [$line, $quantity, $note, $policy];
+                $after = MoneyCalculator::sum($after, MoneyCalculator::lineTotal($line->customer_unit_price_uzs_snapshot, $quantity));
+
+                continue;
+            }
+
+            $product = $products[$wanted['product_id']];
+            $quantity = QuantityPolicy::parse($product->unit_code, $wanted['quantity'], "items.{$index}.quantity");
+            $price = $prices->priceOf($product->market_price_uzs);
+            $added[] = [$product, $price, $quantity, $note, $policy];
+            $after = MoneyCalculator::sum($after, MoneyCalculator::lineTotal($price, $quantity));
+        }
+
+        $wantedProducts = array_column($items, 'product_id');
+        $removed = array_values(array_filter(
+            $current,
+            static fn (OrderItem $line): bool => ! in_array($line->product_id, $wantedProducts, true)
+        ));
+
+        $changed = array_values(array_filter(
+            $kept,
+            static fn (array $plan): bool => $plan[0]->ordered_quantity !== $plan[1]->toDecimal()
+                || $plan[0]->customer_note_snapshot !== $plan[2]
+                || $plan[0]->substitution_policy_snapshot !== $plan[3]
+        ));
+
+        return compact('current', 'kept', 'added', 'removed', 'changed', 'before', 'after');
     }
 
     /**

@@ -28,7 +28,7 @@ Rules for every stage:
 | 9 | Search | 8 | — | Merged (PR #131) |
 | 10 | Favourites | 7 | favourites order | Merged (PR #132) |
 | 11 | Order | 9 | approval amounts and picture | Merged (PR #133) |
-| 12 | My orders | 10 | list summary fields | Planned |
+| 12 | My orders | 10 | list summary fields | Merged (PR #134) |
 | 13 | Order editing | 12 | edit preview, minimum | Planned |
 | 14 | Cancellation | 12 | cancel reason | Planned |
 | 15 | Rating | 10 | `reviewed_at` | Planned |
@@ -354,6 +354,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app now also reads each category's `product_count` as a required key (`DL-128` (1)), like `working_hours` (`DL-125` (7)): deploy the backend first.
 - The app reads the order screen's new keys as required (`estimate_if_approved_uzs`, `change_if_approved_uzs`, `change_if_rejected_uzs`, `replacement.image_url`, and each line's `agreed`), like `working_hours` (`DL-130`): deploy the backend before any build of stage 11 reaches a phone.
 - The app reads the list summary's new keys as required (`pending_approval_expires_at`, `preview`), like `working_hours` (`DL-125` (7)) and the order screen's keys (`DL-130`): deploy the backend before any build of stage 12 reaches a phone (`DL-131`).
+- The stage 13 editor asks `POST /customer/orders/{order}/items/preview` for the order's sums (`DL-132`): an editor of this build against an older server finds no preview (`404`) and shows «Доставку, сбор и итог пересчитаем после сохранения», so deploy the backend first.
 
 ## Review findings not acted on
 
@@ -377,7 +378,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 6, minor: the banner's spoken minutes follow its rebuilds (the 30 s reload), while the visible chip counts down on its own timer. Ruling: at most a minute off; kept.
 - Stage 6, minor: the home stays mounted on a hidden tab, so a question that appears there (only after an order action, since its refresh waits while hidden) buzzes and is announced from the hidden home. Ruling: rare, and the expiry notice is the only one a screen-reader user gets on the order page; kept.
 - Stage 6 re-review, P3: while `StaleDataLine` is busy its button holds only a spinner, so a screen reader meets an unlabelled disabled button during the retry. Ruling: taken with stage 7, which reuses the line on the category screen (`catpage-2`); the fix is a label («Обновляем…») on the busy button. Fixed in stage 7: the busy button reads «Обновляем…» (`DL-127`).
-- Stage 6 re-review, P3: the order editor's picker keeps a dead `data:` branch in its `sections.when`, there only to satisfy `when`. Ruling: harmless; replaced by a `switch` with stage 13, which touches the picker.
+- Stage 6 re-review, P3: the order editor's picker keeps a dead `data:` branch in its `sections.when`, there only to satisfy `when`. Ruling: harmless; replaced by a `switch` with stage 13, which touches the picker. Fixed in stage 13: the picker's sections are a `switch` (`DL-132`).
 - Stage 6 re-review, P3: `StoreClosedLine` and `QuestionBanner` start their `AppLifecycleListener` with a bare `_lifecycle;` statement in `initState`. Ruling: works; assign it explicitly when either is next touched.
 - Stage 6 re-review, P3: the category screen now keeps its rail after a failed refresh but shows no stale line there. Ruling: stage 7 (`catpage-2`) brings the stale line to the category screen. Fixed in stage 7: the categories' failure shows in the list's stale line (`DL-127` (2)).
 - Stage 7 final review, P3 (a ruling of Task 3): when another order's first page fails, the old cards stay dimmed under «Нет связи · Повторить» and take no taps while offline; on «Рекомендуем» and «Все товары» going back to the previous order offline shows still skeletons, because that list was let go. Ruling: kept — the same products in another order; a pull or «Повторить» brings them back.
@@ -405,3 +406,9 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 12, minor: the past count's bump is counted in `build` from rises of the total, guarded by the last total. Ruling: deterministic; kept.
 - Stage 12 re-review, out of scope: a drop while the feed reloads or failed keeps the id as given, and the reload's filter compares ids case-sensitively. Ruling: the server sends lower-case UUIDs and the order page drops the id it was opened with; harmless today.
 - Stage 12 re-review, minor: the reset of the past count on another account has no test, and a first build before the new account's «Прошлые» starts loading may compare the carried count once. Ruling: at most one false bump right after an account switch; cosmetic.
+- Stage 13 final review, P3: the editor's stepper is the cart's `CartLineStepper`, whose quantity keeps its `FittedBox`. Ruling: shared with the cart, whose look the Owner approved in stage 3 (`DL-119`); at large text the editor stacks the stepper at up to 180 like the cart, so the count keeps room; a change belongs to a pass over the shared stepper.
+- Stage 13 final review, P3: with a line whose quantity must be set anew (its unit changed since) and one real change, the button says «(2)» and the exit sheet «1 изменение». Ruling: needs an Admin unit change on an open order; the button's count keeps the quantity sheet reachable and the sheet lists only what the Customer typed (`DL-132`).
+- Stage 13 final review, P3: when the reload after a successful save lands inside the 650 ms ✓ moment and shopping started at once, the editor gives way to «Этот заказ уже нельзя изменить» instead of returning with the banner. Ruling: the save succeeded and the order page shows it; rare; kept.
+- Stage 13 re-review, P3: the picker's pill-fit test checks the quantity's width at 100 % only; at 200 % the test font fills the slot, so that case asserts nothing. Ruling: the rule reads `textWidth` at the device's text size, which the 100 % test pins; the iOS and real-font pass checks 200 %.
+- Stage 13 re-review, P3: with the keyboard up at 200 % on a 640 px phone the footer (strips and total capped at 45 % over the fixed button) leaves the editor's list about 50 px. Ruling: nothing overflows and the list scrolls; a later improvement folds the total while the keyboard is up.
+- Stage 13 re-review, P3: the red failure line now sits in the footer's scrolling part, so at the cap it can scroll out of view. Ruling: it starts at the top and needs a refusal, a strip and 200 % text at once; kept.

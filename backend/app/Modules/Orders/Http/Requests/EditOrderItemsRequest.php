@@ -18,7 +18,7 @@ use Illuminate\Validation\Rule;
  * its unit by the action. Product ids are compared in lower case, as the
  * database stores them.
  */
-final class EditOrderItemsRequest extends StrictFormRequest
+class EditOrderItemsRequest extends StrictFormRequest
 {
     protected function prepareForValidation(): void
     {

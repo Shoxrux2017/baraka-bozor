@@ -3902,12 +3902,6 @@ abstract class AppLocalizations {
   /// **'Yetkazish, yig\'im va jamini saqlagandan keyin qayta hisoblaymiz'**
   String get orderEditRecount;
 
-  /// No description provided for @orderPickInOrder.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtmada'**
-  String get orderPickInOrder;
-
   /// No description provided for @orderEditRemoveLine.
   ///
   /// In uz, this message translates to:
@@ -3920,23 +3914,245 @@ abstract class AppLocalizations {
   /// **'Qaytarish'**
   String get orderEditKeepLine;
 
-  /// No description provided for @orderEditAtLeastOne.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtmada kamida bitta mahsulot qolishi kerak'**
-  String get orderEditAtLeastOne;
-
-  /// No description provided for @orderEditSaving.
-  ///
-  /// In uz, this message translates to:
-  /// **'Saqlanmoqda'**
-  String get orderEditSaving;
-
   /// No description provided for @orderEditClosed.
   ///
   /// In uz, this message translates to:
   /// **'Bu buyurtmani endi o\'zgartirib bo\'lmaydi'**
   String get orderEditClosed;
+
+  /// No description provided for @orderEditWasSame.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval {amount} edi · yetkazish va xizmat haqi o\'zgarmadi'**
+  String orderEditWasSame(String amount);
+
+  /// No description provided for @orderEditWas.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval {amount} edi'**
+  String orderEditWas(String amount);
+
+  /// No description provided for @orderEditFeesIncluded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish {delivery} va xizmat haqi {fee} kiritilgan'**
+  String orderEditFeesIncluded(String delivery, String fee);
+
+  /// No description provided for @orderEditMinimum.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minimum} minimal summagacha {shortfall} yetmayapti'**
+  String orderEditMinimum(String minimum, String shortfall);
+
+  /// No description provided for @orderEditAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish'**
+  String get orderEditAdd;
+
+  /// No description provided for @orderEditGone.
+  ///
+  /// In uz, this message translates to:
+  /// **'{names}: sotuvda yo\'q — saqlash uchun olib tashlang'**
+  String orderEditGone(String names);
+
+  /// No description provided for @orderEditRemoveShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlash'**
+  String get orderEditRemoveShort;
+
+  /// No description provided for @orderEditNoChanges.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarish yo\'q'**
+  String get orderEditNoChanges;
+
+  /// No description provided for @orderEditSaveChanges.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarishlarni saqlash ({count})'**
+  String orderEditSaveChanges(int count);
+
+  /// No description provided for @orderEditSavingBusy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda…'**
+  String get orderEditSavingBusy;
+
+  /// No description provided for @orderEditSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlandi'**
+  String get orderEditSaved;
+
+  /// No description provided for @orderEditShortfall.
+  ///
+  /// In uz, this message translates to:
+  /// **'{amount} yetmayapti'**
+  String orderEditShortfall(String amount);
+
+  /// No description provided for @orderEditRemoveFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval olib tashlang: {name}'**
+  String orderEditRemoveFirst(String name);
+
+  /// No description provided for @orderEditRemoveFirstMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval olib tashlang: {name} va yana {count} ta'**
+  String orderEditRemoveFirstMore(String name, int count);
+
+  /// No description provided for @orderEditKeepOne.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamida bitta mahsulot qoldiring'**
+  String get orderEditKeepOne;
+
+  /// No description provided for @orderEditedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma o\'zgartirildi'**
+  String get orderEditedTitle;
+
+  /// No description provided for @orderEditedTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami {amount}'**
+  String orderEditedTotal(String amount);
+
+  /// No description provided for @orderEditedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma o\'zgartirildi. Jami {amount}'**
+  String orderEditedSpoken(String amount);
+
+  /// No description provided for @orderEditNotSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmadi. {what}'**
+  String orderEditNotSaved(String what);
+
+  /// No description provided for @orderEditTotalSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{what}. Jami {amount}'**
+  String orderEditTotalSpoken(String what, String amount);
+
+  /// No description provided for @orderEditCloseSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani o\'zgartirishni yopish'**
+  String get orderEditCloseSpoken;
+
+  /// No description provided for @orderEditComment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh'**
+  String get orderEditComment;
+
+  /// No description provided for @orderEditOptions.
+  ///
+  /// In uz, this message translates to:
+  /// **'{note} · {rule}'**
+  String orderEditOptions(String note, String rule);
+
+  /// No description provided for @orderEditOptionsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh va almashtirish: {value}'**
+  String orderEditOptionsSpoken(String value);
+
+  /// No description provided for @substitutionShortSimilar.
+  ///
+  /// In uz, this message translates to:
+  /// **'o\'xshashiga almashtirish'**
+  String get substitutionShortSimilar;
+
+  /// No description provided for @substitutionShortContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'almashtirishdan oldin qo\'ng\'iroq'**
+  String get substitutionShortContact;
+
+  /// No description provided for @substitutionShortRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'yo\'q bo\'lsa — olib tashlash'**
+  String get substitutionShortRemove;
+
+  /// No description provided for @orderEditRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} — buyurtmadan olib tashlandi'**
+  String orderEditRemoved(String name);
+
+  /// No description provided for @orderEditRestored.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} yana buyurtmada'**
+  String orderEditRestored(String name);
+
+  /// No description provided for @orderEditLineSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {quantity}, {sum}'**
+  String orderEditLineSpoken(String name, String quantity, String sum);
+
+  /// No description provided for @orderEditLineNewSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, joriy narxdagi yangi mahsulot, {quantity}, {sum}'**
+  String orderEditLineNewSpoken(String name, String quantity, String sum);
+
+  /// No description provided for @orderChangeAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'+ {name}, {quantity}'**
+  String orderChangeAdded(String name, String quantity);
+
+  /// No description provided for @orderChangeRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'− {name}'**
+  String orderChangeRemoved(String name);
+
+  /// No description provided for @orderChangeQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: {from} → {to}'**
+  String orderChangeQuantity(String name, String from, String to);
+
+  /// No description provided for @orderChangeNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: izoh «{note}»'**
+  String orderChangeNote(String name, String note);
+
+  /// No description provided for @orderChangeNoNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: izohsiz'**
+  String orderChangeNoNote(String name);
+
+  /// No description provided for @orderChangeRule.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: {rule}'**
+  String orderChangeRule(String name, String rule);
+
+  /// No description provided for @orderChangeWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish istagi: «{wish}»'**
+  String orderChangeWish(String wish);
+
+  /// No description provided for @orderChangeNoWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish istagi olib tashlandi'**
+  String get orderChangeNoWish;
 
   /// No description provided for @orderAddProduct.
   ///
@@ -3949,12 +4165,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmaga qo\'shish'**
   String get orderAddTitle;
-
-  /// No description provided for @orderAddAlreadyIn.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bu mahsulot buyurtmada bor, uni o\'zgartirishingiz mumkin'**
-  String get orderAddAlreadyIn;
 
   /// No description provided for @orderAddFull.
   ///
@@ -7975,6 +8185,132 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtma № {number} bo\'yicha savolga javob vaqti tugadi'**
   String orderQuestionsExpiredAnnounced(int number);
+
+  /// No description provided for @orderEditInfoAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlangan va tez orada xarid qilishni boshlaydi — shundan keyin buyurtmani o\'zgartirib bo\'lmaydi. O\'zgarishlarni darhol saqlang. Buyurtmadagi mahsulotlar narxi o\'zgarmaydi.'**
+  String get orderEditInfoAssigned;
+
+  /// No description provided for @orderEditLeaveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamasdan chiqasizmi?'**
+  String get orderEditLeaveTitle;
+
+  /// No description provided for @orderEditLeaveCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta o\'zgarish saqlanmaydi:'**
+  String orderEditLeaveCount(int count);
+
+  /// No description provided for @orderEditKeepEditing.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirishni davom ettirish'**
+  String get orderEditKeepEditing;
+
+  /// No description provided for @orderEditLeave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamasdan chiqish'**
+  String get orderEditLeave;
+
+  /// No description provided for @orderEditLockedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi xarid qilishni boshladi'**
+  String get orderEditLockedTitle;
+
+  /// No description provided for @orderEditLockedCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilindi'**
+  String get orderEditLockedCancelled;
+
+  /// No description provided for @orderEditLockedText.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi. Muhim narsa bo\'lsa, qo\'llab-quvvatlash xizmatiga qo\'ng\'iroq qiling.'**
+  String get orderEditLockedText;
+
+  /// No description provided for @orderEditLockedTextNoPhone.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarishlar saqlanmadi — buyurtma avvalgidek qoldi.'**
+  String get orderEditLockedTextNoPhone;
+
+  /// No description provided for @orderEditLost.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima saqlanmadi'**
+  String get orderEditLost;
+
+  /// No description provided for @orderCallSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llab-quvvatlashga qo\'ng\'iroq qilish'**
+  String get orderCallSupport;
+
+  /// No description provided for @orderEditLockedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmadi: {title}. Saqlanmagan o\'zgarishlar: {count}'**
+  String orderEditLockedSpoken(String title, int count);
+
+  /// No description provided for @orderPickAllSections.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha bo\'limlar'**
+  String get orderPickAllSections;
+
+  /// No description provided for @orderPickSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, bo\'lim'**
+  String orderPickSection(String name);
+
+  /// No description provided for @orderPickAlreadyIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada bor'**
+  String get orderPickAlreadyIn;
+
+  /// No description provided for @orderPickAddedNow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir qo\'shildi'**
+  String get orderPickAddedNow;
+
+  /// No description provided for @orderPickAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish: {name}'**
+  String orderPickAdd(String name);
+
+  /// No description provided for @orderPickRowSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {unit} uchun {price}'**
+  String orderPickRowSpoken(String name, String price, String unit);
+
+  /// No description provided for @orderPickInOrderSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, buyurtmada {quantity}'**
+  String orderPickInOrderSpoken(String name, String quantity);
+
+  /// No description provided for @orderPickAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shildi: {count} ta mahsulot'**
+  String orderPickAdded(int count);
+
+  /// No description provided for @orderPickAddedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shildi: {name}, {quantity}. Qo\'shilgan mahsulotlar: {count}'**
+  String orderPickAddedSpoken(String name, String quantity, int count);
 }
 
 class _AppLocalizationsDelegate

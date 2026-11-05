@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
-import '../../catalog/domain/catalog.dart';
 import 'order_edit_screen.dart';
 import 'order_product_picker.dart';
 import 'orders_list_screen.dart';
@@ -38,31 +37,24 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerOrderEditPattern,
       name: 'customer-order-edit',
-      // A product picked by a picker opened alone comes along (`DL-52` (1)).
       pageBuilder: (BuildContext context, GoRouterState state) => appPage(
         state,
-        OrderEditScreen(
-          orderId: state.pathParameters['order']!.toLowerCase(),
-          adding: switch (state.extra) {
-            final CatalogProduct product => product,
-            _ => null,
-          },
-        ),
+        OrderEditScreen(orderId: state.pathParameters['order']!.toLowerCase()),
       ),
     ),
     GoRoute(
       path: AppPaths.customerOrderAddPattern,
       name: 'customer-order-add',
-      // The products the editor keeps come along, to mark them; opened by
-      // its address alone, the picker reads them from the order.
+      // The picker adds to the editor's draft, so only the editor opens it;
+      // opened by its address alone it gives way to the editor (`DL-132`).
+      redirect: (BuildContext context, GoRouterState state) =>
+          state.extra is OrderPickerOpening
+          ? null
+          : AppPaths.customerOrderEdit(state.pathParameters['order']!),
       pageBuilder: (BuildContext context, GoRouterState state) => appPage(
         state,
         OrderProductPickerScreen(
           orderId: state.pathParameters['order']!.toLowerCase(),
-          productIds: switch (state.extra) {
-            final Set<String> ids => ids,
-            _ => null,
-          },
         ),
       ),
     ),
