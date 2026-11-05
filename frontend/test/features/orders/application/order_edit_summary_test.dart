@@ -10,6 +10,7 @@ import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/fake_catalog_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 
 const Duration _quiet = Duration(milliseconds: 400);
@@ -308,4 +309,99 @@ void main() {
     expect(orders.previewCalls, hasLength(1));
     expect(_summary(container).shortfallUzs, 0);
   });
+
+  testWidgets('a refused minimum stays shown while the preview has failed', (
+    WidgetTester tester,
+  ) async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+      ..previewFailure = const NetworkFailure();
+    final ProviderContainer container = await _open(tester, orders);
+
+    _draft(container).step(lineTomato, up: true);
+    await tester.pump(_quiet);
+    expect(_summary(container).failed, isTrue);
+    expect(_summary(container).shortfallUzs, 0);
+
+    container
+        .read(orderEditSummaryProvider(orderOne).notifier)
+        .refusedMinimum(minimumUzs: 50000, shortfallUzs: 15000);
+
+    expect(_summary(container).failed, isTrue);
+    expect(_summary(container).shortfallUzs, 15000);
+
+    // The next failure clears it.
+    orders.previewFailure = const NetworkFailure();
+    _draft(container).step(lineTomato, up: true);
+    await tester.pump(_quiet);
+    expect(_summary(container).failed, isTrue);
+    expect(_summary(container).shortfallUzs, 0);
+  });
+
+  testWidgets("the order reloading as the draft brings the order's sums back", (
+    WidgetTester tester,
+  ) async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+      ..previews = (String id, List<OrderEditLine> lines) =>
+          editPreviewJson(merchandise: 42600, total: 62600, change: 7000);
+    final ProviderContainer container = await _open(tester, orders);
+
+    _draft(container).step(lineTomato, up: true);
+    await tester.pump(_quiet);
+    expect(_summary(container).shown.totalChangeUzs, 7000);
+
+    // The save went through and its answer was lost: the order reloads
+    // holding what the draft holds.
+    orders.rows = <Map<String, Object?>>[
+      customerOrderJson(
+        lines: <Object?>[
+          orderLineJson(quantity: '2.000'),
+          orderLineJson(
+            id: lineBread,
+            productId: productBread,
+            unit: 'piece',
+            quantity: '2',
+          ),
+        ],
+      ),
+    ];
+    container.invalidate(customerOrderProvider(orderOne));
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(_summary(container).shown.totalChangeUzs, 0);
+    expect(_summary(container).shown.totalUzs, 55600);
+    expect(_summary(container).waiting, isFalse);
+    expect(_summary(container).failed, isFalse);
+  });
+
+  testWidgets(
+    'a draft of more than 100 lines is not priced and sends nothing',
+    (WidgetTester tester) async {
+      String id(int group, int i) =>
+          '0192f0a0-0000-7000-800$group-${i.toString().padLeft(12, '0')}';
+      final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository(
+        orders: <Map<String, Object?>>[
+          customerOrderJson(
+            lines: <Object?>[
+              for (int i = 0; i < orderMaxLines; i++)
+                orderLineJson(
+                  id: id(1, i),
+                  productId: id(2, i),
+                  unit: 'piece',
+                  quantity: '1',
+                ),
+            ],
+          ),
+        ],
+      );
+      final ProviderContainer container = await _open(tester, orders);
+
+      _draft(container).add(catalogProduct(id: productMilk));
+      await tester.pump(_quiet);
+
+      expect(orders.previewCalls, isEmpty);
+      expect(_summary(container).failed, isTrue);
+      expect(_summary(container).waiting, isFalse);
+    },
+  );
 }

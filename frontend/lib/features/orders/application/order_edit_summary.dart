@@ -23,6 +23,7 @@ final class EditSummary {
     this.waiting = false,
     this.failed = false,
     this.locked = false,
+    this.refused = false,
   });
 
   /// The last answer, or the order's own sums while the lines are the
@@ -38,20 +39,26 @@ final class EditSummary {
   /// The server answered `order_editing_locked`.
   final bool locked;
 
+  /// [shown] carries the shortfall a refused save named, which stands until
+  /// the next answer or failure.
+  final bool refused;
+
   /// What the order's minimum still lacks; nothing when the sums are not
-  /// known.
-  int get shortfallUzs => failed ? 0 : shown.minimumShortfallUzs;
+  /// known, unless a refused save named it.
+  int get shortfallUzs => failed && !refused ? 0 : shown.minimumShortfallUzs;
 
   EditSummary copyWith({
     OrderEditPreview? shown,
     bool? waiting,
     bool? failed,
     bool? locked,
+    bool? refused,
   }) => EditSummary(
     shown: shown ?? this.shown,
     waiting: waiting ?? this.waiting,
     failed: failed ?? this.failed,
     locked: locked ?? this.locked,
+    refused: refused ?? this.refused,
   );
 }
 
@@ -79,6 +86,12 @@ class OrderEditSummaryController extends Notifier<EditSummary> {
       orderDraftProvider(orderId).select((OrderDraft draft) => draft.version),
       (int? _, int _) => _changed(),
     );
+    ref.listen<AsyncValue<CustomerOrder>>(customerOrderProvider(orderId), (
+      AsyncValue<CustomerOrder>? _,
+      AsyncValue<CustomerOrder> after,
+    ) {
+      _reloaded(after);
+    });
     final bool changed = ref.read(orderDraftProvider(orderId)).version != 0;
     if (changed) {
       _timer = Timer(_quiet, _fire);
@@ -105,7 +118,26 @@ class OrderEditSummaryController extends Notifier<EditSummary> {
         minimumOrderUzs: minimumUzs,
         minimumShortfallUzs: shortfallUzs,
       ),
+      refused: true,
     );
+  }
+
+  /// The order loaded again holding what the draft holds — a save whose
+  /// answer was lost went through: its own sums stand, not the last
+  /// answer's change.
+  void _reloaded(AsyncValue<CustomerOrder> after) {
+    final CustomerOrder? order = after.value;
+    if (order == null || after.isLoading || state.locked) {
+      return;
+    }
+    if (!linesChange(ref.read(orderDraftProvider(orderId)), order)) {
+      state = state.copyWith(
+        shown: OrderEditPreview.ofOrder(order),
+        waiting: false,
+        failed: false,
+        refused: false,
+      );
+    }
   }
 
   void _changed() {
@@ -133,8 +165,11 @@ class OrderEditSummaryController extends Notifier<EditSummary> {
     }
     final OrderDraft draft = ref.read(orderDraftProvider(orderId));
     final List<DraftLine> kept = draft.kept;
-    if (kept.isEmpty || kept.any((DraftLine line) => !line.quantityValid)) {
-      state = state.copyWith(waiting: false, failed: true);
+    // More lines than an order holds cannot be priced (`DL-132` (3)).
+    if (kept.isEmpty ||
+        kept.length > orderMaxLines ||
+        kept.any((DraftLine line) => !line.quantityValid)) {
+      state = state.copyWith(waiting: false, failed: true, refused: false);
       return;
     }
     if (!linesChange(draft, order)) {
@@ -142,6 +177,7 @@ class OrderEditSummaryController extends Notifier<EditSummary> {
         shown: OrderEditPreview.ofOrder(order),
         waiting: false,
         failed: false,
+        refused: false,
       );
       return;
     }
@@ -186,14 +222,19 @@ class OrderEditSummaryController extends Notifier<EditSummary> {
         ref
             .read(orderDraftProvider(orderId).notifier)
             .setUnavailable(const <String>{});
-        state = state.copyWith(shown: answer, waiting: false, failed: false);
+        state = state.copyWith(
+          shown: answer,
+          waiting: false,
+          failed: false,
+          refused: false,
+        );
       } else {
         if (failure is ApiRefusal && failure.code == 'product_unavailable') {
           ref
               .read(orderDraftProvider(orderId).notifier)
               .setUnavailable(_named(failure));
         }
-        state = state.copyWith(waiting: false, failed: true);
+        state = state.copyWith(waiting: false, failed: true, refused: false);
       }
     }
     if (_again) {
