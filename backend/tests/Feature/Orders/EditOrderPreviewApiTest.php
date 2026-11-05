@@ -193,6 +193,21 @@ final class EditOrderPreviewApiTest extends TestCase
             ->assertStatus(429)->assertJsonPath('code', 'rate_limited');
     }
 
+    public function test_thirty_ratings_do_not_use_up_the_edits(): void
+    {
+        $line = [['product_id' => $this->tomatoLine->product_id, 'quantity' => '3']];
+        $token = $this->token();
+
+        // The rating has its own bucket (`order-rating`); whatever it answers,
+        // its thirty calls leave the edit's thirty untouched.
+        for ($i = 0; $i < 30; $i++) {
+            $this->withToken($token)->postJson('/api/v1/customer/orders/'.$this->order->id.'/rating', ['stars' => 5]);
+        }
+        $this->withToken($token)
+            ->putJson('/api/v1/customer/orders/'.$this->order->id.'/items', ['items' => $line, 'delivery_time_note' => null])
+            ->assertOk();
+    }
+
     /**
      * @param  list<array<string, mixed>>  $items
      */
