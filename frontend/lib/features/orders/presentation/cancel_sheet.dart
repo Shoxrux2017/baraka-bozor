@@ -15,6 +15,7 @@ import '../../../core/widgets/periodic_refresh.dart';
 import '../application/cancel_draft.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
+import 'cancel_sheet_form.dart';
 
 /// How the cancel sheet ended (`DL-133`): the order is cancelled, a request
 /// for its cancellation is with the Operator, or the Customer chose to edit
@@ -59,6 +60,10 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
   final FocusNode _focus = FocusNode();
   Timer? _closing;
 
+  /// What the Customer chose and wrote; the controller keeps a copy so a
+  /// closed sheet shows it again.
+  late CancelDraft _draft = _controller.draft;
+
   /// The Operator's question came up: a 422 on the reason.
   bool _forcedRequest = false;
 
@@ -93,10 +98,28 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
   }
 
   void _remember() {
-    final OrderCancelController controller = _controller;
-    if (controller.draft.text != _words.text) {
-      controller.draft = controller.draft.copyWith(text: _words.text);
+    if (_draft.text != _words.text) {
+      _change(_draft.copyWith(text: _words.text));
     }
+  }
+
+  void _change(CancelDraft draft) {
+    if (!mounted || _held != null || _done) {
+      return;
+    }
+    _controller.draft = draft;
+    setState(() => _draft = draft);
+  }
+
+  /// The tip's «Изменить заказ»: the sheet ends and the order page opens the
+  /// editor, so the cancel's draft is not kept.
+  void _edit() {
+    if (_held != null || _done) {
+      return;
+    }
+    _focus.unfocus();
+    _controller.draft = CancelDraft.empty;
+    Navigator.of(context).pop(CancelSheetExit.edit);
   }
 
   Future<void> _send(CustomerOrder order, CancelSheetMode mode) async {
@@ -113,10 +136,7 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
     if (again) {
       reason = controller.unconfirmedReason;
     } else {
-      final String composed = composeCancelReason(
-        controller.draft,
-        (CancelChip chip) => cancelChipLabel(l10n, chip),
-      );
+      final String composed = _composed(l10n);
       if (cancelBlock(composed, request: request) != null) {
         return;
       }
@@ -176,6 +196,11 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
       }
     });
   }
+
+  String _composed(AppLocalizations l10n) => composeCancelReason(
+    _draft,
+    (CancelChip chip) => cancelChipLabel(l10n, chip),
+  );
 
   void _keep() {
     _controller.draft = CancelDraft.empty;
@@ -285,70 +310,65 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: KitColors.line,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Semantics(
-                              header: true,
-                              child: Text(
-                                title,
-                                key: const ValueKey<String>(
-                                  'cancel-sheet-title',
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                  color: KitColors.ink,
-                                ),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            key: const ValueKey<String>('cancel-sheet-close'),
-                            tooltip: MaterialLocalizations.of(context)
-                                .closeButtonTooltip,
-                            constraints: const BoxConstraints(
-                              minWidth: 44,
-                              minHeight: 44,
-                            ),
-                            icon: const Icon(Icons.close, color: KitColors.ink),
-                            onPressed: busy || _done
-                                ? null
-                                : () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: KitColors.line,
-                      ),
-                    ],
-                  ),
-                ),
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: KitColors.line,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Semantics(
+                                header: true,
+                                child: Text(
+                                  title,
+                                  key: const ValueKey<String>(
+                                    'cancel-sheet-title',
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    color: KitColors.ink,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              key: const ValueKey<String>('cancel-sheet-close'),
+                              tooltip: MaterialLocalizations.of(context)
+                                  .closeButtonTooltip,
+                              constraints: const BoxConstraints(
+                                minWidth: 44,
+                                minHeight: 44,
+                              ),
+                              icon: const Icon(
+                                Icons.close,
+                                color: KitColors.ink,
+                              ),
+                              onPressed: busy || _done
+                                  ? null
+                                  : () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: KitColors.line,
+                        ),
                         if (mode == CancelSheetMode.closed)
                           _ClosedStrip(text: _closedWords(l10n, order))
                         else if (retry) ...<Widget>[
@@ -382,7 +402,16 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
                             ),
                           KeyedSubtree(
                             key: const ValueKey<String>('cancel-field'),
-                            child: _field(l10n, request),
+                            child: CancelReasonForm(
+                              draft: _draft,
+                              request: request,
+                              canEdit: order.canEdit,
+                              onChanged: _change,
+                              onEdit: _edit,
+                              text: _words,
+                              focus: _focus,
+                              locked: holding,
+                            ),
                           ),
                         ],
                         if (strip)
@@ -422,55 +451,6 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
     return l10n.errorOrderCancellationNotAllowed;
   }
 
-  Widget _field(AppLocalizations l10n, bool request) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      const SizedBox(height: 16),
-      Text(
-        l10n.cancelFieldOwn,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: KitColors.ink,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Semantics(
-        label: request
-            ? l10n.cancelFieldRequestSpoken
-            : l10n.cancelFieldDirectSpoken,
-        child: TextField(
-          key: const ValueKey<String>('cancel-reason'),
-          controller: _words,
-          focusNode: _focus,
-          readOnly: _held != null || _done,
-          minLines: 1,
-          maxLines: 4,
-          style: const TextStyle(
-            fontSize: 15,
-            height: 1.4,
-            color: KitColors.ink,
-          ),
-          decoration: InputDecoration(
-            hintText: l10n.cancelFieldOwnHint,
-            hintStyle: const TextStyle(color: KitColors.muted),
-            filled: true,
-            fillColor: KitColors.field,
-            counterText: '',
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
-
   Widget _footer(
     AppLocalizations l10n,
     CustomerOrder order,
@@ -483,6 +463,9 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
     final bool sending = _held != null && !_done;
     final bool closed = mode == CancelSheetMode.closed;
     final bool retry = mode == CancelSheetMode.retry;
+    final CancelBlock? block = retry || sending || _done
+        ? null
+        : cancelBlock(_composed(l10n), request: request);
 
     final Widget keep = Opacity(
       opacity: sending || _done ? 0.55 : 1,
@@ -551,6 +534,14 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
           ),
         ],
       );
+    } else if (block != null) {
+      label = Text(
+        block == CancelBlock.empty
+            ? l10n.cancelSheetNeedReason
+            : l10n.cancelSheetTooLong(cancelReasonLimit),
+        textAlign: TextAlign.center,
+        style: sendStyle,
+      );
     } else {
       label = Text(
         retry
@@ -568,11 +559,17 @@ class _CancelSheetState extends ConsumerState<CancelSheet> {
       style: FilledButton.styleFrom(
         backgroundColor: KitColors.danger,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: KitColors.buttonOff,
+        disabledForegroundColor: KitColors.muted,
         minimumSize: const Size.fromHeight(54),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
-      onPressed: sending || _done ? () {} : () => _send(order, mode),
+      onPressed: sending || _done
+          ? () {}
+          : block != null
+          ? null
+          : () => _send(order, mode),
       child: label,
     );
 

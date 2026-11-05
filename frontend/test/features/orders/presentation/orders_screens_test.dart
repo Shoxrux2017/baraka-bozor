@@ -393,6 +393,7 @@ void main() {
 
       orders.answer = customerOrderJson(status: 'cancelled', changeable: false);
       await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-more'));
       await tester.enterText(byKey('cancel-reason'), '  Kerak emas ');
       await tapAndSettle(tester, byKey('cancel-confirm'));
 
@@ -409,6 +410,7 @@ void main() {
 
         orders.failure = const NetworkFailure();
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
         // The sheet itself is the retry: it stays, and says what is unknown.
@@ -446,6 +448,7 @@ void main() {
         );
         final Completer<void> listHold = orders.holdList = Completer<void>();
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
         await backToList(tester);
@@ -469,6 +472,7 @@ void main() {
       orders.failure = const NetworkFailure();
       orders.holdList = Completer<void>();
       await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-more'));
       await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
       await tapAndSettle(tester, byKey('cancel-confirm'));
       // The sheet stays on its retry face; the Customer leaves it by hand.
@@ -492,6 +496,7 @@ void main() {
           cancellationRequest: 'pending',
         );
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
 
@@ -538,6 +543,7 @@ void main() {
       );
       orders.holdList = Completer<void>();
       await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-more'));
       await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
       await tapAndSettle(tester, byKey('cancel-confirm'));
       await backToList(tester);
