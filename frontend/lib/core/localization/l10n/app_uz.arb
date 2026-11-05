@@ -1187,6 +1187,146 @@
   "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
   "orderEditSaving": "Saqlanmoqda",
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
+  "orderEditCloseSpoken": "Buyurtmani o'zgartirishni yopish",
+  "orderEditComment": "Izoh",
+  "orderEditOptions": "{note} · {rule}",
+  "@orderEditOptions": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      },
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditOptionsSpoken": "Izoh va almashtirish: {value}",
+  "@orderEditOptionsSpoken": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutionShortSimilar": "o'xshashiga almashtirish",
+  "substitutionShortContact": "almashtirishdan oldin qo'ng'iroq",
+  "substitutionShortRemove": "yo'q bo'lsa — olib tashlash",
+  "orderEditRemoved": "{name} — buyurtmadan olib tashlandi",
+  "@orderEditRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRestored": "{name} yana buyurtmada",
+  "@orderEditRestored": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditLineSpoken": "{name}, {quantity}, {sum}",
+  "@orderEditLineSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditLineNewSpoken": "{name}, joriy narxdagi yangi mahsulot, {quantity}, {sum}",
+  "@orderEditLineNewSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeAdded": "+ {name}, {quantity}",
+  "@orderChangeAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeRemoved": "− {name}",
+  "@orderChangeRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeQuantity": "{name}: {from} → {to}",
+  "@orderChangeQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNote": "{name}: izoh «{note}»",
+  "@orderChangeNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNoNote": "{name}: izohsiz",
+  "@orderChangeNoNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeRule": "{name}: {rule}",
+  "@orderChangeRule": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeWish": "Yetkazish istagi: «{wish}»",
+  "@orderChangeWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNoWish": "Yetkazish istagi olib tashlandi",
   "orderAddProduct": "Mahsulot qo'shish",
   "orderAddTitle": "Buyurtmaga qo'shish",
   "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",

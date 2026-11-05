@@ -428,12 +428,12 @@ void main() {
 
       expect(
         find.descendant(
-          of: byKey('edit-remove-$lineTomato'),
+          of: byKey('edit-restore-$lineTomato'),
           matching: find.text(l10n(tester).orderEditKeepLine),
         ),
         findsOneWidget,
       );
-      await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
+      await tapAndSettle(tester, byKey('edit-restore-$lineTomato'));
       expect(byKey('edit-adds-$lineTomato'), findsOneWidget);
       orders.answer = customerOrderJson(note: 'Ertalab');
       await tapAndSettle(tester, byKey('edit-save'));
@@ -728,7 +728,7 @@ void main() {
 
     // One added in its place, then the line kept again: one too many.
     await addMilk(tester);
-    await tapAndSettle(tester, byKey('edit-remove-${id(1, 99)}'));
+    await tapAndSettle(tester, byKey('edit-restore-${id(1, 99)}'));
     await tester.scrollUntilVisible(
       byKey('edit-full'),
       300,

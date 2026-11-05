@@ -2225,6 +2225,89 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderEditClosed => 'Этот заказ уже нельзя изменить';
 
   @override
+  String get orderEditCloseSpoken => 'Закрыть изменение заказа';
+
+  @override
+  String get orderEditComment => 'Комментарий';
+
+  @override
+  String orderEditOptions(String note, String rule) {
+    return '$note · $rule';
+  }
+
+  @override
+  String orderEditOptionsSpoken(String value) {
+    return 'Комментарий и замена: $value';
+  }
+
+  @override
+  String get substitutionShortSimilar => 'замена похожим';
+
+  @override
+  String get substitutionShortContact => 'позвонить перед заменой';
+
+  @override
+  String get substitutionShortRemove => 'нет — убрать';
+
+  @override
+  String orderEditRemoved(String name) {
+    return '$name — убрали из заказа';
+  }
+
+  @override
+  String orderEditRestored(String name) {
+    return '$name снова в заказе';
+  }
+
+  @override
+  String orderEditLineSpoken(String name, String quantity, String sum) {
+    return '$name, $quantity, $sum';
+  }
+
+  @override
+  String orderEditLineNewSpoken(String name, String quantity, String sum) {
+    return '$name, новый товар по текущей цене, $quantity, $sum';
+  }
+
+  @override
+  String orderChangeAdded(String name, String quantity) {
+    return '+ $name, $quantity';
+  }
+
+  @override
+  String orderChangeRemoved(String name) {
+    return '− $name';
+  }
+
+  @override
+  String orderChangeQuantity(String name, String from, String to) {
+    return '$name: $from → $to';
+  }
+
+  @override
+  String orderChangeNote(String name, String note) {
+    return '$name: комментарий «$note»';
+  }
+
+  @override
+  String orderChangeNoNote(String name) {
+    return '$name: без комментария';
+  }
+
+  @override
+  String orderChangeRule(String name, String rule) {
+    return '$name: $rule';
+  }
+
+  @override
+  String orderChangeWish(String wish) {
+    return 'Пожелание к доставке: «$wish»';
+  }
+
+  @override
+  String get orderChangeNoWish => 'Пожелание к доставке убрано';
+
+  @override
   String get orderAddProduct => 'Добавить товар';
 
   @override

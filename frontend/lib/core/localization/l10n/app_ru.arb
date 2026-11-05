@@ -1094,6 +1094,146 @@
   "orderEditAtLeastOne": "В заказе должен остаться хотя бы один товар",
   "orderEditSaving": "Сохраняем",
   "orderEditClosed": "Этот заказ уже нельзя изменить",
+  "orderEditCloseSpoken": "Закрыть изменение заказа",
+  "orderEditComment": "Комментарий",
+  "orderEditOptions": "{note} · {rule}",
+  "@orderEditOptions": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      },
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditOptionsSpoken": "Комментарий и замена: {value}",
+  "@orderEditOptionsSpoken": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutionShortSimilar": "замена похожим",
+  "substitutionShortContact": "позвонить перед заменой",
+  "substitutionShortRemove": "нет — убрать",
+  "orderEditRemoved": "{name} — убрали из заказа",
+  "@orderEditRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditRestored": "{name} снова в заказе",
+  "@orderEditRestored": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditLineSpoken": "{name}, {quantity}, {sum}",
+  "@orderEditLineSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "orderEditLineNewSpoken": "{name}, новый товар по текущей цене, {quantity}, {sum}",
+  "@orderEditLineNewSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeAdded": "+ {name}, {quantity}",
+  "@orderChangeAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeRemoved": "− {name}",
+  "@orderChangeRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeQuantity": "{name}: {from} → {to}",
+  "@orderChangeQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNote": "{name}: комментарий «{note}»",
+  "@orderChangeNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNoNote": "{name}: без комментария",
+  "@orderChangeNoNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeRule": "{name}: {rule}",
+  "@orderChangeRule": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeWish": "Пожелание к доставке: «{wish}»",
+  "@orderChangeWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "orderChangeNoWish": "Пожелание к доставке убрано",
   "orderAddProduct": "Добавить товар",
   "orderAddTitle": "Добавить в заказ",
   "orderAddAlreadyIn": "Этот товар уже в заказе — его можно изменить",

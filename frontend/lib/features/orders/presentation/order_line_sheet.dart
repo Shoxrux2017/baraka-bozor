@@ -12,9 +12,9 @@ import '../application/order_draft.dart';
 export '../application/order_draft.dart' show OrderLineChoice;
 
 /// Opens the options of one editor line (drawing 29и): its quantity, note
-/// and rule, on copies of the line's values. "Сохранить" checks them and
-/// answers the [OrderLineChoice]; closing the sheet any other way answers
-/// `null` and changes nothing. With [onRemove] the sheet offers to take the
+/// and rule, on copies of the line's values. «Готово» checks them and answers
+/// the [OrderLineChoice]; × «Отмена», or closing the sheet any other way,
+/// answers `null` and changes nothing (`DL-132`). With [onRemove] the sheet offers to take the
 /// line out of the order, which closes it and calls [onRemove]; [removeKey]
 /// is that button's key.
 Future<OrderLineChoice?> showOrderLineSheet(
@@ -127,18 +127,34 @@ class _OrderLineSheetState extends State<_OrderLineSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              Semantics(
-                header: true,
-                child: Text(
-                  widget.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.ink,
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        widget.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: KitColors.ink,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  IconButton(
+                    key: const ValueKey<String>('edit-options-cancel'),
+                    tooltip: l10n.cancelButton,
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                    icon: const Icon(Icons.close, color: KitColors.ink),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               LineOptionsFields(
                 unit: widget.unit,
                 quantity: _quantity,
@@ -160,7 +176,7 @@ class _OrderLineSheetState extends State<_OrderLineSheet> {
                 ),
                 onPressed: _done,
                 child: Text(
-                  l10n.saveButton,
+                  l10n.doneButton,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

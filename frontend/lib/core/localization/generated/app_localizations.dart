@@ -3938,6 +3938,120 @@ abstract class AppLocalizations {
   /// **'Bu buyurtmani endi o\'zgartirib bo\'lmaydi'**
   String get orderEditClosed;
 
+  /// No description provided for @orderEditCloseSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani o\'zgartirishni yopish'**
+  String get orderEditCloseSpoken;
+
+  /// No description provided for @orderEditComment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh'**
+  String get orderEditComment;
+
+  /// No description provided for @orderEditOptions.
+  ///
+  /// In uz, this message translates to:
+  /// **'{note} · {rule}'**
+  String orderEditOptions(String note, String rule);
+
+  /// No description provided for @orderEditOptionsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh va almashtirish: {value}'**
+  String orderEditOptionsSpoken(String value);
+
+  /// No description provided for @substitutionShortSimilar.
+  ///
+  /// In uz, this message translates to:
+  /// **'o\'xshashiga almashtirish'**
+  String get substitutionShortSimilar;
+
+  /// No description provided for @substitutionShortContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'almashtirishdan oldin qo\'ng\'iroq'**
+  String get substitutionShortContact;
+
+  /// No description provided for @substitutionShortRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'yo\'q bo\'lsa — olib tashlash'**
+  String get substitutionShortRemove;
+
+  /// No description provided for @orderEditRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} — buyurtmadan olib tashlandi'**
+  String orderEditRemoved(String name);
+
+  /// No description provided for @orderEditRestored.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} yana buyurtmada'**
+  String orderEditRestored(String name);
+
+  /// No description provided for @orderEditLineSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {quantity}, {sum}'**
+  String orderEditLineSpoken(String name, String quantity, String sum);
+
+  /// No description provided for @orderEditLineNewSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, joriy narxdagi yangi mahsulot, {quantity}, {sum}'**
+  String orderEditLineNewSpoken(String name, String quantity, String sum);
+
+  /// No description provided for @orderChangeAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'+ {name}, {quantity}'**
+  String orderChangeAdded(String name, String quantity);
+
+  /// No description provided for @orderChangeRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'− {name}'**
+  String orderChangeRemoved(String name);
+
+  /// No description provided for @orderChangeQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: {from} → {to}'**
+  String orderChangeQuantity(String name, String from, String to);
+
+  /// No description provided for @orderChangeNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: izoh «{note}»'**
+  String orderChangeNote(String name, String note);
+
+  /// No description provided for @orderChangeNoNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: izohsiz'**
+  String orderChangeNoNote(String name);
+
+  /// No description provided for @orderChangeRule.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: {rule}'**
+  String orderChangeRule(String name, String rule);
+
+  /// No description provided for @orderChangeWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish istagi: «{wish}»'**
+  String orderChangeWish(String wish);
+
+  /// No description provided for @orderChangeNoWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish istagi olib tashlandi'**
+  String get orderChangeNoWish;
+
   /// No description provided for @orderAddProduct.
   ///
   /// In uz, this message translates to:

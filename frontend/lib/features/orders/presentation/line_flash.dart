@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/kit_colors.dart';
 
-/// A wash behind [child] that reaches 6 px past it and fades out in 1400 ms
-/// each time [flash] changes after the first build, to show a line the
-/// Customer's answer changed (`DL-130`). With reduced motion nothing flashes.
+/// A wash of [color] behind [child] that reaches 6 px past it and fades out in
+/// 1400 ms each time [flash] changes after the first build, to show a line
+/// the Customer's answer changed (`DL-130`) or the editor brought in
+/// (`DL-132`). With reduced motion nothing flashes.
 class LineFlash extends StatefulWidget {
-  const LineFlash({required this.flash, required this.child, super.key});
+  const LineFlash({
+    required this.flash,
+    required this.child,
+    this.color = KitColors.lineFlash,
+    super.key,
+  });
 
   final int flash;
+  final Color color;
   final Widget child;
 
   @override
@@ -55,8 +62,8 @@ class _LineFlashState extends State<LineFlash>
                 key: const ValueKey<String>('line-flash'),
                 decoration: BoxDecoration(
                   color: Color.lerp(
-                    KitColors.lineFlash,
-                    KitColors.lineFlash.withValues(alpha: 0),
+                    widget.color,
+                    widget.color.withValues(alpha: 0),
                     Curves.easeOut.transform(_controller.value),
                   ),
                   borderRadius: BorderRadius.circular(12),

@@ -2194,6 +2194,89 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderEditClosed => 'Bu buyurtmani endi o\'zgartirib bo\'lmaydi';
 
   @override
+  String get orderEditCloseSpoken => 'Buyurtmani o\'zgartirishni yopish';
+
+  @override
+  String get orderEditComment => 'Izoh';
+
+  @override
+  String orderEditOptions(String note, String rule) {
+    return '$note · $rule';
+  }
+
+  @override
+  String orderEditOptionsSpoken(String value) {
+    return 'Izoh va almashtirish: $value';
+  }
+
+  @override
+  String get substitutionShortSimilar => 'o\'xshashiga almashtirish';
+
+  @override
+  String get substitutionShortContact => 'almashtirishdan oldin qo\'ng\'iroq';
+
+  @override
+  String get substitutionShortRemove => 'yo\'q bo\'lsa — olib tashlash';
+
+  @override
+  String orderEditRemoved(String name) {
+    return '$name — buyurtmadan olib tashlandi';
+  }
+
+  @override
+  String orderEditRestored(String name) {
+    return '$name yana buyurtmada';
+  }
+
+  @override
+  String orderEditLineSpoken(String name, String quantity, String sum) {
+    return '$name, $quantity, $sum';
+  }
+
+  @override
+  String orderEditLineNewSpoken(String name, String quantity, String sum) {
+    return '$name, joriy narxdagi yangi mahsulot, $quantity, $sum';
+  }
+
+  @override
+  String orderChangeAdded(String name, String quantity) {
+    return '+ $name, $quantity';
+  }
+
+  @override
+  String orderChangeRemoved(String name) {
+    return '− $name';
+  }
+
+  @override
+  String orderChangeQuantity(String name, String from, String to) {
+    return '$name: $from → $to';
+  }
+
+  @override
+  String orderChangeNote(String name, String note) {
+    return '$name: izoh «$note»';
+  }
+
+  @override
+  String orderChangeNoNote(String name) {
+    return '$name: izohsiz';
+  }
+
+  @override
+  String orderChangeRule(String name, String rule) {
+    return '$name: $rule';
+  }
+
+  @override
+  String orderChangeWish(String wish) {
+    return 'Yetkazish istagi: «$wish»';
+  }
+
+  @override
+  String get orderChangeNoWish => 'Yetkazish istagi olib tashlandi';
+
+  @override
   String get orderAddProduct => 'Mahsulot qo\'shish';
 
   @override
