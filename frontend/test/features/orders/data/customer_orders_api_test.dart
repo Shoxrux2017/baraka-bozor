@@ -512,6 +512,30 @@ void main() {
       );
     });
 
+    test('cancellation_note is read, null or words, and is required', () {
+      expect(
+        CustomerOrdersApi.parseOrder(customerOrderJson()).cancellationNote,
+        isNull,
+      );
+      expect(
+        CustomerOrdersApi.parseOrder(
+          customerOrderJson(
+            status: 'cancelled',
+            changeable: false,
+            cancellationNote: 'Передумал',
+          ),
+        ).cancellationNote,
+        'Передумал',
+      );
+      expect(
+        () => CustomerOrdersApi.parseOrder(
+          <String, Object?>{...customerOrderJson()}
+            ..remove('cancellation_note'),
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('an order off the contract is refused', () {
       for (final Map<String, Object?> broken in <Map<String, Object?>>[
         customerOrderJson(lines: <Object?>[orderLineJson(status: 'removed')]),

@@ -350,6 +350,7 @@ final class CustomerOrder {
     required this.totalKind,
     required this.address,
     required this.cancellationReason,
+    required this.cancellationNote,
     required this.cancellationRequest,
     required this.payment,
     required this.createdAt,
@@ -389,6 +390,9 @@ final class CustomerOrder {
   final TotalKind totalKind;
   final OrderAddress address;
   final CancellationReason? cancellationReason;
+
+  /// The Customer's own words for a cancelled order, or `null` (`DL-133`).
+  final String? cancellationNote;
 
   /// The order's latest cancellation request, or `null` when it has none.
   final CustomerCancellationRequest? cancellationRequest;

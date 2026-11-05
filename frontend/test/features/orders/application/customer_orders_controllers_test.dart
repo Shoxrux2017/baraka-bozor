@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/network/idempotency_key.dart';
 import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
+import 'package:baraka_bozor/features/orders/application/cancel_draft.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,7 +57,7 @@ void main() {
             changeable: false,
           );
         }
-        await cancelling.cancel(null);
+        await cancelling.cancel(null, request: false);
         return orders.cancels.last.$3;
       }
 
@@ -94,6 +95,76 @@ void main() {
     },
   );
 
+  test(
+    'a request kept unconfirmed says so and is sent again as it was',
+    () async {
+      final FakeCustomerOrdersRepository orders =
+          FakeCustomerOrdersRepository();
+      final ProviderContainer container = _container(orders);
+      addTearDown(container.dispose);
+      final OrderCancelController cancelling = container.read(
+        orderCancelProvider(orderOne).notifier,
+      );
+
+      orders.failure = const NetworkFailure();
+      await cancelling.cancel('Передумал', request: true);
+      expect(cancelling.unconfirmed, isTrue);
+      expect(cancelling.unconfirmedReason, 'Передумал');
+      expect(cancelling.unconfirmedRequest, isTrue);
+
+      orders.answer = customerOrderJson(status: 'cancelled', changeable: false);
+      await cancelling.cancel(null, request: false);
+      expect(orders.cancels[1].$2, 'Передумал');
+      expect(orders.cancels[1].$3, orders.cancels[0].$3);
+      expect(cancelling.unconfirmed, isFalse);
+      expect(cancelling.unconfirmedReason, isNull);
+      expect(cancelling.unconfirmedRequest, isFalse);
+    },
+  );
+
+  test('a needs-reason refusal loads the order again', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final ProviderContainer container = _container(orders);
+    addTearDown(container.dispose);
+    final ProviderSubscription<AsyncValue<CustomerOrder>> watch = container
+        .listen(customerOrderProvider(orderOne), (_, _) {});
+    addTearDown(watch.close);
+    await container.read(customerOrderProvider(orderOne).future);
+    int reads() =>
+        orders.loads.where((String l) => l == 'order:$orderOne').length;
+    final int before = reads();
+
+    orders.failure = const ApiRefusal(
+      ApiError(
+        status: 422,
+        code: 'validation_failed',
+        errors: <String, List<String>>{
+          'reason': <String>['required'],
+        },
+      ),
+    );
+    await container
+        .read(orderCancelProvider(orderOne).notifier)
+        .cancel(null, request: false);
+    await container.read(customerOrderProvider(orderOne).future);
+    expect(reads(), before + 1);
+  });
+
+  test('the draft lives as long as the controller', () {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final ProviderContainer container = _container(orders);
+    addTearDown(container.dispose);
+    final OrderCancelController cancelling = container.read(
+      orderCancelProvider(orderOne).notifier,
+    );
+    expect(cancelling.draft, CancelDraft.empty);
+    cancelling.draft = const CancelDraft(chip: CancelChip.tooSlow, text: 'x');
+    expect(
+      container.read(orderCancelProvider(orderOne).notifier).draft.text,
+      'x',
+    );
+  });
+
   test('a retry sends the reason of the attempt it repeats', () async {
     final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
     final ProviderContainer container = _container(orders);
@@ -103,12 +174,12 @@ void main() {
     );
 
     orders.failure = const NetworkFailure();
-    await cancelling.cancel('Kerak emas');
+    await cancelling.cancel('Kerak emas', request: false);
     expect(cancelling.unconfirmed, isTrue);
     expect(cancelling.unconfirmedReason, 'Kerak emas');
 
     orders.answer = customerOrderJson(status: 'cancelled', changeable: false);
-    await cancelling.cancel('Boshqa sabab');
+    await cancelling.cancel('Boshqa sabab', request: false);
     expect(orders.cancels[1].$2, 'Kerak emas');
     expect(orders.cancels[1].$3, orders.cancels[0].$3);
     expect(cancelling.unconfirmed, isFalse);
@@ -130,15 +201,15 @@ void main() {
         ..hold = hold
         ..failure = const NetworkFailure();
 
-      final Future<void> first = cancelling.cancel(null);
-      expect(await cancelling.cancel(null), isNull);
+      final Future<void> first = cancelling.cancel(null, request: false);
+      expect(await cancelling.cancel(null, request: false), isNull);
       expect(orders.cancels, hasLength(1));
       orders.hold = null;
       hold.complete();
       await first;
 
       orders.answer = customerOrderJson(status: 'cancelled', changeable: false);
-      await cancelling.cancel(null);
+      await cancelling.cancel(null, request: false);
       expect(orders.cancels[1].$3, orders.cancels[0].$3);
     },
   );
@@ -473,7 +544,9 @@ void main() {
     orders
       ..holdList = Completer<void>()
       ..answer = customerOrderJson(status: 'cancelled', changeable: false);
-    await container.read(orderCancelProvider(orderOne).notifier).cancel(null);
+    await container
+        .read(orderCancelProvider(orderOne).notifier)
+        .cancel(null, request: false);
 
     final OrdersFeed feed = container.read(current).requireValue;
     expect(feed.rows.map((OrderSummary o) => o.id), isNot(contains(orderOne)));

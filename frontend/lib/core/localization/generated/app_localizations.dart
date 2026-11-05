@@ -4172,30 +4172,6 @@ abstract class AppLocalizations {
   /// **'Buyurtmada ko\'pi bilan {count} ta mahsulot bo\'lishi mumkin'**
   String orderAddFull(int count);
 
-  /// No description provided for @orderCancelReason.
-  ///
-  /// In uz, this message translates to:
-  /// **'Sabab (ixtiyoriy)'**
-  String get orderCancelReason;
-
-  /// No description provided for @orderCancelRepeating.
-  ///
-  /// In uz, this message translates to:
-  /// **'Avvalgi so\'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi'**
-  String get orderCancelRepeating;
-
-  /// No description provided for @orderCancelling.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bekor qilinmoqda'**
-  String get orderCancelling;
-
-  /// No description provided for @orderCancellationNeedsReason.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi'**
-  String get orderCancellationNeedsReason;
-
   /// No description provided for @orderOpen.
   ///
   /// In uz, this message translates to:
@@ -5539,12 +5515,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bekor qilishni so\'rash'**
   String get orderRequestCancel;
-
-  /// No description provided for @orderRequestCancelReason.
-  ///
-  /// In uz, this message translates to:
-  /// **'Sabab'**
-  String get orderRequestCancelReason;
 
   /// No description provided for @errorApprovalExpired.
   ///
@@ -7277,8 +7247,8 @@ abstract class AppLocalizations {
   /// No description provided for @requestSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Bekor qilishni so\'raysizmi?'**
-  String get requestSheetTitle;
+  /// **'Buyurtma № {number} ni bekor qilishni so\'raysizmi?'**
+  String requestSheetTitle(int number);
 
   /// No description provided for @requestSheetHint.
   ///
@@ -7286,23 +7256,11 @@ abstract class AppLocalizations {
   /// **'Yig\'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.'**
   String get requestSheetHint;
 
-  /// No description provided for @cancelReasonHint.
-  ///
-  /// In uz, this message translates to:
-  /// **'Masalan: noto\'g\'ri buyurtma berdim'**
-  String get cancelReasonHint;
-
   /// No description provided for @orderCancelKeepKit.
   ///
   /// In uz, this message translates to:
-  /// **'Bekor qilmaslik'**
+  /// **'Buyurtmani qoldirish'**
   String get orderCancelKeepKit;
-
-  /// No description provided for @requestSend.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yuborish'**
-  String get requestSend;
 
   /// No description provided for @rateTitle.
   ///
@@ -8311,6 +8269,282 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Qo\'shildi: {name}, {quantity}. Qo\'shilgan mahsulotlar: {count}'**
   String orderPickAddedSpoken(String name, String quantity, int count);
+
+  /// No description provided for @cancelSheetConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani bekor qilish'**
+  String get cancelSheetConfirm;
+
+  /// No description provided for @cancelSheetSendRequest.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rovni yuborish'**
+  String get cancelSheetSendRequest;
+
+  /// No description provided for @cancelSheetCancelling.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilinmoqda…'**
+  String get cancelSheetCancelling;
+
+  /// No description provided for @cancelSheetSending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborilmoqda…'**
+  String get cancelSheetSending;
+
+  /// No description provided for @cancelSheetRequested.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov yuborildi'**
+  String get cancelSheetRequested;
+
+  /// No description provided for @cancelSheetNeedReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sababni tanlang yoki yozing'**
+  String get cancelSheetNeedReason;
+
+  /// No description provided for @cancelSheetTooLong.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sababni {max} belgigacha qisqartiring'**
+  String cancelSheetTooLong(int max);
+
+  /// No description provided for @cancelSheetRaced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi xarid qilishni boshladi — darhol bekor qilib bo\'lmaydi. Sababini yozing — operator hal qilib, sizga xabar beradi.'**
+  String get cancelSheetRaced;
+
+  /// No description provided for @cancelSheetUnsureTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish tasdiqlanmadi'**
+  String get cancelSheetUnsureTitle;
+
+  /// No description provided for @requestSheetUnsureTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov tasdiqlanmadi'**
+  String get requestSheetUnsureTitle;
+
+  /// No description provided for @cancelSheetSendAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana yuborish'**
+  String get cancelSheetSendAgain;
+
+  /// No description provided for @cancelUnsureNow.
+  ///
+  /// In uz, this message translates to:
+  /// **'{kind, select, request{Aloqa yo\'q — so\'rov yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.} other{Aloqa yo\'q — bekor qilish yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.}}'**
+  String cancelUnsureNow(String kind);
+
+  /// No description provided for @cancelUnsureLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'{kind, select, request{O\'tgan safar aloqa uzildi — so\'rov yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.} other{O\'tgan safar aloqa uzildi — bekor qilish yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.}}'**
+  String cancelUnsureLater(String kind);
+
+  /// No description provided for @cancelUnsureServer.
+  ///
+  /// In uz, this message translates to:
+  /// **'{kind, select, request{Javob kelmadi — so\'rov yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.} other{Javob kelmadi — bekor qilish yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.}}'**
+  String cancelUnsureServer(String kind);
+
+  /// No description provided for @cancelSheetQuote.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{reason}»'**
+  String cancelSheetQuote(String reason);
+
+  /// No description provided for @cancelSheetNoReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sababsiz'**
+  String get cancelSheetNoReason;
+
+  /// No description provided for @cancelAlreadyAsked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz bu buyurtmani bekor qilishni so\'ragansiz — operator hal qiladi.'**
+  String get cancelAlreadyAsked;
+
+  /// No description provided for @cancelChipsDirect.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nega bekor qilyapsiz?'**
+  String get cancelChipsDirect;
+
+  /// No description provided for @cancelChipsRequest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nega bekor qilish kerak?'**
+  String get cancelChipsRequest;
+
+  /// No description provided for @cancelChipsOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rsatmasangiz ham bo\'ladi'**
+  String get cancelChipsOptional;
+
+  /// No description provided for @cancelChipsForOperator.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buni operator o\'qiydi'**
+  String get cancelChipsForOperator;
+
+  /// No description provided for @cancelChipWrongItems.
+  ///
+  /// In uz, this message translates to:
+  /// **'Noto\'g\'ri buyurtma berdim'**
+  String get cancelChipWrongItems;
+
+  /// No description provided for @cancelChipChangedMind.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fikrimdan qaytdim'**
+  String get cancelChipChangedMind;
+
+  /// No description provided for @cancelChipTooSlow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzoq kutish kerak'**
+  String get cancelChipTooSlow;
+
+  /// No description provided for @cancelChipOtherAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa manzil kerak'**
+  String get cancelChipOtherAddress;
+
+  /// No description provided for @cancelChipOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa'**
+  String get cancelChipOther;
+
+  /// No description provided for @cancelChipPosition.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} tadan {index}'**
+  String cancelChipPosition(int index, int count);
+
+  /// No description provided for @cancelChipSpokenOn.
+  ///
+  /// In uz, this message translates to:
+  /// **'{chip}, tanlandi'**
+  String cancelChipSpokenOn(String chip);
+
+  /// No description provided for @cancelChipSpokenOff.
+  ///
+  /// In uz, this message translates to:
+  /// **'{chip}, tanlanmadi'**
+  String cancelChipSpokenOff(String chip);
+
+  /// No description provided for @cancelAddDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tafsilot qo\'shish'**
+  String get cancelAddDetails;
+
+  /// No description provided for @cancelFieldOwn.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'z sababingiz'**
+  String get cancelFieldOwn;
+
+  /// No description provided for @cancelFieldOwnHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nega bekor qilayotganingizni yozing'**
+  String get cancelFieldOwnHint;
+
+  /// No description provided for @cancelFieldDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tafsilotlar (ixtiyoriy)'**
+  String get cancelFieldDetails;
+
+  /// No description provided for @cancelFieldDetailsHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana nima yetkazaylik?'**
+  String get cancelFieldDetailsHint;
+
+  /// No description provided for @cancelFieldDirectSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish sababi, ixtiyoriy'**
+  String get cancelFieldDirectSpoken;
+
+  /// No description provided for @cancelFieldRequestSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator uchun sabab, majburiy'**
+  String get cancelFieldRequestSpoken;
+
+  /// No description provided for @cancelLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta belgi qoldi'**
+  String cancelLeft(int count);
+
+  /// No description provided for @cancelOver.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta belgi ortiqcha'**
+  String cancelOver(int count);
+
+  /// No description provided for @cancelTipEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish shart emas: yig\'uvchi boshlamaguncha mahsulotlarni o\'zgartirish mumkin.'**
+  String get cancelTipEdit;
+
+  /// No description provided for @cancelTipEditButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani o\'zgartirish'**
+  String get cancelTipEditButton;
+
+  /// No description provided for @cancelTipAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmadagi manzil o\'zgarmaydi. Bekor qilgandan keyin «Buyurtmani takrorlash» tugmasini bosing — mahsulotlar savatga qaytadi, manzilni qaytadan tanlaysiz.'**
+  String get cancelTipAddress;
+
+  /// No description provided for @cancelSendingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilinmoqda…'**
+  String get cancelSendingSpoken;
+
+  /// No description provided for @requestSendingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov yuborilmoqda…'**
+  String get requestSendingSpoken;
+
+  /// No description provided for @cancelBannerTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bekor qilindi'**
+  String cancelBannerTitle(int number);
+
+  /// No description provided for @cancelBannerHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta buyurtma berish — pastdagi «Buyurtmani takrorlash»'**
+  String get cancelBannerHint;
+
+  /// No description provided for @requestBannerHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator hal qiladi — sizga xabar beramiz'**
+  String get requestBannerHint;
 }
 
 class _AppLocalizationsDelegate

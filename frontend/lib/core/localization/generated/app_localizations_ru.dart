@@ -2395,20 +2395,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get orderCancelReason => 'Причина (необязательно)';
-
-  @override
-  String get orderCancelRepeating =>
-      'Прошлый запрос остался без ответа: он повторится с той же причиной';
-
-  @override
-  String get orderCancelling => 'Отменяем';
-
-  @override
-  String get orderCancellationNeedsReason =>
-      'Заказ уже в работе: напишите причину отмены, и решит оператор';
-
-  @override
   String get orderOpen => 'Открыть заказ';
 
   @override
@@ -3261,9 +3247,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderRequestCancel => 'Попросить отменить';
-
-  @override
-  String get orderRequestCancelReason => 'Причина';
 
   @override
   String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
@@ -4386,20 +4369,16 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сборщик ещё не начал покупать — отменим сразу.';
 
   @override
-  String get requestSheetTitle => 'Попросить отменить?';
+  String requestSheetTitle(int number) {
+    return 'Попросить отменить заказ № $number?';
+  }
 
   @override
   String get requestSheetHint =>
       'Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.';
 
   @override
-  String get cancelReasonHint => 'Например: заказал не то';
-
-  @override
-  String get orderCancelKeepKit => 'Не отменять';
-
-  @override
-  String get requestSend => 'Отправить';
+  String get orderCancelKeepKit => 'Оставить заказ';
 
   @override
   String get rateTitle => 'Оценка заказа';
@@ -5138,4 +5117,196 @@ class AppLocalizationsRu extends AppLocalizations {
   String orderPickAddedSpoken(String name, String quantity, int count) {
     return 'Добавили: $name, $quantity. Добавлено товаров: $count';
   }
+
+  @override
+  String get cancelSheetConfirm => 'Отменить заказ';
+
+  @override
+  String get cancelSheetSendRequest => 'Отправить просьбу';
+
+  @override
+  String get cancelSheetCancelling => 'Отменяем…';
+
+  @override
+  String get cancelSheetSending => 'Отправляем…';
+
+  @override
+  String get cancelSheetRequested => 'Просьба отправлена';
+
+  @override
+  String get cancelSheetNeedReason => 'Выберите или напишите причину';
+
+  @override
+  String cancelSheetTooLong(int max) {
+    return 'Сократите причину до $max знаков';
+  }
+
+  @override
+  String get cancelSheetRaced =>
+      'Сборщик уже начал покупать — сразу отменить нельзя. Напишите, почему, — решит оператор и сообщит вам.';
+
+  @override
+  String get cancelSheetUnsureTitle => 'Отмена не подтвердилась';
+
+  @override
+  String get requestSheetUnsureTitle => 'Просьба не подтвердилась';
+
+  @override
+  String get cancelSheetSendAgain => 'Отправить ещё раз';
+
+  @override
+  String cancelUnsureNow(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'request': 'Нет связи — мы не знаем, дошла ли просьба. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.',
+      'other': 'Нет связи — мы не знаем, дошла ли отмена. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String cancelUnsureLater(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'request': 'Мы не знаем, дошла ли просьба: в прошлый раз пропала связь. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.',
+      'other': 'Мы не знаем, дошла ли отмена: в прошлый раз пропала связь. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String cancelUnsureServer(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'request': 'Ответ не пришёл — мы не знаем, дошла ли просьба. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.',
+      'other': 'Ответ не пришёл — мы не знаем, дошла ли отмена. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String cancelSheetQuote(String reason) {
+    return '«$reason»';
+  }
+
+  @override
+  String get cancelSheetNoReason => 'Без причины';
+
+  @override
+  String get cancelAlreadyAsked =>
+      'Вы уже попросили отменить этот заказ — решит оператор.';
+
+  @override
+  String get cancelChipsDirect => 'Почему отменяете?';
+
+  @override
+  String get cancelChipsRequest => 'Почему отменить?';
+
+  @override
+  String get cancelChipsOptional => 'Можно не указывать';
+
+  @override
+  String get cancelChipsForOperator => 'Это прочтёт оператор';
+
+  @override
+  String get cancelChipWrongItems => 'Заказал не то';
+
+  @override
+  String get cancelChipChangedMind => 'Передумал';
+
+  @override
+  String get cancelChipTooSlow => 'Долго ждать';
+
+  @override
+  String get cancelChipOtherAddress => 'Нужен другой адрес';
+
+  @override
+  String get cancelChipOther => 'Другое';
+
+  @override
+  String cancelChipPosition(int index, int count) {
+    return '$index из $count';
+  }
+
+  @override
+  String cancelChipSpokenOn(String chip) {
+    return '$chip, выбрано';
+  }
+
+  @override
+  String cancelChipSpokenOff(String chip) {
+    return '$chip, не выбрано';
+  }
+
+  @override
+  String get cancelAddDetails => 'Добавить подробности';
+
+  @override
+  String get cancelFieldOwn => 'Своя причина';
+
+  @override
+  String get cancelFieldOwnHint => 'Напишите, почему отменяете';
+
+  @override
+  String get cancelFieldDetails => 'Подробности (необязательно)';
+
+  @override
+  String get cancelFieldDetailsHint => 'Что ещё передать?';
+
+  @override
+  String get cancelFieldDirectSpoken => 'Причина отмены, необязательно';
+
+  @override
+  String get cancelFieldRequestSpoken => 'Причина для оператора, обязательно';
+
+  @override
+  String cancelLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Осталось $count знака',
+      many: 'Осталось $count знаков',
+      few: 'Осталось $count знака',
+      one: 'Осталось $count знак',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cancelOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Длиннее на $count знака',
+      many: 'Длиннее на $count знаков',
+      few: 'Длиннее на $count знака',
+      one: 'Длиннее на $count знак',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cancelTipEdit =>
+      'Не обязательно отменять: пока сборщик не начал, товары можно поменять.';
+
+  @override
+  String get cancelTipEditButton => 'Изменить заказ';
+
+  @override
+  String get cancelTipAddress =>
+      'Адрес в заказе не меняется. После отмены нажмите «Повторить заказ» — товары вернутся в корзину, адрес выберете заново.';
+
+  @override
+  String get cancelSendingSpoken => 'Отменяем заказ…';
+
+  @override
+  String get requestSendingSpoken => 'Отправляем просьбу…';
+
+  @override
+  String cancelBannerTitle(int number) {
+    return 'Заказ № $number отменён';
+  }
+
+  @override
+  String get cancelBannerHint => 'Заказать снова — «Повторить заказ» внизу';
+
+  @override
+  String get requestBannerHint => 'Решит оператор — мы сообщим';
 }

@@ -21,6 +21,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../cart/application/cart_controllers.dart';
 import '../data/customer_orders_api.dart';
 import '../domain/customer_orders.dart';
+import 'cancel_draft.dart';
 
 final Provider<CustomerOrdersRepository> customerOrdersRepositoryProvider =
     Provider<CustomerOrdersRepository>(
@@ -369,6 +370,11 @@ class OrderCancelController extends OrderMutation {
 
   String? _key;
   String? _reason;
+  bool _request = false;
+
+  /// What the sheet holds, kept while this controller lives so a closed and
+  /// reopened sheet shows it again (`DL-133`); not part of [state].
+  CancelDraft draft = CancelDraft.empty;
 
   /// Whether a cancel was sent and no answer has said for sure what it did;
   /// a retry then sends [unconfirmedReason] again, under the same key, so the
@@ -377,7 +383,12 @@ class OrderCancelController extends OrderMutation {
 
   String? get unconfirmedReason => _reason;
 
-  Future<CustomerOrder?> cancel(String? reason) async {
+  /// Whether the unconfirmed send was a request for the Operator.
+  bool get unconfirmedRequest => _key != null && _request;
+
+  /// [request] is the face the Customer sent from; it is kept with the
+  /// reason when a new key is made.
+  Future<CustomerOrder?> cancel(String? reason, {required bool request}) async {
     // A tap while a cancel runs is not another attempt, and leaves the key.
     if (state.isBusy) {
       return null;
@@ -385,6 +396,7 @@ class OrderCancelController extends OrderMutation {
     if (_key == null) {
       _key = newIdempotencyKey();
       _reason = reason;
+      _request = request;
     }
     final String key = _key!;
     final String? sent = _reason;
@@ -402,9 +414,15 @@ class OrderCancelController extends OrderMutation {
         reload(cancelled);
       },
     );
-    if (!_uncertain(ref.mounted ? state.failure : null)) {
+    final ApiFailure? failure = ref.mounted ? state.failure : null;
+    if (!_uncertain(failure)) {
       _key = null;
       _reason = null;
+      _request = false;
+    }
+    // The order the sheet was drawn from is out of date: it loads again.
+    if (ref.mounted && cancelNeedsReason(failure)) {
+      reload(null);
     }
     return order;
   }

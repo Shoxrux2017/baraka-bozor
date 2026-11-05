@@ -719,41 +719,46 @@ void main() {
       });
     });
 
-    testWidgets('asking needs a reason, and files the request', (
-      WidgetTester tester,
-    ) async {
-      orders.rows = <Map<String, Object?>>[
-        shopping(<Object?>[orderLineJson()]),
-      ];
-      await open(tester, at: AppPaths.customerOrder(orderOne));
-      final AppLocalizations words = l10n(tester);
-      expect(byKey('order-cancel'), findsNothing);
+    testWidgets(
+      'asking sends nothing without a reason, and files the request',
+      (WidgetTester tester) async {
+        orders.rows = <Map<String, Object?>>[
+          shopping(<Object?>[orderLineJson()]),
+        ];
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+        final AppLocalizations words = l10n(tester);
+        expect(byKey('order-cancel'), findsNothing);
 
-      await tapAndSettle(tester, byKey('order-request-cancel'));
-      expect(find.text(words.requestSheetTitle), findsOneWidget);
-      expect(find.text(words.requestSheetHint), findsOneWidget);
-      await tester.enterText(byKey('cancel-reason'), '   ');
-      await tapAndSettle(tester, byKey('cancel-confirm'));
-      expect(find.text(words.fieldRequired), findsOneWidget);
-      expect(orders.cancels, isEmpty);
+        await tapAndSettle(tester, byKey('order-request-cancel'));
+        expect(find.text(words.requestSheetTitle(1001)), findsOneWidget);
+        expect(find.text(words.requestSheetHint), findsOneWidget);
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+        expect(orders.cancels, isEmpty);
 
-      await tester.enterText(byKey('cancel-reason'), 'a' * 301);
-      await tapAndSettle(tester, byKey('cancel-confirm'));
-      expect(find.text(words.fieldTooLong(300)), findsOneWidget);
-      expect(orders.cancels, isEmpty);
+        await tapAndSettle(tester, byKey('cancel-more'));
+        await tester.enterText(byKey('cancel-reason'), '   ');
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+        expect(orders.cancels, isEmpty);
 
-      orders.answer = shopping(
-        <Object?>[orderLineJson()],
-        canRequestCancellation: false,
-        request: 'pending',
-      );
-      await tester.enterText(byKey('cancel-reason'), '  Kech qoldi ');
-      await tapAndSettle(tester, byKey('cancel-confirm'));
+        await tester.enterText(byKey('cancel-reason'), 'a' * 301);
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+        expect(orders.cancels, isEmpty);
 
-      expect(orders.cancels.single.$2, 'Kech qoldi');
-      expect(byKey('order-cancellation-requested'), findsOneWidget);
-      expect(byKey('order-request-cancel'), findsNothing);
-    });
+        orders.answer = shopping(
+          <Object?>[orderLineJson()],
+          canRequestCancellation: false,
+          request: 'pending',
+        );
+        await tester.enterText(byKey('cancel-reason'), '  Kech qoldi ');
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pumpAndSettle();
+
+        expect(orders.cancels.single.$2, 'Kech qoldi');
+        expect(byKey('order-cancellation-requested'), findsOneWidget);
+        expect(byKey('order-request-cancel'), findsNothing);
+      },
+    );
 
     testWidgets(
       'a cancel lost before shopping began goes again as it was, without a reason',
@@ -769,15 +774,18 @@ void main() {
         await tapAndSettle(tester, byKey('cancel-confirm'));
         expect(orders.cancels.single.$2, isNull);
 
-        await tapAndSettle(tester, byKey('order-request-cancel'));
-        expect(find.text(l10n(tester).orderCancelRepeating), findsOneWidget);
+        // The sheet itself is the retry, whatever the order became.
+        expect(find.text(l10n(tester).cancelSheetUnsureTitle), findsOneWidget);
+        expect(find.text(l10n(tester).cancelSheetNoReason), findsOneWidget);
         orders.answer = customerOrderJson(
           status: 'cancelled',
           changeable: false,
         );
         await tapAndSettle(tester, byKey('cancel-confirm'));
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pumpAndSettle();
 
-        expect(find.text(l10n(tester).fieldRequired), findsNothing);
+        expect(byKey('cancel-strip'), findsNothing);
         expect(orders.cancels, hasLength(2));
         expect(orders.cancels[1].$2, isNull);
         expect(orders.cancels[1].$3, orders.cancels[0].$3);
@@ -803,7 +811,7 @@ void main() {
           ),
         ];
       await tapAndSettle(tester, byKey('order-request-cancel'));
-      await tester.enterText(byKey('cancel-reason'), 'Kech qoldi');
+      await tapAndSettle(tester, byKey('cancel-chip-tooSlow'));
       await tapAndSettle(tester, byKey('cancel-confirm'));
 
       expect(byKey('failure-message'), findsNothing);
@@ -1024,7 +1032,7 @@ void main() {
 
         await tapAndSettle(tester, byKey('order-request-cancel'));
         await tapAndSettle(tester, byKey('cancel-confirm'));
-        expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
+        expect(orders.cancels, isEmpty);
         expect(tester.takeException(), isNull);
       },
     );

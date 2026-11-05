@@ -8,11 +8,12 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
-import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
+import 'package:baraka_bozor/features/orders/presentation/cancel_outcome.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_edited_banner.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,6 +22,7 @@ import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 
 /// The Customer's orders of `docs/09` sections 20 to 22 through the real
 /// router and screens, with the repositories faked.
@@ -54,6 +56,7 @@ void main() {
     bool alone = false,
     Size size = const Size(800, 2400),
     double textScale = 1,
+    TextScaler? scaler,
     Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
@@ -68,6 +71,7 @@ void main() {
         orders: orders,
         cart: cart,
         device: device,
+        textScaler: scaler,
       ),
     );
     await tester.pumpAndSettle();
@@ -394,6 +398,7 @@ void main() {
 
       orders.answer = customerOrderJson(status: 'cancelled', changeable: false);
       await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-more'));
       await tester.enterText(byKey('cancel-reason'), '  Kerak emas ');
       await tapAndSettle(tester, byKey('cancel-confirm'));
 
@@ -410,9 +415,12 @@ void main() {
 
         orders.failure = const NetworkFailure();
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
-        expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+        // The sheet itself is the retry: it stays, and says what is unknown.
+        expect(find.text(l10n(tester).cancelSheetUnsureTitle), findsOneWidget);
+        expect(find.text('«Kerak emas»'), findsOneWidget);
 
         orders.failure = const ApiRefusal(
           ApiError(status: 409, code: 'order_cancellation_not_allowed'),
@@ -420,17 +428,6 @@ void main() {
         orders.rows = <Map<String, Object?>>[
           customerOrderJson(status: 'shopping', changeable: false),
         ];
-        await tapAndSettle(tester, byKey('order-cancel'));
-        // The retry is the same request: its reason is shown and kept.
-        final TextField reason = tester.widget<TextField>(
-          find.descendant(
-            of: byKey('cancel-reason'),
-            matching: find.byType(TextField),
-          ),
-        );
-        expect(reason.controller!.text, 'Kerak emas');
-        expect(reason.readOnly, isTrue);
-        expect(find.text(l10n(tester).orderCancelRepeating), findsOneWidget);
         await tapAndSettle(tester, byKey('cancel-confirm'));
 
         expect(orders.cancels, hasLength(2));
@@ -440,6 +437,7 @@ void main() {
           find.text(l10n(tester).errorOrderCancellationNotAllowed),
           findsOneWidget,
         );
+        await tapAndSettle(tester, byKey('cancel-keep'));
         expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
       },
     );
@@ -455,6 +453,7 @@ void main() {
         );
         final Completer<void> listHold = orders.holdList = Completer<void>();
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
         await backToList(tester);
@@ -478,8 +477,11 @@ void main() {
       orders.failure = const NetworkFailure();
       orders.holdList = Completer<void>();
       await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-more'));
       await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
       await tapAndSettle(tester, byKey('cancel-confirm'));
+      // The sheet stays on its retry face; the Customer leaves it by hand.
+      await tapAndSettle(tester, byKey('cancel-sheet-close'));
       await backToList(tester);
 
       expect(byKey('order-$orderOne'), findsOneWidget);
@@ -499,6 +501,7 @@ void main() {
           cancellationRequest: 'pending',
         );
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-more'));
         await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
 
@@ -510,34 +513,28 @@ void main() {
       },
     );
 
-    testWidgets('without a reason, the Customer is told to give one', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, at: AppPaths.customerOrder(orderOne));
+    testWidgets(
+      'without a reason, the sheet turns into the request that asks for one',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.customerOrder(orderOne));
 
-      orders.failure = const ApiRefusal(
-        ApiError(
-          status: 422,
-          code: 'validation_failed',
-          errors: <String, List<String>>{
-            'reason': <String>['A cancellation request needs its reason.'],
-          },
-        ),
-      );
-      await tapAndSettle(tester, byKey('order-cancel'));
-      await tapAndSettle(tester, byKey('cancel-confirm'));
+        orders.failure = const ApiRefusal(
+          ApiError(
+            status: 422,
+            code: 'validation_failed',
+            errors: <String, List<String>>{
+              'reason': <String>['A cancellation request needs its reason.'],
+            },
+          ),
+        );
+        await tapAndSettle(tester, byKey('order-cancel'));
+        await tapAndSettle(tester, byKey('cancel-confirm'));
 
-      expect(byKey('order-cancel-needs-reason'), findsOneWidget);
-      expect(
-        find.text(l10n(tester).orderCancellationNeedsReason),
-        findsOneWidget,
-      );
-      expect(find.text(l10n(tester).errorValidationFailed), findsNothing);
-      expect(
-        tester.widget<Text>(byKey('order-cancel-needs-reason')).style?.color,
-        KitColors.danger,
-      );
-    });
+        expect(byKey('cancel-raced'), findsOneWidget);
+        expect(find.text(l10n(tester).cancelSheetRaced), findsOneWidget);
+        expect(find.text(l10n(tester).errorValidationFailed), findsNothing);
+      },
+    );
 
     testWidgets('a cancellation request keeps the order on the list', (
       WidgetTester tester,
@@ -551,6 +548,7 @@ void main() {
       );
       orders.holdList = Completer<void>();
       await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-more'));
       await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
       await tapAndSettle(tester, byKey('cancel-confirm'));
       await backToList(tester);
@@ -558,6 +556,301 @@ void main() {
       expect(byKey('order-$orderOne'), findsOneWidget);
       expect(byKey('order-$otherOrder'), findsOneWidget);
     });
+  });
+
+  group('the cancel outcome', () {
+    late List<MethodCall> platformCalls;
+
+    setUp(() {
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+    });
+
+    int haptics() => platformCalls
+        .where(
+          (MethodCall c) =>
+              c.method == 'HapticFeedback.vibrate' &&
+              c.arguments == 'HapticFeedbackType.lightImpact',
+        )
+        .length;
+
+    Map<String, Object?> shoppingRow({String? request}) => customerOrderJson(
+      status: 'shopping',
+      changeable: false,
+      canRequestCancellation: request == null,
+      cancellationRequest: request,
+    );
+
+    double offset(WidgetTester tester) =>
+        tester.widget<ListView>(byKey('order')).controller!.offset;
+
+    /// Opens the order scrolled down, the cancel sheet over it, and sends a
+    /// direct cancel (or a request when [request]); stops where the sheet
+    /// has just closed, so the outcome is at its first frame.
+    Future<void> cancelFromPage(
+      WidgetTester tester, {
+      bool request = false,
+      Size size = const Size(360, 700),
+      TextScaler? scaler,
+      Completer<void>? holdOrder,
+      String? note,
+    }) async {
+      if (request) {
+        orders.rows = <Map<String, Object?>>[shoppingRow()];
+      }
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        size: size,
+        scaler: scaler,
+      );
+      await tester.drag(byKey('order'), const Offset(0, -1500));
+      await tester.pumpAndSettle();
+      expect(offset(tester), greaterThan(0), reason: 'scrolled down');
+
+      await tapAndSettle(
+        tester,
+        byKey(request ? 'order-request-cancel' : 'order-cancel'),
+      );
+      if (request) {
+        await tapAndSettle(tester, byKey('cancel-chip-changedMind'));
+        orders.answer = shoppingRow(request: 'pending');
+      } else {
+        orders.answer = customerOrderJson(
+          status: 'cancelled',
+          changeable: false,
+          cancellationNote: note,
+        );
+      }
+      orders.holdOrder = holdOrder;
+      await tester.ensureVisible(byKey('cancel-confirm'));
+      await tester.tap(byKey('cancel-confirm'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+    }
+
+    Finder entranceFades() => find.descendant(
+      of: find.byType(OutcomeEntrance),
+      matching: find.byType(Opacity),
+    );
+
+    testWidgets(
+      'a cancel brings the top into view, changes the card, shows the banner for 4 s and buzzes',
+      (WidgetTester tester) async {
+        await cancelFromPage(tester);
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(offset(tester), 0);
+        final AppLocalizations words = l10n(tester);
+        expect(byKey('cancel-banner'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: byKey('cancel-banner'),
+            matching: find.text(words.cancelBannerTitle(1001)),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: byKey('cancel-banner'),
+            matching: find.text(words.cancelBannerHint),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(words.orderStateCancelled), findsOneWidget);
+        expect(haptics(), 1);
+        expect(
+          tester.takeAnnouncements().map(
+            (CapturedAccessibilityAnnouncement a) => a.message,
+          ),
+          contains(words.cancelBannerTitle(1001)),
+        );
+        final FocusNode? focus = tester
+            .widget<Focus>(byKey('order-status-focus'))
+            .focusNode;
+        expect(focus?.hasFocus, isTrue);
+
+        await tester.pump(const Duration(milliseconds: 3500));
+        expect(byKey('cancel-banner'), findsOneWidget, reason: 'still there');
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(byKey('cancel-banner'), findsNothing, reason: 'gone after 4 s');
+        await tester.pumpAndSettle();
+        expect(haptics(), 1);
+      },
+    );
+
+    testWidgets(
+      'a request shows Просьба отправлена and the request card arrives',
+      (WidgetTester tester) async {
+        await cancelFromPage(tester, request: true);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final AppLocalizations words = l10n(tester);
+        expect(
+          find.descendant(
+            of: byKey('cancel-banner'),
+            matching: find.byIcon(Icons.schedule),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: byKey('cancel-banner'),
+            matching: find.text(words.cancelSheetRequested),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: byKey('cancel-banner'),
+            matching: find.text(words.requestBannerHint),
+          ),
+          findsOneWidget,
+        );
+        expect(byKey('order-cancellation-requested'), findsOneWidget);
+        expect(byKey('order-request-cancel'), findsNothing, reason: 'no bar');
+        expect(
+          tester.getBottomLeft(byKey('cancel-banner')).dy,
+          tester.view.physicalSize.height - 10,
+        );
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('the card waits for the order that says it is cancelled', (
+      WidgetTester tester,
+    ) async {
+      final Completer<void> hold = Completer<void>();
+      await cancelFromPage(tester, holdOrder: hold);
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(byKey('cancel-banner'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<Opacity>(entranceFades())
+            .any((Opacity o) => o.opacity < 1),
+        isFalse,
+        reason: 'no entrance yet',
+      );
+
+      hold.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(
+        tester
+            .widgetList<Opacity>(entranceFades())
+            .any((Opacity o) => o.opacity < 1),
+        isTrue,
+        reason: 'the entrance plays',
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'with reduced motion the page jumps to the top and nothing slides',
+      (WidgetTester tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        await cancelFromPage(tester);
+
+        expect(offset(tester), 0, reason: 'first frame after the sheet');
+        for (final Transform t in tester.widgetList<Transform>(
+          find.descendant(
+            of: find.byType(OutcomeEntrance),
+            matching: find.byType(Transform),
+          ),
+        )) {
+          expect(t.transform.getTranslation().y, 0);
+          expect(t.transform.getTranslation().x, 0);
+        }
+        final Finder fade = find.ancestor(
+          of: byKey('cancel-banner'),
+          matching: find.byType(Opacity),
+        );
+        expect(tester.widget<Opacity>(fade).opacity, lessThan(1));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('Изменить заказ in the sheet opens the editor', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        size: const Size(360, 700),
+      );
+      await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-chip-wrongItems'));
+      await tapAndSettle(tester, byKey('cancel-tip-edit-button'));
+
+      expect(byKey('edit-save'), findsOneWidget);
+      expect(byKey('cancel-banner'), findsNothing);
+    });
+
+    testWidgets(
+      'a replay the Operator already rejected plays no outcome and shows the rejected card',
+      (WidgetTester tester) async {
+        await open(
+          tester,
+          at: AppPaths.customerOrder(orderOne),
+          size: const Size(360, 700),
+        );
+        await tapAndSettle(tester, byKey('order-cancel'));
+        orders.failure = const NetworkFailure();
+        await tester.ensureVisible(byKey('cancel-confirm'));
+        await tester.tap(byKey('cancel-confirm'));
+        await tester.pumpAndSettle();
+        expect(byKey('cancel-unsure'), findsOneWidget);
+
+        orders.rows = <Map<String, Object?>>[shoppingRow(request: 'rejected')];
+        await tester.tap(byKey('cancel-confirm'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
+
+        final AppLocalizations words = l10n(tester);
+        expect(byKey('cancel-sheet'), findsNothing);
+        expect(find.text(words.cancelSheetRequested), findsNothing);
+        expect(byKey('cancel-banner'), findsNothing);
+        expect(haptics(), 0);
+        expect(find.text(words.requestStateRejected), findsWidgets);
+      },
+    );
+
+    for (final (String, TextScaler?) scale in <(String, TextScaler?)>[
+      ('100 %', null),
+      ('NonlinearTextScaler(2)', NonlinearTextScaler(2)),
+    ]) {
+      testWidgets(
+        'the order page with the banner and the reason line meets the tap target guideline at ${scale.$1}',
+        (WidgetTester tester) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          await cancelFromPage(tester, scaler: scale.$2, note: 'Kerak emas');
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(byKey('cancel-banner'), findsOneWidget);
+          expect(byKey('order-status-reason'), findsOneWidget);
+
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          expect(tester.takeException(), isNull);
+          await tester.pumpAndSettle();
+          handle.dispose();
+        },
+      );
+    }
   });
 
   group('the edited banner', () {

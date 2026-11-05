@@ -5,66 +5,26 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/timed_banner.dart';
 import '../domain/customer_orders.dart';
 
 /// The strip the order page shows once an edit is saved: «Заказ изменён» over
-/// the new total (`DL-132`). It comes down from above in 420 ms, stays until
-/// 4 s have passed and goes up with a fade in 300 ms; with reduced motion it
-/// only fades, 250 ms each way. It does not announce: the editor did when it
-/// saved.
-class OrderEditedBanner extends StatefulWidget {
+/// the new total (`DL-132`). It moves as a [TimedBanner] from above does. It
+/// does not announce: the editor did when it saved.
+class OrderEditedBanner extends StatelessWidget {
   const OrderEditedBanner({required this.order, super.key});
 
   /// The order as the save answered it.
   final CustomerOrder order;
 
   @override
-  State<OrderEditedBanner> createState() => _OrderEditedBannerState();
-}
-
-class _OrderEditedBannerState extends State<OrderEditedBanner>
-    with SingleTickerProviderStateMixin {
-  static const Cubic _settle = Cubic(0.2, 0.8, 0.2, 1);
-  static const double _stay = 4000;
-
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    // Reduced motion changes how the banner moves, not how long it stays.
-    animationBehavior: AnimationBehavior.preserve,
-  );
-  late bool _reduced;
-  late double _inMs;
-  late double _outMs;
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) {
-      return;
-    }
-    _started = true;
-    _reduced = MediaQuery.disableAnimationsOf(context);
-    _inMs = _reduced ? 250 : 420;
-    _outMs = _reduced ? 250 : 300;
-    _controller.duration = Duration(milliseconds: (_stay + _outMs).round());
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final int? total = widget.order.totalUzs;
+    final int? total = order.totalUzs;
     final String? totalWords =
-        total == null || widget.order.totalKind == TotalKind.none
+        total == null || order.totalKind == TotalKind.none
         ? null
-        : _words(l10n, total);
+        : _words(context, l10n, total);
 
     final Widget card = DecoratedBox(
       key: const ValueKey<String>('edit-banner'),
@@ -117,47 +77,13 @@ class _OrderEditedBannerState extends State<OrderEditedBanner>
       ),
     );
 
-    return AnimatedBuilder(
-      animation: _controller,
-      child: card,
-      builder: (BuildContext context, Widget? child) {
-        if (_controller.isCompleted) {
-          return const SizedBox.shrink();
-        }
-        final double ms = _controller.value * (_stay + _outMs);
-        double rise = 0;
-        double opacity = 1;
-        if (ms < _inMs) {
-          final double t = ms / _inMs;
-          if (_reduced) {
-            opacity = Curves.easeOut.transform(t);
-          } else {
-            rise = -1.4 * (1 - _settle.transform(t));
-          }
-        } else if (ms > _stay) {
-          final double eased = Curves.easeIn.transform(
-            ((ms - _stay) / _outMs).clamp(0, 1),
-          );
-          opacity = 1 - eased;
-          if (!_reduced) {
-            rise = -1.4 * eased;
-          }
-        }
-        return Opacity(
-          opacity: opacity,
-          child: FractionalTranslation(
-            translation: Offset(0, rise),
-            child: child,
-          ),
-        );
-      },
-    );
+    return TimedBanner(fromBelow: false, child: card);
   }
 
   /// The order's total, with «≈» while it is an estimate.
-  String _words(AppLocalizations l10n, int total) {
+  String _words(BuildContext context, AppLocalizations l10n, int total) {
     final String amount = MoneyFormat.uzs(total, interfaceLanguage(context));
-    return widget.order.totalKind == TotalKind.estimate
+    return order.totalKind == TotalKind.estimate
         ? l10n.cartLineEstimate(amount)
         : amount;
   }

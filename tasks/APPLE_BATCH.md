@@ -29,7 +29,7 @@ Rules for every stage:
 | 10 | Favourites | 7 | favourites order | Merged (PR #132) |
 | 11 | Order | 9 | approval amounts and picture | Merged (PR #133) |
 | 12 | My orders | 10 | list summary fields | Merged (PR #134) |
-| 13 | Order editing | 12 | edit preview, minimum | Planned |
+| 13 | Order editing | 12 | edit preview, minimum | Merged (PR #135) |
 | 14 | Cancellation | 12 | cancel reason | Planned |
 | 15 | Rating | 10 | `reviewed_at` | Planned |
 | 16 | Profile and name | 18 | — | Planned |
@@ -355,6 +355,8 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app reads the order screen's new keys as required (`estimate_if_approved_uzs`, `change_if_approved_uzs`, `change_if_rejected_uzs`, `replacement.image_url`, and each line's `agreed`), like `working_hours` (`DL-130`): deploy the backend before any build of stage 11 reaches a phone.
 - The app reads the list summary's new keys as required (`pending_approval_expires_at`, `preview`), like `working_hours` (`DL-125` (7)) and the order screen's keys (`DL-130`): deploy the backend before any build of stage 12 reaches a phone (`DL-131`).
 - The stage 13 editor asks `POST /customer/orders/{order}/items/preview` for the order's sums (`DL-132`): an editor of this build against an older server finds no preview (`404`) and shows «Доставку, сбор и итог пересчитаем после сохранения», so deploy the backend first.
+- The app reads the order's `cancellation_note` as a required key, like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 14 reaches a phone (`DL-133`).
+- After a cancel, focus moves to the order's status heading through its input focus (`DL-133` (9)); that TalkBack and VoiceOver follow it there is checked only on a real phone, at the wave's manual check.
 
 ## Review findings not acted on
 
@@ -412,3 +414,4 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 13 re-review, P3: the picker's pill-fit test checks the quantity's width at 100 % only; at 200 % the test font fills the slot, so that case asserts nothing. Ruling: the rule reads `textWidth` at the device's text size, which the 100 % test pins; the iOS and real-font pass checks 200 %.
 - Stage 13 re-review, P3: with the keyboard up at 200 % on a 640 px phone the footer (strips and total capped at 45 % over the fixed button) leaves the editor's list about 50 px. Ruling: nothing overflows and the list scrolls; a later improvement folds the total while the keyboard is up.
 - Stage 13 re-review, P3: the red failure line now sits in the footer's scrolling part, so at the cap it can scroll out of view. Ruling: it starts at the top and needs a refusal, a strip and 200 % text at once; kept.
+- Stage 14 final review, P3: focus moves to the status card by retrying once a frame (at most 120) until the page's focus scope holds focus again after the cancel sheet leaves. Ruling: a modal bottom sheet never drives the order page's `secondaryAnimation`, so there is no exit event to wait on, and a single request is lost to the sheet's scope (the focus test fails); the retries stop at the first success and on unmount.

@@ -186,6 +186,45 @@ void main() {
       expect(byKey('order-stage-0'), findsNothing, reason: 'no bar');
     });
 
+    testWidgets(
+      'a cancelled order shows the reason the Customer gave (DL-133)',
+      (WidgetTester tester) async {
+        await show(
+          tester,
+          customerOrderJson(
+            status: 'cancelled',
+            changeable: false,
+            cancellationNote: 'Передумал',
+          ),
+        );
+        expect(
+          textOf(tester, 'order-status-reason'),
+          ru().orderCancelReasonQuoted('Передумал'),
+        );
+
+        await show(
+          tester,
+          customerOrderJson(status: 'cancelled', changeable: false),
+        );
+        expect(byKey('order-status-reason'), findsNothing);
+
+        await show(
+          tester,
+          customerOrderJson(
+            status: 'cancelled',
+            changeable: false,
+            cancellationReason: 'cancellation_request_approved',
+            cancellationRequest: 'approved',
+            requestReason: 'Срочно уезжаю',
+          ),
+        );
+        expect(
+          textOf(tester, 'order-status-reason'),
+          'Причина: «Срочно уезжаю»',
+        );
+      },
+    );
+
     testWidgets('quotes the reason of an approved request', (
       WidgetTester tester,
     ) async {
@@ -1177,16 +1216,20 @@ void main() {
   });
 
   group('the cancel sheet', () {
-    testWidgets('counts what is kept', (WidgetTester tester) async {
+    testWidgets('names the order and opens a field for the reason', (
+      WidgetTester tester,
+    ) async {
       await show(tester, customerOrderJson());
       await tester.tap(byKey('order-cancel'));
       await tester.pumpAndSettle();
 
       expect(find.text('Отменить заказ № 1001?'), findsOneWidget);
-      expect(find.text('0 / 300'), findsOneWidget);
+      await tester.tap(byKey('cancel-more'));
+      await tester.pumpAndSettle();
+      expect(find.text(ru().cancelFieldOwn), findsOneWidget);
       await tester.enterText(byKey('cancel-reason'), '  не то  ');
       await tester.pump();
-      expect(find.text('5 / 300'), findsOneWidget);
+      expect(find.text('  не то  '), findsOneWidget);
     });
 
     testWidgets('the close button keeps the order', (
@@ -1215,10 +1258,12 @@ void main() {
       await tester.tap(byKey('order-request-cancel'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Попросить отменить?'), findsOneWidget);
+      expect(find.text('Попросить отменить заказ № 1001?'), findsOneWidget);
       expect(find.text(ru().requestSheetHint), findsOneWidget);
-      expect(find.text('Отправить'), findsOneWidget);
-      expect(find.text('Не отменять'), findsOneWidget);
+      await tester.tap(byKey('cancel-chip-changedMind'));
+      await tester.pumpAndSettle();
+      expect(find.text(ru().cancelSheetSendRequest), findsOneWidget);
+      expect(find.text('Оставить заказ'), findsOneWidget);
     });
   });
 
@@ -1425,9 +1470,10 @@ void main() {
         await tester.tap(byKey('order-cancel'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+        await tester.ensureVisible(byKey('cancel-more'));
+        await tester.tap(byKey('cancel-more'));
+        await tester.pumpAndSettle();
         await tester.enterText(byKey('cancel-reason'), 'x' * 301);
-        await tester.ensureVisible(byKey('cancel-confirm'));
-        await tester.tap(byKey('cancel-confirm'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         await tester.ensureVisible(byKey('cancel-keep'));
@@ -1448,6 +1494,9 @@ void main() {
         await tester.tap(byKey('order-request-cancel'));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+        await tester.ensureVisible(byKey('cancel-chip-changedMind'));
+        await tester.tap(byKey('cancel-chip-changedMind'));
+        await tester.pumpAndSettle();
         await tester.ensureVisible(byKey('cancel-confirm'));
         await tester.tap(byKey('cancel-confirm'));
         await tester.pumpAndSettle();
