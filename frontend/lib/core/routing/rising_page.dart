@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 
 const Curve _rise = Cubic(0.2, 0.8, 0.2, 1);
 
+/// [Curves.easeIn] as seen from the reversing animation.
+final Curve _leave = Curves.easeIn.flipped;
+
 /// The page of a route that rises over the screen it was opened from, as a
 /// full-screen dialog (`DL-134`): 340 ms up on [_rise], 260 ms down on
 /// [Curves.easeIn]; with [reduced] motion a 200 ms fade each way. Key, name,
@@ -36,15 +39,18 @@ Page<void> risingPage(
           child: child,
           builder: (BuildContext context, Widget? child) {
             final bool leaving = animation.status == AnimationStatus.reverse;
+            // The animation runs 1 → 0 on the way out; the flipped curve makes
+            // the screen start slowly and speed up as it goes, like the
+            // drawing's `ease-in`.
             if (reduced) {
               return Opacity(
-                opacity: (leaving ? Curves.easeIn : Curves.easeOut).transform(
+                opacity: (leaving ? _leave : Curves.easeOut).transform(
                   animation.value,
                 ),
                 child: child,
               );
             }
-            final double t = (leaving ? Curves.easeIn : _rise).transform(
+            final double t = (leaving ? _leave : _rise).transform(
               animation.value,
             );
             return FractionalTranslation(

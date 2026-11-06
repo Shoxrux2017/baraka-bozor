@@ -20,6 +20,7 @@ import '../application/rate_draft.dart';
 import '../domain/customer_orders.dart';
 import 'rate_order_footer.dart';
 import 'rate_order_form.dart';
+import 'rate_rise.dart';
 import 'rating_stars.dart';
 
 /// What the rating screen returns when it leaves with an outcome (`DL-134`):
@@ -70,10 +71,10 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
       stars: tapped != null && tapped >= 1 && tapped <= 5 ? tapped : null,
     );
     _comment = TextEditingController(text: _draft.comment);
-    if (kept != null) {
+    if (kept != null || _draft.stars != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _announceRestored();
+          _announceOpened(restored: kept != null);
         }
       });
     }
@@ -86,17 +87,28 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
     super.dispose();
   }
 
-  /// A kept draft came back: the reader hears the stars with it.
-  void _announceRestored() {
+  /// The stars as a reader says them, with a full stop unless the word ends
+  /// with one.
+  String _said(int stars) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String value = l10n.rateStarsValue(
+      stars,
+      RateOrderForm.wordOf(l10n, stars),
+    );
+    return RegExp(r'[.?!]$').hasMatch(value) ? value : '$value.';
+  }
+
+  /// The screen opened with stars chosen or a draft kept: the reader hears the
+  /// stars, and that the draft came back (`DL-134`). The title is the
+  /// reader's own to say.
+  void _announceOpened({required bool restored}) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final int? stars = _draft.stars;
-    announce(
-      context,
-      stars == null
-          ? l10n.rateDraftRestored
-          : '${l10n.rateStarsValue(stars, RateOrderForm.wordOf(l10n, stars))}. '
-                '${l10n.rateDraftRestored}',
-    );
+    final List<String> parts = <String>[
+      if (stars != null) _said(stars),
+      if (restored) l10n.rateDraftRestored,
+    ];
+    announce(context, parts.join(' '));
   }
 
   bool get _busy => ref.read(rateProvider(widget.orderId)).isBusy;
@@ -160,11 +172,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
       }
       return;
     }
-    final String value = l10n.rateStarsValue(
-      stars,
-      RateOrderForm.wordOf(l10n, stars),
-    );
-    final String said = RegExp(r'[.?!]$').hasMatch(value) ? value : '$value.';
+    final String said = _said(stars);
     announce(context, extra == null ? said : '$said $extra');
   }
 

@@ -358,6 +358,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app reads the order's `cancellation_note` as a required key, like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 14 reaches a phone (`DL-133`).
 - The app reads the rating's `reviewed_at` as a required key (its value may be `null`), like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 15 reaches a phone (`DL-134`).
 - After a cancel, focus moves to the order's status heading through its input focus (`DL-133` (9)); that TalkBack and VoiceOver follow it there is checked only on a real phone, at the wave's manual check.
+- The rating's screen-reader behaviour (the one adjustable control, the announcements, Ruling (14)(b) of `DL-134`) is checked only on a real phone, at the wave's manual check.
 
 ## Review findings not acted on
 
@@ -416,3 +417,4 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 13 re-review, P3: with the keyboard up at 200 % on a 640 px phone the footer (strips and total capped at 45 % over the fixed button) leaves the editor's list about 50 px. Ruling: nothing overflows and the list scrolls; a later improvement folds the total while the keyboard is up.
 - Stage 13 re-review, P3: the red failure line now sits in the footer's scrolling part, so at the cap it can scroll out of view. Ruling: it starts at the top and needs a refusal, a strip and 200 % text at once; kept.
 - Stage 14 final review, P3: focus moves to the status card by retrying once a frame (at most 120) until the page's focus scope holds focus again after the cancel sheet leaves. Ruling: a modal bottom sheet never drives the order page's `secondaryAnimation`, so there is no exit event to wait on, and a single request is lost to the sheet's scope (the focus test fails); the retries stop at the first success and on unmount.
+- Stage 15 final review, P3: rating from «Мои заказы» an order already rated on another phone closes the screen and the list card shows the stored stars without a word. Ruling: the «уже оценили» banner (`rate-8`) was approved for the order page; the list shows the stored stars at once; a list banner is taken if the wave's manual check finds it confusing.

@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
+import 'rate_rise.dart';
 
 /// What the rating screen's button is doing (`DL-134`).
 enum RateFooterMode {
@@ -59,6 +58,9 @@ class RateOrderFooter extends StatelessWidget {
     final double bottom = MediaQuery.paddingOf(context).bottom;
     final bool notes = mode == RateFooterMode.form;
     final String? line = notes ? refusal : null;
+    // «Повторить» sends nothing while the comment is too long, so the strip
+    // waits until it is shortened.
+    final bool strip = unsent && !locked && !tooLong;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -78,9 +80,11 @@ class RateOrderFooter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (notes && (line != null || unsent || locked))
+            if (notes && (line != null || strip || locked))
               Flexible(
                 child: SingleChildScrollView(
+                  // Not the body's controller: the notes scroll on their own.
+                  primary: false,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
@@ -100,7 +104,7 @@ class RateOrderFooter extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (unsent && !locked)
+                      if (strip)
                         RateRise(
                           child: _Strip(onRetry: onRetry, l10n: l10n),
                         ),
@@ -118,63 +122,6 @@ class RateOrderFooter extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// [child] rising 8 px with a fade in 260 ms as it appears; with reduced
-/// motion it is simply there.
-class RateRise extends StatefulWidget {
-  const RateRise({required this.child, super.key});
-
-  final Widget child;
-
-  @override
-  State<RateRise> createState() => _RateRiseState();
-}
-
-class _RateRiseState extends State<RateRise>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _run = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 260),
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_started) {
-      _started = true;
-      if (MediaQuery.disableAnimationsOf(context)) {
-        _run.value = 1;
-      } else {
-        unawaited(_run.forward());
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _run.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _run,
-      child: widget.child,
-      builder: (BuildContext context, Widget? child) {
-        final double t = const Cubic(0.2, 0.8, 0.2, 1).transform(_run.value);
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 8),
-            child: child,
-          ),
-        );
-      },
     );
   }
 }
@@ -254,29 +201,26 @@ class _RetryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.zero,
-      child: Material(
-        key: const ValueKey<String>('rate-retry'),
-        color: Colors.white,
+    return Material(
+      key: const ValueKey<String>('rate-retry'),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Center(
-                widthFactor: 1,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.danger,
-                  ),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.danger,
                 ),
               ),
             ),

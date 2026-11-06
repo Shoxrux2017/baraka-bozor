@@ -8,6 +8,7 @@ import 'package:baraka_bozor/features/orders/application/customer_orders_control
 import 'package:baraka_bozor/features/orders/application/rate_draft.dart';
 import 'package:baraka_bozor/features/orders/presentation/rate_order_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -258,12 +259,88 @@ void main() {
   testWidgets('a second tap while the screen is on its way is ignored', (
     WidgetTester tester,
   ) async {
+    final List<MethodCall> calls = hearPlatform(tester);
     await open(tester);
     await tester.tap(byKey('order-rate-3'));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(byKey('order-rate-5'));
     await tester.pumpAndSettle();
     expect(screenAt(tester), AppPaths.customerOrderRate(orderOne, stars: 3));
+    // The stars stand disabled during the wait: no second haptic.
+    expect(lightImpacts(calls), 1);
+  });
+
+  testWidgets('the card does not open the screen once another page covers it', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.tap(byKey('order-rate-3'));
+    await tester.pump(const Duration(milliseconds: 100));
+    unawaited(
+      GoRouter.of(anywhere(tester)).push<void>(AppPaths.customerNewAddress),
+    );
+    await tester.pumpAndSettle();
+
+    expect(screenAt(tester), isNull);
+    expect(location(tester), AppPaths.customerNewAddress);
+    GoRouter.of(anywhere(tester)).pop();
+    await tester.pumpAndSettle();
+    expect(lit(tester), <bool>[false, false, false, false, false]);
+  });
+
+  testWidgets('the draft strip reads as its words and one button', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+    keepDraft(tester);
+    await tester.pumpAndSettle();
+
+    final Finder strip = find.bySemanticsLabel(
+      'Оценка не отправлена. Продолжить',
+    );
+    expect(strip, findsOneWidget);
+    final SemanticsData data = tester.getSemantics(strip).getSemanticsData();
+    expect(data.flagsCollection.isButton, isTrue);
+    expect(data.hasAction(SemanticsAction.tap), isTrue);
+    expect(find.bySemanticsLabel('Оценка не отправлена'), findsNothing);
+    expect(find.bySemanticsLabel('Продолжить'), findsNothing);
+
+    tester.semantics.tap(
+      find.semantics.byLabel('Оценка не отправлена. Продолжить'),
+    );
+    await tester.pumpAndSettle();
+    expect(screenAt(tester), AppPaths.customerOrderRate(orderOne));
+    handle.dispose();
+  });
+
+  testWidgets('the rated card is one reader node with the whole phrase', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.rows = <Map<String, Object?>>[
+      customerOrderJson(
+        status: 'completed',
+        rating: <String, Object?>{
+          'stars': 2,
+          'reasons': <Object?>['not_fresh', 'late'],
+          'comment': 'мятые',
+          'created_at': '2026-09-28T08:13:00Z',
+          'reviewed_at': null,
+        },
+      ),
+    ];
+    await open(tester);
+
+    final Finder card = find.bySemanticsLabel(
+      'Ваша оценка, сегодня в 13:13. Оценка: 2 из 5. Несвежее, Опоздал. '
+      '«мятые». Оператор свяжется с вами, чтобы разобраться',
+    );
+    expect(card, findsOneWidget);
+    expect(find.bySemanticsLabel('Ваша оценка'), findsNothing);
+    expect(find.bySemanticsLabel('Оценка: 2 из 5'), findsNothing);
+    expect(find.bySemanticsLabel('Несвежее'), findsNothing);
+    handle.dispose();
   });
 
   testWidgets('a draft shows on the card and continues', (
@@ -307,7 +384,17 @@ void main() {
   testWidgets('a sent rating flashes the rated card', (
     WidgetTester tester,
   ) async {
-    await open(tester, size: const Size(800, 500));
+    await open(tester, size: const Size(360, 560));
+    double top() => tester
+        .state<ScrollableState>(
+          find
+              .descendant(of: byKey('order'), matching: find.byType(Scrollable))
+              .first,
+        )
+        .position
+        .pixels;
+    await scrollTo(tester, byKey('order-rate-5'));
+    expect(top(), greaterThan(0));
     await tester.tap(byKey('order-rate-5'));
     await tester.pumpAndSettle();
     expect(screenAt(tester), AppPaths.customerOrderRate(orderOne, stars: 5));
@@ -319,25 +406,15 @@ void main() {
     }
 
     expect(location(tester), AppPaths.customerOrder(orderOne));
-    expect(
-      tester
-          .state<ScrollableState>(
-            find
-                .descendant(
-                  of: byKey('order'),
-                  matching: find.byType(Scrollable),
-                )
-                .first,
-          )
-          .position
-          .pixels,
-      0,
-    );
     expect(ground(tester), isNot(Colors.white));
     final BoxDecoration start =
         tester.widget<DecoratedBox>(byKey('order-rated')).decoration
             as BoxDecoration;
     expect(start.boxShadow!.first.spreadRadius, greaterThan(1));
+
+    // The page brings its top into view in 300 ms.
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(top(), 0);
 
     await tester.pump(const Duration(milliseconds: 1600));
     expect(ground(tester), Colors.white);
@@ -430,7 +507,10 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Оператор связался с вами сегодня в 15:40'),
+      find.bySemanticsLabel(
+        'Ваша оценка, сегодня в 13:13. Оценка: 2 из 5. Несвежее. '
+        'Оператор связался с вами сегодня в 15:40',
+      ),
       findsOneWidget,
     );
 
@@ -605,6 +685,19 @@ void main() {
       await scrollTo(tester, byKey('order-rate'));
       await checkTargets(tester);
 
+      keepDraft(tester);
+      await tester.pumpAndSettle();
+      await scrollTo(tester, find.text('Продолжить'));
+      await checkTargets(tester);
+      handle.dispose();
+    });
+
+    testWidgets('the rate card with its draft strip holds at 100 %', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(tester, size: phone);
+      await scrollTo(tester, byKey('order-rate'));
       keepDraft(tester);
       await tester.pumpAndSettle();
       await scrollTo(tester, find.text('Продолжить'));

@@ -32,9 +32,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * instants, and the payment once made: the cash the Courier took at the door
  * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
  * rated (`DL-91` (4)), and when an Operator or Admin reviewed it as
- * `reviewed_at` — never who (`DL-134` (1)). A direct cancel carries the Customer's reason as
- * `cancellation_note` (`DL-133` (1)). Refunds arrive with Wave 5; until then
- * the list is empty.
+ * `reviewed_at` — never who (`DL-134` (1)). A direct cancel carries the
+ * Customer's reason as `cancellation_note` (`DL-133` (1)). Refunds arrive with
+ * Wave 5; until then the list is empty.
  *
  * Expects `self::RELATIONS` loaded.
  *

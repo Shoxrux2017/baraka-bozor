@@ -306,6 +306,60 @@ void main() {
     expect(find.text('Можно выбрать несколько'), findsOneWidget);
   });
 
+  testWidgets('an order whose every line was removed still names them', (
+    WidgetTester tester,
+  ) async {
+    orders.rows = <Map<String, Object?>>[
+      customerOrderJson(
+        status: 'completed',
+        canRate: true,
+        lines: <Object?>[
+          orderLineJson(
+            status: 'removed',
+            removedReason: 'unavailable',
+            patch: <String, Object?>{
+              'image_url': 'https://cdn.example/tomato.webp',
+            },
+          ),
+          orderLineJson(
+            id: lineBread,
+            productId: productBread,
+            unit: 'piece',
+            status: 'removed',
+            removedReason: 'unavailable',
+          ),
+        ],
+        timestamps: <String, Object?>{'completed_at': '2026-09-28T08:05:00Z'},
+      ),
+    ];
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 5));
+
+    expect(
+      find.text('Помидоры, Хлеб · доставлен сегодня в 13:05'),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('rate-header'),
+        matching: find.byType(ProductImage),
+      ),
+      findsNWidgets(2),
+    );
+  });
+
+  testWidgets('the screen opened on stars says them', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne));
+    expect(announced(tester), isEmpty);
+
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 4));
+    expect(announced(tester), <String>['4 из 5, Хорошо.']);
+
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 5));
+    expect(announced(tester), <String>['5 из 5, Отлично!']);
+  });
+
   testWidgets('reasons fold at 4 and come back at 2', (
     WidgetTester tester,
   ) async {
@@ -984,6 +1038,83 @@ void main() {
     expect(sendActive(tester), isTrue);
   });
 
+  testWidgets('«Повторить» hides while the comment is too long', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 3));
+    orders.rateFailure = const NetworkFailure(mayHaveArrived: false);
+    await tapAndSettle(tester, byKey('rate-send'));
+    expect(byKey('rate-strip'), findsOneWidget);
+
+    await tester.enterText(byKey('rate-comment'), 'я' * 501);
+    await tester.pumpAndSettle();
+    expect(byKey('rate-strip'), findsNothing);
+    expect(byKey('rate-retry'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('rate-send'),
+        matching: find.text('Сократите комментарий'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.enterText(byKey('rate-comment'), 'я' * 500);
+    await tester.pumpAndSettle();
+    expect(byKey('rate-strip'), findsOneWidget);
+  });
+
+  testWidgets('the word keeps its length with reduced motion', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne));
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pump();
+
+    await tester.tap(byKey('rate-star-5'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    final double opacity = tester
+        .widget<Opacity>(
+          find
+              .ancestor(of: byKey('rate-word'), matching: find.byType(Opacity))
+              .first,
+        )
+        .opacity;
+    // A 150 ms fade, not one cut to a twentieth by the platform.
+    expect(opacity, inExclusiveRange(0, 1));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('with reduced motion the closed face only fades, in 200 ms', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 2));
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pump();
+    orders.rateFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'rating_window_closed'),
+    );
+    await tester.tap(byKey('rate-send'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final Finder face = byKey('rate-closed');
+    Opacity fade() => tester.widget<Opacity>(
+      find.ancestor(of: face, matching: find.byType(Opacity)).first,
+    );
+    expect(fade().opacity, inExclusiveRange(0, 1));
+    final Offset top = tester.getTopLeft(face);
+    await tester.pump(const Duration(milliseconds: 110));
+    expect(tester.getTopLeft(face), top);
+    expect(fade().opacity, 1);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('the over-limit button says to shorten and is off', (
     WidgetTester tester,
   ) async {
@@ -1199,5 +1330,96 @@ void main() {
     expect(exit, isNull);
     expect(location(tester), AppPaths.customerOrder(orderOne));
     expect(byKey('rate-send'), findsNothing);
+  });
+
+  group('every face passes the tap-target guideline', () {
+    /// Brings the screen to [face].
+    Future<void> reach(WidgetTester tester, String face) async {
+      switch (face) {
+        case 'empty':
+          break;
+        case '2 stars':
+          await tapAndSettle(tester, byKey('rate-star-2'));
+          await tapAndSettle(tester, byKey('rate-reason-not_fresh'));
+        case '5 stars':
+          await tapAndSettle(tester, byKey('rate-star-5'));
+        case 'over the limit':
+          // At 5 stars there are no reasons to be left half under the bar by
+          // the field scrolling into view; a target cut by the scroll's edge
+          // is not a target the guideline can measure.
+          await tapAndSettle(tester, byKey('rate-star-5'));
+          await tester.enterText(byKey('rate-comment'), 'я' * 520);
+          await tester.pumpAndSettle();
+        case 'sending':
+          await tapAndSettle(tester, byKey('rate-star-3'));
+          orders.hold = Completer<void>();
+          await tester.tap(byKey('rate-send'));
+          await tester.pump();
+        case 'sent':
+          orders.rows = <Map<String, Object?>>[ratedRow(3)];
+          await tapAndSettle(tester, byKey('rate-star-3'));
+          await tester.tap(byKey('rate-send'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 50));
+        case 'red line':
+          await tapAndSettle(tester, byKey('rate-star-3'));
+          orders.rateFailure = const ApiRefusal(
+            ApiError(status: 429, code: 'rate_limited'),
+          );
+          await tapAndSettle(tester, byKey('rate-send'));
+        case 'strip':
+          await tapAndSettle(tester, byKey('rate-star-3'));
+          orders.rateFailure = const NetworkFailure(mayHaveArrived: false);
+          await tapAndSettle(tester, byKey('rate-send'));
+        case 'locked':
+          await tapAndSettle(tester, byKey('rate-star-3'));
+          orders.rateFailure = const NetworkFailure();
+          await tapAndSettle(tester, byKey('rate-send'));
+        case 'closed':
+          await tapAndSettle(tester, byKey('rate-star-3'));
+          orders.rateFailure = const ApiRefusal(
+            ApiError(status: 409, code: 'rating_window_closed'),
+          );
+          await tapAndSettle(tester, byKey('rate-send'));
+      }
+    }
+
+    for (final String face in <String>[
+      'empty',
+      '2 stars',
+      '5 stars',
+      'over the limit',
+      'sending',
+      'sent',
+      'red line',
+      'strip',
+      'locked',
+      'closed',
+    ]) {
+      for (final (String, TextScaler?) scale in <(String, TextScaler?)>[
+        ('100 %', null),
+        ('200 %', const NonlinearTextScaler(2)),
+      ]) {
+        testWidgets('the $face face at ${scale.$1}', (
+          WidgetTester tester,
+        ) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          orders.rows = <Map<String, Object?>>[_boughtRow()];
+          await open(
+            tester,
+            rate: AppPaths.customerOrderRate(orderOne),
+            size: const Size(360, 640),
+            textScaler: scale.$2,
+          );
+          await reach(tester, face);
+
+          expect(tester.takeException(), isNull);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          orders.hold?.complete();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
+          handle.dispose();
+        });
+      }
+    }
   });
 }

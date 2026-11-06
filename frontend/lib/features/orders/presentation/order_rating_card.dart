@@ -12,13 +12,12 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/kit/kit_star.dart';
 import '../application/rate_draft.dart';
 import '../domain/customer_orders.dart';
+import 'rate_rise.dart';
 import 'rating_stars.dart';
 
 const List<BoxShadow> _cardShadow = <BoxShadow>[
   BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 2)),
 ];
-
-const Cubic _settle = Cubic(0.2, 0.8, 0.2, 1);
 
 /// The white card both rating cards stand on; [decoration] draws a flash.
 class _RatingCard extends StatelessWidget {
@@ -48,51 +47,6 @@ class _RatingCard extends StatelessWidget {
   }
 }
 
-/// Brings [child] in 8 px from below with a fade in 260 ms when it first
-/// stands; with reduced motion only the fade plays (`DL-134`).
-class _Rise extends StatefulWidget {
-  const _Rise({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_Rise> createState() => _RiseState();
-}
-
-class _RiseState extends State<_Rise> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 260),
-    // Reduced motion changes how it arrives, not how long it takes.
-    animationBehavior: AnimationBehavior.preserve,
-  )..forward();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool reduced = MediaQuery.disableAnimationsOf(context);
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (BuildContext context, Widget? child) {
-        final double eased = _settle.transform(_controller.value);
-        return Opacity(
-          opacity: eased,
-          child: Transform.translate(
-            offset: Offset(0, reduced ? 0 : 8 * (1 - eased)),
-            child: child,
-          ),
-        );
-      },
-    );
-  }
-}
-
 /// The amber strip under the order's stars while an unsent rating is kept:
 /// «Оценка не отправлена» and «Продолжить». Above 1.3 at 13 px the button goes
 /// under the words at full width.
@@ -112,30 +66,24 @@ class _DraftStrip extends StatelessWidget {
         style: const TextStyle(fontSize: 13, height: 1.4, color: KitColors.ink),
       ),
     );
-    final Widget button = Semantics(
-      button: true,
-      excludeSemantics: true,
-      label: l10n.rateDraftContinue,
-      onTap: onContinue,
-      child: Material(
-        color: Colors.white,
+    final Widget button = Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onContinue,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-            child: Center(
-              widthFactor: large ? null : 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  l10n.rateDraftContinue,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.warningDark,
-                  ),
+        onTap: onContinue,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          child: Center(
+            widthFactor: large ? null : 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                l10n.rateDraftContinue,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.warningDark,
                 ),
               ),
             ),
@@ -148,41 +96,49 @@ class _DraftStrip extends StatelessWidget {
       size: 20,
       color: KitColors.warningDark,
     );
-    return _Rise(
-      child: DecoratedBox(
-        key: const ValueKey<String>('order-rate-draft'),
-        decoration: BoxDecoration(
-          color: KitColors.warningWash,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
-          child: large
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Padding(
-                          padding: EdgeInsets.only(top: 12),
-                          child: icon,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(child: words),
-                      ],
-                    ),
-                    button,
-                  ],
-                )
-              : Row(
-                  children: <Widget>[
-                    icon,
-                    const SizedBox(width: 10),
-                    Expanded(child: words),
-                    button,
-                  ],
-                ),
+    // One stop for a reader: the words, then the button (`DL-134` (11)).
+    return RateRise(
+      child: Semantics(
+        container: true,
+        button: true,
+        excludeSemantics: true,
+        label: '${l10n.rateDraftLine}. ${l10n.rateDraftContinue}',
+        onTap: onContinue,
+        child: DecoratedBox(
+          key: const ValueKey<String>('order-rate-draft'),
+          decoration: BoxDecoration(
+            color: KitColors.warningWash,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+            child: large
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          const Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: icon,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(child: words),
+                        ],
+                      ),
+                      button,
+                    ],
+                  )
+                : Row(
+                    children: <Widget>[
+                      icon,
+                      const SizedBox(width: 10),
+                      Expanded(child: words),
+                      button,
+                    ],
+                  ),
+          ),
         ),
       ),
     );
@@ -280,6 +236,7 @@ class _RateOrderCardState extends ConsumerState<RateOrderCard> {
           Center(
             child: RatingStars(
               value: _lit,
+              enabled: _lit == null,
               onChanged: _tap,
               cell: 44,
               glyph: 34,
@@ -380,73 +337,98 @@ class _RatedOrderCardState extends State<RatedOrderCard>
         decoration: _decoration(),
         child: child!,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _RatedHead(
-            title: l10n.ratedTitle,
-            date: orderAtLower(l10n, rating.createdAt, widget.now),
-          ),
-          const SizedBox(height: 8),
-          Semantics(
-            label: l10n.ratedStarsLabel(rating.stars),
-            excludeSemantics: true,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                for (int star = 1; star <= 5; star++) ...<Widget>[
-                  if (star > 1) const SizedBox(width: 2),
-                  KitStar(filled: star <= rating.stars, size: 24),
-                ],
-              ],
+      // One stop for a reader, the whole phrase (`DL-134` (11)).
+      child: Semantics(
+        container: true,
+        excludeSemantics: true,
+        label: _spoken(l10n),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _RatedHead(
+              title: l10n.ratedTitle,
+              date: orderAtLower(l10n, rating.createdAt, widget.now),
             ),
-          ),
-          if (rating.reasons.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                for (final RatingReason reason in rating.reasons)
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: KitColors.field,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+            const SizedBox(height: 8),
+            Semantics(
+              label: l10n.ratedStarsLabel(rating.stars),
+              excludeSemantics: true,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  for (int star = 1; star <= 5; star++) ...<Widget>[
+                    if (star > 1) const SizedBox(width: 2),
+                    KitStar(filled: star <= rating.stars, size: 24),
+                  ],
+                ],
+              ),
+            ),
+            if (rating.reasons.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  for (final RatingReason reason in rating.reasons)
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: KitColors.field,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        OrderLabels.ratingReason(l10n, reason),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: KitColors.ink,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          OrderLabels.ratingReason(l10n, reason),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: KitColors.ink,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ],
-          if (comment != null && comment.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(
-              '«$comment»',
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: KitColors.ink,
+                ],
               ),
-            ),
+            ],
+            if (comment != null && comment.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              Text(
+                '«$comment»',
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: KitColors.ink,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            _RatedNote(rating: rating, now: widget.now),
           ],
-          const SizedBox(height: 12),
-          _RatedNote(rating: rating, now: widget.now),
-        ],
+        ),
       ),
     );
+  }
+
+  /// The card as one phrase: the title and date, the stars, the reasons, the
+  /// comment and what happens next; the parts that are absent are left out.
+  String _spoken(AppLocalizations l10n) {
+    final CustomerRating rating = widget.rating;
+    final String? comment = rating.comment;
+    return <String>[
+      '${l10n.ratedTitle}, ${orderAtLower(l10n, rating.createdAt, widget.now)}',
+      l10n.ratedStarsLabel(rating.stars),
+      if (rating.reasons.isNotEmpty)
+        rating.reasons
+            .map(
+              (RatingReason reason) => OrderLabels.ratingReason(l10n, reason),
+            )
+            .join(', '),
+      if (comment != null && comment.isNotEmpty) '«$comment»',
+      _ratedNote(l10n, rating, widget.now).$2,
+    ].join('. ');
   }
 }
 
@@ -500,8 +482,25 @@ class _RatedHead extends StatelessWidget {
   }
 }
 
-/// What happens next: thanks at 4 and 5; at 1 to 3 that the Operator will
-/// call, or when they did.
+/// What happens next, with its icon if it has one: thanks at 4 and 5; at 1 to
+/// 3 that the Operator will call, or when they did.
+(IconData?, String) _ratedNote(
+  AppLocalizations l10n,
+  CustomerRating rating,
+  DateTime now,
+) {
+  final DateTime? reviewed = rating.reviewedAt;
+  if (!isLowRating(rating.stars)) {
+    return (null, l10n.ratedThanks);
+  }
+  return reviewed == null
+      ? (Icons.support_agent, l10n.ratedOperatorWill)
+      : (
+          Icons.check_circle,
+          l10n.ratedOperatorCalled(orderAtLower(l10n, reviewed, now)),
+        );
+}
+
 class _RatedNote extends StatelessWidget {
   const _RatedNote({required this.rating, required this.now});
 
@@ -510,43 +509,30 @@ class _RatedNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final DateTime? reviewed = rating.reviewedAt;
-    final bool low = isLowRating(rating.stars);
-    final (IconData?, String) note = !low
-        ? (null, l10n.ratedThanks)
-        : reviewed == null
-        ? (Icons.support_agent, l10n.ratedOperatorWill)
-        : (
-            Icons.check_circle,
-            l10n.ratedOperatorCalled(orderAtLower(l10n, reviewed, now)),
-          );
-    final IconData? icon = note.$1;
+    final (IconData? icon, String words) = _ratedNote(
+      AppLocalizations.of(context),
+      rating,
+      now,
+    );
 
-    // Its own node, so a reader hears the phrase whole.
-    return Semantics(
-      container: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (icon != null) ...<Widget>[
-            ExcludeSemantics(
-              child: Icon(icon, size: 18, color: KitColors.primaryDark),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Text(
-              note.$2,
-              style: const TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: KitColors.ink2,
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (icon != null) ...<Widget>[
+          Icon(icon, size: 18, color: KitColors.primaryDark),
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: Text(
+            words,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: KitColors.ink2,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

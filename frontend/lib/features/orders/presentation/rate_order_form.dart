@@ -351,7 +351,10 @@ class _RateHeader extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
     final DateTime now = ref.watch(clockProvider)();
-    final List<CustomerOrderLine> lines = order.openLines;
+    // Every line may have been removed; the order is still named by them.
+    final List<CustomerOrderLine> lines = order.openLines.isEmpty
+        ? order.lines
+        : order.openLines;
     final String names = _names(l10n, language, lines);
     final DateTime? completedAt = order.completedAt;
     final String? when = completedAt == null
@@ -519,6 +522,8 @@ class _WordState extends State<_Word> with SingleTickerProviderStateMixin {
   late final AnimationController _run = AnimationController(
     vsync: this,
     value: 1,
+    // Reduced motion shortens the rise to a fade, not the time it takes.
+    animationBehavior: AnimationBehavior.preserve,
   );
 
   @override
