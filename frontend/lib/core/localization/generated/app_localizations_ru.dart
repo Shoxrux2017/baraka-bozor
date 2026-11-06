@@ -4545,14 +4545,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rateBlockTitle => 'Как вам заказ?';
 
   @override
-  String get rateBlockHint => 'Свежесть, вес, доставка — оценить можно 7 дней';
+  String get rateBlockHint => 'Свежесть, вес и доставка · оценить можно 7 дней';
 
   @override
   String get ratedTitle => 'Ваша оценка';
 
   @override
-  String get ratedThanksLow =>
-      'Спасибо! Оператор свяжется с вами, чтобы разобраться.';
+  String get rateDraftLine => 'Оценка не отправлена';
+
+  @override
+  String get rateDraftContinue => 'Продолжить';
+
+  @override
+  String get ratedOperatorWill => 'Оператор свяжется с вами, чтобы разобраться';
+
+  @override
+  String ratedOperatorCalled(String when) {
+    return 'Оператор связался с вами $when';
+  }
+
+  @override
+  String ratedAlreadyTitle(int stars) {
+    return 'Этот заказ уже оценили: $stars из 5';
+  }
+
+  @override
+  String get ratedAlreadyHint => 'Оценку отправили раньше — изменить её нельзя';
 
   @override
   String get ratedThanks => 'Спасибо за оценку!';

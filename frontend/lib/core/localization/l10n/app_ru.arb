@@ -2837,9 +2837,28 @@
   "rateUnsentSpoken": "Оценка не отправлена: нет связи.",
   "rateUnsureSpoken": "Ответ не дошёл. Оценка могла сохраниться. Отправьте ещё раз.",
   "rateBlockTitle": "Как вам заказ?",
-  "rateBlockHint": "Свежесть, вес, доставка — оценить можно 7 дней",
+  "rateBlockHint": "Свежесть, вес и доставка · оценить можно 7 дней",
   "ratedTitle": "Ваша оценка",
-  "ratedThanksLow": "Спасибо! Оператор свяжется с вами, чтобы разобраться.",
+  "rateDraftLine": "Оценка не отправлена",
+  "rateDraftContinue": "Продолжить",
+  "ratedOperatorWill": "Оператор свяжется с вами, чтобы разобраться",
+  "ratedOperatorCalled": "Оператор связался с вами {when}",
+  "@ratedOperatorCalled": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "ratedAlreadyTitle": "Этот заказ уже оценили: {stars} из 5",
+  "@ratedAlreadyTitle": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "ratedAlreadyHint": "Оценку отправили раньше — изменить её нельзя",
   "ratedThanks": "Спасибо за оценку!",
   "deleteAccountTitle": "Удалить аккаунт?",
   "deleteErasedHeading": "Сотрём",

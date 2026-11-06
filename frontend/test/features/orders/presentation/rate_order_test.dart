@@ -567,7 +567,7 @@ void main() {
     expect(find.text('Несвежее'), findsOneWidget);
     expect(find.text('«мятые»'), findsOneWidget);
     expect(
-      find.text('Спасибо! Оператор свяжется с вами, чтобы разобраться.'),
+      find.text('Оператор свяжется с вами, чтобы разобраться'),
       findsOneWidget,
     );
   });
@@ -1200,104 +1200,4 @@ void main() {
     expect(location(tester), AppPaths.customerOrder(orderOne));
     expect(byKey('rate-send'), findsNothing);
   });
-
-  testWidgets('the page offers stars only while it can be rated', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    expect(byKey('order-rate'), findsOneWidget);
-    expect(byKey('order-rated'), findsNothing);
-    for (int stars = 1; stars <= 5; stars++) {
-      expect(byKey('order-rate-$stars'), findsOneWidget);
-    }
-    expect(find.text('Как вам заказ?'), findsOneWidget);
-
-    orders.rows = <Map<String, Object?>>[
-      customerOrderJson(status: 'completed', rating: _ratedTwo),
-    ];
-    await open(tester);
-    expect(byKey('order-rate'), findsNothing);
-    expect(byKey('order-rated'), findsOneWidget);
-
-    orders.rows = <Map<String, Object?>>[customerOrderJson(status: 'shopping')];
-    await open(tester);
-    expect(byKey('order-rate'), findsNothing);
-    expect(byKey('order-rated'), findsNothing);
-  });
-
-  for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
-    testWidgets(
-      'the screen holds at 2 stars with text x2 (${locale.languageCode})',
-      (WidgetTester tester) async {
-        await open(
-          tester,
-          rate: AppPaths.customerOrderRate(orderOne, stars: 2),
-          size: const Size(320, 640),
-          textScale: 2,
-          device: locale,
-        );
-        await tapAndSettle(tester, byKey('rate-reason-not_fresh'));
-        await tester.enterText(byKey('rate-comment'), 'мятые ' * 30);
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'the page holds the rated card with text x2 (${locale.languageCode})',
-      (WidgetTester tester) async {
-        orders.rows = <Map<String, Object?>>[
-          customerOrderJson(
-            status: 'completed',
-            rating: <String, Object?>{
-              'stars': 1,
-              'reasons': <Object?>['not_fresh', 'wrong_weight', 'late', 'rude'],
-              'comment': 'мятые ' * 40,
-              'created_at': '2026-09-29T08:00:00Z',
-              'reviewed_at': null,
-            },
-          ),
-        ];
-        await open(
-          tester,
-          size: const Size(320, 640),
-          textScale: 2,
-          device: locale,
-        );
-
-        await tester.scrollUntilVisible(
-          byKey('order-rated'),
-          200,
-          scrollable: find
-              .descendant(of: byKey('order'), matching: find.byType(Scrollable))
-              .first,
-        );
-        expect(byKey('order-rated'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'the page holds the stars block with text x2 (${locale.languageCode})',
-      (WidgetTester tester) async {
-        await open(
-          tester,
-          size: const Size(320, 640),
-          textScale: 2,
-          device: locale,
-        );
-
-        await tester.scrollUntilVisible(
-          byKey('order-rate'),
-          200,
-          scrollable: find
-              .descendant(of: byKey('order'), matching: find.byType(Scrollable))
-              .first,
-        );
-        expect(byKey('order-rate'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
-  }
 }

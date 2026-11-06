@@ -3247,9 +3247,28 @@
   "rateUnsentSpoken": "Baho yuborilmadi: aloqa yo'q.",
   "rateUnsureSpoken": "Javob kelmadi. Baho saqlangan bo'lishi mumkin. Yana yuboring.",
   "rateBlockTitle": "Buyurtma yoqdimi?",
-  "rateBlockHint": "Yangilik, og'irlik, yetkazish — 7 kun ichida baholash mumkin",
+  "rateBlockHint": "Yangilik, og'irlik va yetkazish · 7 kun ichida baholash mumkin",
   "ratedTitle": "Sizning bahoingiz",
-  "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
+  "rateDraftLine": "Baho yuborilmadi",
+  "rateDraftContinue": "Davom etish",
+  "ratedOperatorWill": "Operator vaziyatni aniqlash uchun siz bilan bog'lanadi",
+  "ratedOperatorCalled": "Operator siz bilan {when} bog'landi",
+  "@ratedOperatorCalled": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "ratedAlreadyTitle": "Bu buyurtma allaqachon baholangan: 5 dan {stars}",
+  "@ratedAlreadyTitle": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "ratedAlreadyHint": "Baho avval yuborilgan — uni o'zgartirib bo'lmaydi",
   "ratedThanks": "Baho uchun rahmat!",
   "deleteAccountTitle": "Akkauntni o'chirasizmi?",
   "deleteErasedHeading": "O'chiriladi",

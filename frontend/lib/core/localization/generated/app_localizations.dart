@@ -7541,7 +7541,7 @@ abstract class AppLocalizations {
   /// No description provided for @rateBlockHint.
   ///
   /// In uz, this message translates to:
-  /// **'Yangilik, og\'irlik, yetkazish — 7 kun ichida baholash mumkin'**
+  /// **'Yangilik, og\'irlik va yetkazish · 7 kun ichida baholash mumkin'**
   String get rateBlockHint;
 
   /// No description provided for @ratedTitle.
@@ -7550,11 +7550,41 @@ abstract class AppLocalizations {
   /// **'Sizning bahoingiz'**
   String get ratedTitle;
 
-  /// No description provided for @ratedThanksLow.
+  /// No description provided for @rateDraftLine.
   ///
   /// In uz, this message translates to:
-  /// **'Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi.'**
-  String get ratedThanksLow;
+  /// **'Baho yuborilmadi'**
+  String get rateDraftLine;
+
+  /// No description provided for @rateDraftContinue.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etish'**
+  String get rateDraftContinue;
+
+  /// No description provided for @ratedOperatorWill.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi'**
+  String get ratedOperatorWill;
+
+  /// No description provided for @ratedOperatorCalled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator siz bilan {when} bog\'landi'**
+  String ratedOperatorCalled(String when);
+
+  /// No description provided for @ratedAlreadyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu buyurtma allaqachon baholangan: 5 dan {stars}'**
+  String ratedAlreadyTitle(int stars);
+
+  /// No description provided for @ratedAlreadyHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho avval yuborilgan — uni o\'zgartirib bo\'lmaydi'**
+  String get ratedAlreadyHint;
 
   /// No description provided for @ratedThanks.
   ///

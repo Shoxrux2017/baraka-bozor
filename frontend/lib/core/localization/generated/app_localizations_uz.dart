@@ -4492,14 +4492,34 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get rateBlockHint =>
-      'Yangilik, og\'irlik, yetkazish — 7 kun ichida baholash mumkin';
+      'Yangilik, og\'irlik va yetkazish · 7 kun ichida baholash mumkin';
 
   @override
   String get ratedTitle => 'Sizning bahoingiz';
 
   @override
-  String get ratedThanksLow =>
-      'Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi.';
+  String get rateDraftLine => 'Baho yuborilmadi';
+
+  @override
+  String get rateDraftContinue => 'Davom etish';
+
+  @override
+  String get ratedOperatorWill =>
+      'Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi';
+
+  @override
+  String ratedOperatorCalled(String when) {
+    return 'Operator siz bilan $when bog\'landi';
+  }
+
+  @override
+  String ratedAlreadyTitle(int stars) {
+    return 'Bu buyurtma allaqachon baholangan: 5 dan $stars';
+  }
+
+  @override
+  String get ratedAlreadyHint =>
+      'Baho avval yuborilgan — uni o\'zgartirib bo\'lmaydi';
 
   @override
   String get ratedThanks => 'Baho uchun rahmat!';

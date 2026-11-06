@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/timed_banner.dart';
 import 'cancel_sheet.dart';
+import 'order_notice_banner.dart';
 
 /// The strip the order page shows once the cancel sheet answered for sure
 /// (`DL-133`): «Заказ № … отменён» over how to order again, or «Просьба
@@ -34,58 +34,11 @@ class OrderCancelledBanner extends StatelessWidget {
 
     return TimedBanner(
       fromBelow: true,
-      child: DecoratedBox(
-        key: const ValueKey<String>('cancel-banner'),
-        decoration: BoxDecoration(
-          color: KitColors.ink2,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: KitColors.shadow,
-              blurRadius: 24,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                cancelled ? Icons.check_circle : Icons.schedule,
-                size: 24,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        hint,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.92),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      child: DarkNoticeBanner(
+        boxKey: const ValueKey<String>('cancel-banner'),
+        icon: cancelled ? Icons.check_circle : Icons.schedule,
+        title: title,
+        hint: hint,
       ),
     );
   }
