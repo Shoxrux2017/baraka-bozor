@@ -4165,5 +4165,23 @@
     }
   },
   "cancelBannerHint": "Qayta buyurtma berish — pastdagi «Buyurtmani takrorlash»",
-  "requestBannerHint": "Operator hal qiladi — sizga xabar beramiz"
+  "requestBannerHint": "Operator hal qiladi — sizga xabar beramiz",
+  "logoutTitle": "Akkauntdan chiqasizmi?",
+  "logoutBody": "Qayta kirish uchun {phone} raqamiga Telegram orqali kod keladi. Savat, manzillar va buyurtmalar saqlanadi.",
+  "@logoutBody": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "logoutStaffStays": "Xodim rejimi telefonda qoladi.",
+  "languageChosenSpoken": "Til: {language}, tanlangan",
+  "@languageChosenSpoken": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  }
 }

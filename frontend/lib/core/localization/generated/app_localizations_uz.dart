@@ -5373,4 +5373,20 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get requestBannerHint => 'Operator hal qiladi — sizga xabar beramiz';
+
+  @override
+  String get logoutTitle => 'Akkauntdan chiqasizmi?';
+
+  @override
+  String logoutBody(String phone) {
+    return 'Qayta kirish uchun $phone raqamiga Telegram orqali kod keladi. Savat, manzillar va buyurtmalar saqlanadi.';
+  }
+
+  @override
+  String get logoutStaffStays => 'Xodim rejimi telefonda qoladi.';
+
+  @override
+  String languageChosenSpoken(String language) {
+    return 'Til: $language, tanlangan';
+  }
 }

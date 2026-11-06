@@ -8809,6 +8809,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Operator hal qiladi — sizga xabar beramiz'**
   String get requestBannerHint;
+
+  /// No description provided for @logoutTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntdan chiqasizmi?'**
+  String get logoutTitle;
+
+  /// No description provided for @logoutBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta kirish uchun {phone} raqamiga Telegram orqali kod keladi. Savat, manzillar va buyurtmalar saqlanadi.'**
+  String logoutBody(String phone);
+
+  /// No description provided for @logoutStaffStays.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodim rejimi telefonda qoladi.'**
+  String get logoutStaffStays;
+
+  /// No description provided for @languageChosenSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Til: {language}, tanlangan'**
+  String languageChosenSpoken(String language);
 }
 
 class _AppLocalizationsDelegate

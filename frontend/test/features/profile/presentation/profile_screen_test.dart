@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
+import 'package:baraka_bozor/core/widgets/entrance_fade.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -13,6 +16,7 @@ import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/profile/presentation/profile_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -360,6 +364,8 @@ void main() {
       await openProfile(tester);
 
       await tester.tap(byKey('logout-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-confirm'));
       await tester.pumpAndSettle();
       expect(auth.calls, contains('logout:customer'));
       expect(byKey('profile-list'), findsNothing);
@@ -954,6 +960,316 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the logout sheet', () {
+    ProviderContainer container(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(byKey('profile-list')));
+
+    Future<void> openLogout(WidgetTester tester) async {
+      await tester.ensureVisible(byKey('logout-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-button'));
+      await tester.pumpAndSettle();
+    }
+
+    double fadeOpacity(WidgetTester tester) => tester
+        .widget<FadeTransition>(
+          find
+              .descendant(
+                of: find.byType(EntranceFade),
+                matching: find.byType(FadeTransition),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    testWidgets('logout asks first and says what stays', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+
+      await openLogout(tester);
+      expect(byKey('logout-sheet'), findsOneWidget);
+      expect(find.text('Выйти из аккаунта?'), findsOneWidget);
+      expect(
+        find.text(
+          'Чтобы войти снова, на +998 90 123 45 67 придёт код в Telegram. '
+          'Корзина, адреса и заказы сохранятся.',
+        ),
+        findsOneWidget,
+      );
+      expect(auth.calls, isNot(contains('logout:customer')));
+
+      await tester.tap(byKey('logout-cancel'));
+      await tester.pumpAndSettle();
+      expect(byKey('logout-sheet'), findsNothing);
+      expect(byKey('profile-list'), findsOneWidget);
+
+      await openLogout(tester);
+      await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
+      expect(byKey('logout-sheet'), findsNothing);
+      expect(byKey('profile-list'), findsOneWidget);
+      expect(auth.calls, isNot(contains('logout:customer')));
+    });
+
+    testWidgets('logout from the sheet fades the sign-in in', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+
+      await openLogout(tester);
+      await tester.tap(byKey('logout-confirm'));
+      for (int i = 0; i < 40 && byKey('phone-field').evaluate().isEmpty; i++) {
+        await tester.pump();
+      }
+      expect(byKey('phone-field'), findsOneWidget);
+      expect(fadeOpacity(tester), 0);
+      await tester.pump(const Duration(milliseconds: 320));
+      expect(fadeOpacity(tester), 1);
+      await tester.pumpAndSettle();
+      expect(tokens.tokens[SessionSlot.customer], isNull);
+    });
+
+    testWidgets('with a staff session the sheet says the staff mode stays', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400), staff: true);
+
+      await openLogout(tester);
+      expect(
+        find.text('Режим сотрудника останется на телефоне.'),
+        findsOneWidget,
+      );
+      final ProviderContainer scope = container(tester);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(byKey('staff-menu'), findsOneWidget);
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+    });
+
+    testWidgets('logout works from a profile that failed', (tester) async {
+      profile.loadFailure = const NetworkFailure();
+      await openProfile(tester, size: const Size(400, 1400));
+
+      await openLogout(tester);
+      expect(find.textContaining('+998 90 123 45 67'), findsOneWidget);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('logout:customer'));
+    });
+
+    testWidgets('a fade request is spent once', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      final ProviderContainer scope = container(tester);
+
+      await openLogout(tester);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(byKey('phone-field'), findsOneWidget);
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+
+      auth.verifyResult = IssuedSession(
+        token: 'c2',
+        user: user(id: 'c2'),
+      );
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      await tester.enterText(byKey('phone-field'), '901234567');
+      await tester.tap(byKey('continue-button'));
+      await tester.pumpAndSettle();
+      if (byKey('confirm-phone-send').evaluate().isNotEmpty) {
+        await tester.tap(byKey('confirm-phone-send'));
+        await tester.pumpAndSettle();
+      }
+      await tester.enterText(byKey('code-field'), '482913');
+      await tester.tap(byKey('verify-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('open-profile'));
+      await tester.pumpAndSettle();
+      await openLogout(tester);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(byKey('staff-menu'), findsOneWidget);
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+    });
+
+    testWidgets('at large text the logout buttons stack with Выйти on top', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(
+        tester,
+        size: const Size(360, 640),
+        textScaler: const NonlinearTextScaler(2),
+      );
+
+      await openLogout(tester);
+      expect(
+        tester.getTopLeft(byKey('logout-confirm')).dy,
+        lessThan(tester.getTopLeft(byKey('logout-cancel')).dy),
+      );
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    });
+  });
+
+  group('the language sheet', () {
+    late List<MethodCall> platformCalls;
+
+    void mockPlatform() {
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+    }
+
+    double checkScale() {
+      double scale = 1;
+      for (final Element e
+          in find
+              .ancestor(
+                of: byKey('language-check'),
+                matching: find.byType(Transform),
+              )
+              .evaluate()) {
+        scale *= (e.widget as Transform).transform.getMaxScaleOnAxis();
+      }
+      return scale;
+    }
+
+    double listOpacity(WidgetTester tester) =>
+        _opacityOf(tester, byKey('profile-list'));
+
+    testWidgets('the language sheet ticks the choice, buzzes and waits', (
+      tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      mockPlatform();
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('language-check'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('language-ru'),
+          matching: byKey('language-check'),
+        ),
+        findsOneWidget,
+      );
+      final SemanticsData ru = tester
+          .getSemantics(byKey('language-ru'))
+          .getSemanticsData();
+      expect(ru.label, 'Русский');
+      expect(ru.flagsCollection.isSelected, Tristate.isTrue);
+      expect(ru.flagsCollection.isInMutuallyExclusiveGroup, isTrue);
+      expect(ru.flagsCollection.isButton, isTrue);
+      tester.takeAnnouncements();
+
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(
+        platformCalls.where(
+          (MethodCall c) =>
+              c.method == 'HapticFeedback.vibrate' &&
+              c.arguments == 'HapticFeedbackType.selectionClick',
+        ),
+        hasLength(1),
+      );
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains("Til: O'zbekcha, tanlangan"),
+      );
+      expect(listOpacity(tester), lessThan(0.5));
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(
+        find.descendant(
+          of: byKey('language-uz'),
+          matching: byKey('language-check'),
+        ),
+        findsOneWidget,
+      );
+      expect(checkScale(), greaterThan(1.2));
+      await tester.pump(const Duration(milliseconds: 130));
+      expect(byKey('language-sheet'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pumpAndSettle();
+      expect(byKey('language-sheet'), findsNothing);
+      expect(listOpacity(tester), 1);
+      handle.dispose();
+    });
+
+    testWidgets('the profile list fades from 0.25 to 1 in 280 ms', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(listOpacity(tester), closeTo(0.25, 0.05));
+      await tester.pump(const Duration(milliseconds: 280));
+      expect(listOpacity(tester), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with reduced motion no pop and no fade, the sheet waits', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(checkScale(), 1);
+      expect(listOpacity(tester), 1);
+      expect(byKey('language-sheet'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+      expect(byKey('language-sheet'), findsNothing);
+    });
+
+    testWidgets('a second tap while the sheet waits is ignored', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('language-ru'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Til'), findsOneWidget);
+      expect(auth.calls, isNot(contains('language:customer:ru')));
     });
   });
 }

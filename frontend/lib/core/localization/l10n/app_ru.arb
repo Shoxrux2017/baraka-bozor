@@ -3468,5 +3468,23 @@
     }
   },
   "cancelBannerHint": "Заказать снова — «Повторить заказ» внизу",
-  "requestBannerHint": "Решит оператор — мы сообщим"
+  "requestBannerHint": "Решит оператор — мы сообщим",
+  "logoutTitle": "Выйти из аккаунта?",
+  "logoutBody": "Чтобы войти снова, на {phone} придёт код в Telegram. Корзина, адреса и заказы сохранятся.",
+  "@logoutBody": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "logoutStaffStays": "Режим сотрудника останется на телефоне.",
+  "languageChosenSpoken": "Язык: {language}, выбрано",
+  "@languageChosenSpoken": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  }
 }

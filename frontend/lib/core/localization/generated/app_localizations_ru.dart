@@ -5469,4 +5469,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get requestBannerHint => 'Решит оператор — мы сообщим';
+
+  @override
+  String get logoutTitle => 'Выйти из аккаунта?';
+
+  @override
+  String logoutBody(String phone) {
+    return 'Чтобы войти снова, на $phone придёт код в Telegram. Корзина, адреса и заказы сохранятся.';
+  }
+
+  @override
+  String get logoutStaffStays => 'Режим сотрудника останется на телефоне.';
+
+  @override
+  String languageChosenSpoken(String language) {
+    return 'Язык: $language, выбрано';
+  }
 }

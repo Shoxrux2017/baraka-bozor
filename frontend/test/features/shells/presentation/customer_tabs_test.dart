@@ -484,6 +484,8 @@ void main() {
       await tab(tester, 'open-profile');
       await tester.tap(byKey('logout-button'));
       await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
       expect(find.byType(ProfileScreen), findsNothing);
 
       auth.verifyResult = IssuedSession(

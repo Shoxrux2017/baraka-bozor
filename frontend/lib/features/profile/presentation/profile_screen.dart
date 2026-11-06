@@ -1,14 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../core/formatting/phone_format.dart';
+import '../../../core/localization/app_language.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
+import '../../../core/widgets/entrance_fade.dart';
 import '../application/profile_controllers.dart';
+import '../../auth/domain/app_user.dart';
 import '../domain/profile.dart';
+import 'logout_sheet.dart';
 import 'profile_header.dart';
 import 'profile_rows.dart';
 
@@ -26,7 +33,20 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with SingleTickerProviderStateMixin {
+  /// Plays the list from 0.25 to 1 when the language changes, so the new
+  /// words arrive rather than jump (`DL-135`).
+  late final AnimationController _languageFade = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    value: 1,
+  );
+  late final Animation<double> _listOpacity = Tween<double>(
+    begin: 0.25,
+    end: 1,
+  ).chain(CurveTween(curve: Curves.easeOut)).animate(_languageFade);
+
   /// Raised each time the name editor comes back with a saved name; the
   /// header plays its arrival on every new value.
   int _arrival = 0;
@@ -38,11 +58,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  void _logout() {
+  @override
+  void dispose() {
+    _languageFade.dispose();
+    super.dispose();
+  }
+
+  /// Asks first; on «Выйти» ends the Customer session. With no staff session
+  /// left, the sign-in that follows fades in (`DL-135`).
+  Future<void> _logout() async {
     final SessionState? state = ref.read(sessionControllerProvider).value;
-    if (state is SignedIn) {
-      ref.read(sessionControllerProvider.notifier).logout(state.activeMode);
+    if (state is! SignedIn) {
+      return;
     }
+    final AppUser? customer = state.customerUser;
+    final bool confirmed = await showLogoutSheet(
+      context,
+      phone: formatPhone(customer?.phone ?? ''),
+      staffStays: state.staffUser != null,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    final SessionState? now = ref.read(sessionControllerProvider).value;
+    if (now is! SignedIn || now.customerUser?.id != customer?.id) {
+      return;
+    }
+    if (now.staffUser == null) {
+      ref.read(entranceFadeProvider).request();
+    }
+    await ref
+        .read(sessionControllerProvider.notifier)
+        .logout(SessionMode.customer);
   }
 
   @override
@@ -50,6 +97,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final AsyncValue<CustomerProfile> profile = ref.watch(
       profileControllerProvider,
     );
+    ref.listen<AsyncValue<AppLanguage>>(languageControllerProvider, (
+      AsyncValue<AppLanguage>? before,
+      AsyncValue<AppLanguage> after,
+    ) {
+      final AppLanguage? was = before?.value;
+      final AppLanguage? now = after.value;
+      if (was != null &&
+          now != null &&
+          was != now &&
+          !MediaQuery.disableAnimationsOf(context)) {
+        unawaited(_languageFade.forward(from: 0));
+      }
+    });
 
     return CustomerTabScope(
       child: Scaffold(
@@ -67,21 +127,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             Expanded(
-              child: ListView(
-                key: const ValueKey<String>('profile-list'),
-                primary: true,
-                padding: EdgeInsets.zero,
-                children: <Widget>[
-                  ProfileHeader(
-                    profile: profile,
-                    onEdit: _editName,
-                    onRetry: () => ref.invalidate(profileControllerProvider),
-                    arrival: _arrival,
-                  ),
-                  // The language and the way out are on the profile in every
-                  // state of it.
-                  ProfileRows(profile: profile, onLogout: _logout),
-                ],
+              child: FadeTransition(
+                opacity: _listOpacity,
+                child: ListView(
+                  key: const ValueKey<String>('profile-list'),
+                  primary: true,
+                  padding: EdgeInsets.zero,
+                  children: <Widget>[
+                    ProfileHeader(
+                      profile: profile,
+                      onEdit: _editName,
+                      onRetry: () => ref.invalidate(profileControllerProvider),
+                      arrival: _arrival,
+                    ),
+                    // The language and the way out are on the profile in every
+                    // state of it.
+                    ProfileRows(profile: profile, onLogout: _logout),
+                  ],
+                ),
               ),
             ),
           ],

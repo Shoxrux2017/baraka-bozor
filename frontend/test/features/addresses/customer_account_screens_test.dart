@@ -167,6 +167,8 @@ void main() {
       await openProfile(tester);
       await tester.tap(byKey('logout-button'));
       await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
       expect(auth.calls, contains('logout:customer'));
       expect(byKey('profile-list'), findsNothing);
     });
