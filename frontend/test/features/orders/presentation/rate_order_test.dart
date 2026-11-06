@@ -1082,17 +1082,20 @@ void main() {
     expect(kept(tester), isNull);
   });
 
-  testWidgets('leaving a locked form keeps no draft', (
+  testWidgets('leaving the locked face keeps the draft', (
     WidgetTester tester,
   ) async {
     await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 2));
-    await tapAndSettle(tester, byKey('rate-reason-late'));
+    await tapAndSettle(tester, byKey('rate-reason-not_fresh'));
+    await tester.enterText(byKey('rate-comment'), 'мятые');
+    await tester.pump();
     orders.rateFailure = const NetworkFailure();
     await tapAndSettle(tester, byKey('rate-send'));
     await tapAndSettle(tester, byKey('rate-close'));
 
     expect(exited, isTrue);
-    expect(kept(tester), isNull);
+    expect(kept(tester)!.reasons, <RatingReason>{RatingReason.notFresh});
+    expect(kept(tester)!.comment, 'мятые');
   });
 
   group('at large text with the keyboard up', () {

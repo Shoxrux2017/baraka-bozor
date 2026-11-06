@@ -114,11 +114,13 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
     }
   }
 
-  /// Keeps what was written for the order's card; a locked or closed screen
-  /// keeps nothing, since the rating may have landed or can no longer be made.
+  /// Keeps what was written for the order's card, also from the locked face:
+  /// the card shows it only while the server says the order can be rated, so a
+  /// rating that did land never shows it (`DL-134` (9)). Only the closed face
+  /// keeps nothing.
   void _keepOrDrop() {
     final RateDrafts drafts = ref.read(rateDraftsProvider.notifier);
-    if (_sent != null || _closed) {
+    if (_closed) {
       drafts.drop(widget.orderId);
     } else {
       drafts.keep(widget.orderId, _draft);
