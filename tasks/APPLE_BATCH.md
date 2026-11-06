@@ -31,7 +31,7 @@ Rules for every stage:
 | 12 | My orders | 10 | list summary fields | Merged (PR #134) |
 | 13 | Order editing | 12 | edit preview, minimum | Merged (PR #135) |
 | 14 | Cancellation | 12 | cancel reason | Merged (PR #136) |
-| 15 | Rating | 10 | `reviewed_at` | Planned |
+| 15 | Rating | 10 | `reviewed_at` | Merged (PR #137) |
 | 16 | Profile and name | 18 | — | Planned |
 | 17 | Documents | 9 | — | Planned |
 | 18 | Addresses | 9 | — | Planned |

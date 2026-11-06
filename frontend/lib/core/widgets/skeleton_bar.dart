@@ -12,6 +12,7 @@ class SkeletonBar extends StatefulWidget {
     this.height = 14,
     this.pulsing = true,
     this.radius,
+    this.color = KitColors.line,
     super.key,
   });
 
@@ -21,6 +22,9 @@ class SkeletonBar extends StatefulWidget {
 
   /// The corner radius; half the height (a pill) when null.
   final double? radius;
+
+  /// The fill; the kit's hairline grey by default (`DL-135`).
+  final Color color;
 
   @override
   State<SkeletonBar> createState() => _SkeletonBarState();
@@ -74,7 +78,7 @@ class _SkeletonBarState extends State<SkeletonBar>
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: KitColors.line,
+            color: widget.color,
             borderRadius: BorderRadius.circular(
               widget.radius ?? widget.height / 2,
             ),
