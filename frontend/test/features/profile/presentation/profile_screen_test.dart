@@ -1085,6 +1085,27 @@ void main() {
       expect(auth.calls, contains('logout:customer'));
     });
 
+    testWidgets('a logout that throws leaves no fade request behind', (
+      tester,
+    ) async {
+      tokens = _FailingClearTokenStore()..tokens[SessionSlot.customer] = 'c';
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      final ProviderContainer scope = container(tester);
+
+      // The failure is not caught on the profile; it reaches the zone that
+      // started the logout.
+      final List<Object> uncaught = <Object>[];
+      await runZonedGuarded(() async {
+        await openLogout(tester);
+        await tester.tap(byKey('logout-confirm'));
+        await tester.pumpAndSettle();
+      }, (Object error, StackTrace _) => uncaught.add(error));
+
+      expect(uncaught.single, isA<StateError>());
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+    });
+
     testWidgets('a fade request is spent once', (tester) async {
       profile.current = named('Дилноза Каримова');
       await openProfile(tester, size: const Size(400, 1400));
@@ -1322,4 +1343,11 @@ Color _flashColor(WidgetTester tester) {
     find.byKey(const ValueKey<String>('profile-identity-flash')),
   );
   return (box.decoration as BoxDecoration).color ?? Colors.transparent;
+}
+
+/// A token store that cannot forget a session, so a logout throws.
+class _FailingClearTokenStore extends InMemoryTokenStore {
+  @override
+  Future<void> clear(SessionSlot slot) async =>
+      throw StateError('the token store cannot clear');
 }

@@ -11,8 +11,9 @@ const Cubic _settle = Cubic(0.2, 0.8, 0.2, 1);
 /// The red strip of a failure that can be repeated (`DL-134`, `DL-135`): an
 /// icon, the [message] and a white «Повторить» 44 high. Above 1.3 at 13 px the
 /// button goes under the words at full width. It rises 8 px with a fade in
-/// 260 ms when first built (only a fade, in 200 ms, under reduced motion) and is one live
-/// region for a reader. [retryKey] sits on the button, [stripKey] on the box.
+/// 260 ms when first built (only a fade, in 200 ms, under reduced motion) and is
+/// one container for a reader, not a live region: the screen announces the
+/// failure itself. [retryKey] sits on the button, [stripKey] on the box.
 class RetryStrip extends StatefulWidget {
   const RetryStrip({
     required this.message,
@@ -125,7 +126,6 @@ class _RetryStripState extends State<RetryStrip>
     );
 
     return Semantics(
-      liveRegion: true,
       container: true,
       child: AnimatedBuilder(
         animation: _run,

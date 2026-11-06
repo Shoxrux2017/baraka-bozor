@@ -602,6 +602,7 @@ void main() {
         findsOneWidget,
       );
       expect(byKey('profile-name-field'), findsOneWidget);
+      expect(nameText(tester), 'Диля');
 
       profile.hold = null;
       await tester.tap(byKey('profile-retry'));
@@ -713,9 +714,7 @@ void main() {
 
       hold.complete();
       await settleSaved(tester);
-      await tester.binding.handlePopRoute();
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(byKey('edit-profile'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
       await tester.pump(pause);
       await tester.pumpAndSettle();
 
@@ -723,6 +722,271 @@ void main() {
       expect(await pushed, isTrue);
       expect(find.text('Диля'), findsOneWidget);
     });
+
+    testWidgets('back during the check leaves at once with the saved result', (
+      tester,
+    ) async {
+      final Completer<void> hold = await startSaving(tester);
+      hold.complete();
+      await settleSaved(tester);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      final ModalRoute<Object?> route = ModalRoute.of(
+        tester.element(byKey('edit-profile')),
+      )!;
+
+      await tester.binding.handlePopRoute();
+      // Well before the 650 ms timer: the route is already leaving.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(route.animation!.status, AnimationStatus.reverse);
+
+      await tester.pumpAndSettle();
+      expect(byKey('edit-profile'), findsNothing);
+      expect(byKey('profile-list'), findsOneWidget);
+      expect(await pushed, isTrue);
+
+      // The timer does not pop a second time.
+      await tester.pump(const Duration(seconds: 1));
+      expect(byKey('profile-list'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the footer scrolls on its own, not on the page controller', (
+      tester,
+    ) async {
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      profile.loseAnswer = true;
+      profile.current = named('Дилноза Каримова');
+      await openEditor(
+        tester,
+        size: const Size(360, 640),
+        device: ru,
+        textScaler: const NonlinearTextScaler(2),
+      );
+      profile.loadFailure = const NetworkFailure();
+      await tester.enterText(byKey('profile-name-field'), 'Диля');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pumpAndSettle();
+      expect(byKey('profile-strip'), findsOneWidget);
+
+      final ScrollController primary = PrimaryScrollController.of(
+        tester.element(byKey('edit-profile')),
+      );
+      expect(primary.positions, hasLength(1));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a refusal shows an error icon, a lost network the wifi one', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openEditor(tester, device: ru);
+      Finder icon(IconData data) => find.descendant(
+        of: byKey('profile-strip'),
+        matching: find.byIcon(data),
+      );
+
+      profile.renameFailure = ApiRefusal(
+        const ApiError(status: 422, code: 'validation_failed'),
+      );
+      await tester.enterText(byKey('profile-name-field'), 'Диля');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Не удалось сохранить имя'), findsOneWidget);
+      expect(icon(Icons.error_outline), findsOneWidget);
+      expect(icon(Icons.wifi_off), findsNothing);
+
+      profile.renameFailure = const NetworkFailure(mayHaveArrived: false);
+      await tester.enterText(byKey('profile-name-field'), 'Диля К');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Нет связи — имя не сохранено'), findsOneWidget);
+      expect(icon(Icons.wifi_off), findsOneWidget);
+      expect(icon(Icons.error_outline), findsNothing);
+
+      profile.loseAnswer = true;
+      profile.loadFailure = const NetworkFailure();
+      await tester.enterText(byKey('profile-name-field'), 'Диля Л');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Нет связи — не удалось проверить, сохранилось ли имя'),
+        findsOneWidget,
+      );
+      expect(icon(Icons.wifi_off), findsOneWidget);
+    });
+
+    testWidgets('Done on the keyboard saves and keeps the keyboard up', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openEditor(tester, device: ru);
+      await tester.enterText(byKey('profile-name-field'), 'Диля');
+      await tester.pump();
+      final Completer<void> hold = Completer<void>();
+      profile.hold = hold;
+
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(find.text('Сохраняем…'), findsOneWidget);
+      expect(nameEditable(tester).focusNode.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
+
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(profile.renames, <String>['Диля']);
+
+      hold.complete();
+      await settleSaved(tester);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      await tester.pump(pause);
+      await tester.pumpAndSettle();
+      expect(profile.renames, <String>['Диля']);
+      expect(await pushed, isTrue);
+    });
+
+    testWidgets('Done on an unchanged name does nothing', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openEditor(tester, device: ru);
+
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(profile.renames, isEmpty);
+      expect(find.text('Сохраняем…'), findsNothing);
+      expect(nameEditable(tester).focusNode.hasFocus, isTrue);
+    });
+
+    testWidgets('the title keeps its words while the check shows', (
+      tester,
+    ) async {
+      await openEditor(tester, device: ru);
+      Finder title(String words) =>
+          find.descendant(of: find.byType(AppBar), matching: find.text(words));
+      final Completer<void> hold = Completer<void>();
+      profile.hold = hold;
+      await tester.enterText(byKey('profile-name-field'), 'Диля');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pump();
+      expect(title('Указать имя'), findsOneWidget);
+
+      hold.complete();
+      await settleSaved(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(title('Указать имя'), findsOneWidget);
+      expect(title('Изменить имя'), findsNothing);
+      await tester.pump(pause);
+      await tester.pumpAndSettle();
+      expect(await pushed, isTrue);
+    });
+
+    testWidgets('leaving by «Не сохранять» after an unsure answer reloads', (
+      tester,
+    ) async {
+      profile.loseAnswer = true;
+      final Completer<void> second = await startChecking(tester);
+      profile.loadFailure = const NetworkFailure();
+      second.complete();
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Нет связи — не удалось проверить, сохранилось ли имя'),
+        findsOneWidget,
+      );
+      final int loads = profile.loads;
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('name-leave-drop'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('edit-profile'), findsNothing);
+      expect(profile.loads, loads + 1);
+      expect(find.text('Диля'), findsOneWidget);
+    });
+
+    testWidgets('an answer after the editor is gone says nothing', (
+      tester,
+    ) async {
+      final Completer<void> hold = await startSaving(tester);
+      bool? result = false;
+      unawaited(pushed.then((bool? value) => result = value));
+
+      GoRouter.of(tester.element(byKey('edit-profile'))).go(AppPaths.customer);
+      await tester.pumpAndSettle();
+      expect(byKey('edit-profile'), findsNothing);
+
+      hold.complete();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(result, isNot(true));
+      expect(profile.renames, <String>['Диля']);
+    });
+
+    testWidgets('leaving during the check by a route change pops nothing', (
+      tester,
+    ) async {
+      final Completer<void> hold = await startSaving(tester);
+      hold.complete();
+      await settleSaved(tester);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      bool? result = false;
+      unawaited(pushed.then((bool? value) => result = value));
+
+      final GoRouter router = GoRouter.of(
+        tester.element(byKey('edit-profile')),
+      );
+      router.go(AppPaths.customer);
+      await tester.pumpAndSettle();
+      final String where = router.routeInformationProvider.value.uri.path;
+      expect(where, AppPaths.customer);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(router.routeInformationProvider.value.uri.path, where);
+      expect(result, isNot(true));
+    });
+
+    for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+      testWidgets('holds at 320x640 at x2 (${device.languageCode})', (
+        tester,
+      ) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        profile.current = named('Дилноза Каримова');
+        await openEditor(
+          tester,
+          size: const Size(320, 640),
+          device: device,
+          textScaler: const NonlinearTextScaler(2),
+        );
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+
+        profile.loseAnswer = true;
+        profile.loadFailure = const NetworkFailure();
+        await tester.enterText(byKey('profile-name-field'), 'Диля');
+        await tester.pump();
+        await tester.tap(byKey('profile-save'));
+        await tester.pumpAndSettle();
+        expect(byKey('profile-strip'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    }
 
     for (final double scale in <double>[1, 2]) {
       for (final String scenario in <String>[

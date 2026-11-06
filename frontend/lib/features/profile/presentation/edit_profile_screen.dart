@@ -21,16 +21,32 @@ import 'name_leave_sheet.dart';
 /// The kit name editor (`DL-96` item 4, `DL-135`): it opens ready to type, the
 /// save button wakes only when the name differs, and the phone is plain text
 /// as it is the sign-in.
-class EditProfileScreen extends ConsumerWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+  /// Whether the title said «Изменить имя» when a save started; the title
+  /// keeps those words until the form is back to typing (`DL-135` (16) (h)).
+  bool? _titleHadName;
+
+  void _holdTitle(bool? hadName) {
+    if (mounted && _titleHadName != hadName) {
+      setState(() => _titleHadName = hadName);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<CustomerProfile> profile = ref.watch(
       profileControllerProvider,
     );
-    final bool hasName = (profile.value?.fullName ?? '').trim().isNotEmpty;
+    final bool hasName =
+        _titleHadName ?? (profile.value?.fullName ?? '').trim().isNotEmpty;
 
     return Scaffold(
       key: const ValueKey<String>('edit-profile'),
@@ -43,8 +59,11 @@ class EditProfileScreen extends ConsumerWidget {
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
           skipError: true,
-          data: (CustomerProfile profile) =>
-              _EditForm(key: ValueKey<String>(profile.id), profile: profile),
+          data: (CustomerProfile profile) => _EditForm(
+            key: ValueKey<String>(profile.id),
+            profile: profile,
+            onTitleHold: _holdTitle,
+          ),
           error: (Object error, StackTrace _) => ListView(
             padding: const EdgeInsets.all(20),
             children: <Widget>[
@@ -68,9 +87,17 @@ class EditProfileScreen extends ConsumerWidget {
 }
 
 class _EditForm extends ConsumerStatefulWidget {
-  const _EditForm({required this.profile, super.key});
+  const _EditForm({
+    required this.profile,
+    required this.onTitleHold,
+    super.key,
+  });
 
   final CustomerProfile profile;
+
+  /// Holds the title's words (`true` for «Изменить имя») while the name is
+  /// being saved, or lets it follow the profile again (`null`).
+  final ValueChanged<bool?> onTitleHold;
 
   @override
   ConsumerState<_EditForm> createState() => _EditFormState();
@@ -112,6 +139,13 @@ class _EditFormState extends ConsumerState<_EditForm> {
   _Problem? _problem;
   late String _lastText = _name.text;
   Timer? _leave;
+
+  /// The last answer was lost and the reload failed too, so the server's name
+  /// is unknown to the profile behind this editor.
+  bool _unsure = false;
+
+  /// The editor has been popped with ✓'s result, by the timer or by back.
+  bool _handedBack = false;
 
   @override
   void initState() {
@@ -193,9 +227,11 @@ class _EditFormState extends ConsumerState<_EditForm> {
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
     announce(context, l10n.profileSavingSpoken);
+    widget.onTitleHold((widget.profile.fullName ?? '').trim().isNotEmpty);
     setState(() {
       _phase = _Phase.saving;
       _problem = null;
+      _unsure = false;
     });
 
     final CustomerProfile? result = await ref
@@ -211,6 +247,7 @@ class _EditFormState extends ConsumerState<_EditForm> {
     final ApiFailure? failure = ref.read(renameControllerProvider).failure;
     // An answer for another account says nothing.
     if (failure == null || failure is CancelledFailure) {
+      widget.onTitleHold(null);
       setState(() => _phase = _Phase.editing);
       return;
     }
@@ -251,9 +288,11 @@ class _EditFormState extends ConsumerState<_EditForm> {
   );
 
   void _showProblem(AppLocalizations l10n, _Problem problem) {
+    widget.onTitleHold(null);
     setState(() {
       _phase = _Phase.editing;
       _problem = problem;
+      _unsure = problem == _Problem.unsure;
     });
     announce(context, _problemText(l10n, problem));
   }
@@ -268,9 +307,39 @@ class _EditFormState extends ConsumerState<_EditForm> {
     announce(context, l10n.profileSaved);
     _leave = Timer(_leaveAfter, () {
       if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
-        Navigator.of(context).pop(true);
+        _handBack();
       }
     });
+  }
+
+  /// Pops the editor with the saved result, once.
+  void _handBack() {
+    if (_handedBack) {
+      return;
+    }
+    _handedBack = true;
+    _leave?.cancel();
+    Navigator.of(context).pop(true);
+  }
+
+  /// A pop that the form refused or let through (`DL-135` (16) (h)): during ✓
+  /// back leaves with the saved result; with a new name pending it asks; a
+  /// leave after an unsure answer reloads the profile so it shows what the
+  /// server has.
+  void _onPop(bool didPop) {
+    if (didPop) {
+      if (_unsure) {
+        ref.invalidate(profileControllerProvider);
+      }
+      return;
+    }
+    if (_phase == _Phase.saved) {
+      if (ModalRoute.of(context)?.isCurrent ?? false) {
+        _handBack();
+      }
+      return;
+    }
+    unawaited(_askBeforeLeaving());
   }
 
   /// A refused back: with a new name pending, asks what to do with it.
@@ -333,11 +402,7 @@ class _EditFormState extends ConsumerState<_EditForm> {
 
         return PopScope(
           canPop: _editing && !_pending,
-          onPopInvokedWithResult: (bool didPop, Object? _) {
-            if (!didPop) {
-              unawaited(_askBeforeLeaving());
-            }
-          },
+          onPopInvokedWithResult: (bool didPop, Object? _) => _onPop(didPop),
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints box) => Column(
               children: <Widget>[
@@ -390,6 +455,9 @@ class _EditFormState extends ConsumerState<_EditForm> {
                           ],
                           textCapitalization: TextCapitalization.words,
                           textInputAction: TextInputAction.done,
+                          // Done keeps the focus and the keyboard; the save
+                          // below decides whether anything is sent.
+                          onEditingComplete: () {},
                           style: const TextStyle(
                             fontSize: 16,
                             color: KitColors.ink,
@@ -460,6 +528,7 @@ class _EditFormState extends ConsumerState<_EditForm> {
                 ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: box.maxHeight * 0.7),
                   child: SingleChildScrollView(
+                    primary: false,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
                         20,
@@ -475,6 +544,9 @@ class _EditFormState extends ConsumerState<_EditForm> {
                             RetryStrip(
                               key: ValueKey<_Problem>(problem),
                               message: _problemText(l10n, problem),
+                              icon: problem == _Problem.failed
+                                  ? Icons.error_outline
+                                  : Icons.wifi_off,
                               stripKey: const ValueKey<String>('profile-strip'),
                               retryKey: const ValueKey<String>('profile-retry'),
                               onRetry: () => unawaited(_submit()),

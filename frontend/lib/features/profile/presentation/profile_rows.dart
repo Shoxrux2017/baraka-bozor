@@ -299,6 +299,10 @@ class _ArrivalState extends State<_Arrival>
     duration: const Duration(milliseconds: 260),
     value: 1,
   );
+  late final CurvedAnimation _opacity = CurvedAnimation(
+    parent: _fade,
+    curve: Curves.easeOut,
+  );
 
   @override
   void didUpdateWidget(_Arrival oldWidget) {
@@ -312,16 +316,14 @@ class _ArrivalState extends State<_Arrival>
 
   @override
   void dispose() {
+    _opacity.dispose();
     _fade.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: CurvedAnimation(parent: _fade, curve: Curves.easeOut),
-      child: widget.child,
-    );
+    return FadeTransition(opacity: _opacity, child: widget.child);
   }
 }
 

@@ -28,8 +28,12 @@ class FakeProfileRepository implements ProfileRepository {
   /// While set, a load or a rename answers only once it completes.
   Completer<void>? hold;
 
+  /// How many times the profile was asked for.
+  int loads = 0;
+
   @override
   Future<CustomerProfile> profile() async {
+    loads++;
     await hold?.future;
     final ApiFailure? failure = loadFailure;
     if (failure != null) {

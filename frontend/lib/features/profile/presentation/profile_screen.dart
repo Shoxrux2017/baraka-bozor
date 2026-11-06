@@ -87,9 +87,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     if (now.staffUser == null) {
       ref.read(entranceFadeProvider).request();
     }
-    await ref
-        .read(sessionControllerProvider.notifier)
-        .logout(SessionMode.customer);
+    try {
+      await ref
+          .read(sessionControllerProvider.notifier)
+          .logout(SessionMode.customer);
+    } catch (_) {
+      // No sign-in is coming, so the fade must not wait for a later one.
+      ref.read(entranceFadeProvider).take();
+      rethrow;
+    }
   }
 
   @override

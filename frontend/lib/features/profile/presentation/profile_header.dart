@@ -50,6 +50,10 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader>
     duration: const Duration(milliseconds: 260),
     value: 1,
   );
+  late final CurvedAnimation _enterOpacity = CurvedAnimation(
+    parent: _enter,
+    curve: Curves.easeOut,
+  );
 
   /// The new name rising: 450 ms.
   late final AnimationController _rise = AnimationController(
@@ -84,6 +88,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader>
 
   @override
   void dispose() {
+    _enterOpacity.dispose();
     _enter.dispose();
     _rise.dispose();
     _flash.dispose();
@@ -114,7 +119,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader>
       face = Padding(
         padding: EdgeInsets.only(top: twoSessions ? 12 : 2),
         child: FadeTransition(
-          opacity: CurvedAnimation(parent: _enter, curve: Curves.easeOut),
+          opacity: _enterOpacity,
           child: _identity(context, l10n, data),
         ),
       );

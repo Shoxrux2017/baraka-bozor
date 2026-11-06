@@ -52,17 +52,33 @@ void main() {
     );
   });
 
-  testWidgets('it is one live region', (tester) async {
+  testWidgets('it is one container node with the words and no live region', (
+    tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
-    expect(
-      find.descendant(
-        of: find.byType(RetryStrip),
-        matching: find.byWidgetPredicate(
-          (Widget w) => w is Semantics && w.properties.liveRegion == true,
-        ),
-      ),
-      findsOneWidget,
+    final Finder inStrip = find.descendant(
+      of: find.byType(RetryStrip),
+      matching: find.byType(Semantics),
     );
+    expect(
+      tester
+          .widgetList<Semantics>(inStrip)
+          .where((Semantics w) => w.properties.liveRegion == true),
+      isEmpty,
+    );
+    expect(
+      tester.widgetList<Semantics>(inStrip).where((Semantics w) => w.container),
+      hasLength(1),
+    );
+    expect(
+      tester.getSemantics(find.text('Нет связи — имя не сохранено')),
+      isSemantics(
+        label: 'Нет связи — имя не сохранено\nПовторить',
+        isLiveRegion: false,
+      ),
+    );
+    handle.dispose();
   });
 }
