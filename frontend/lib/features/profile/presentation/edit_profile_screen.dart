@@ -1,20 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
+import '../../../core/widgets/retry_strip.dart';
 import '../../../core/widgets/submit_button.dart';
 import '../application/profile_controllers.dart';
 import '../domain/profile.dart';
 import 'initials.dart';
+import 'name_leave_sheet.dart';
 
 /// The kit name editor (`DL-96` item 4, `DL-135`): it opens ready to type, the
 /// save button wakes only when the name differs, and the phone is plain text
@@ -74,31 +76,93 @@ class _EditForm extends ConsumerStatefulWidget {
   ConsumerState<_EditForm> createState() => _EditFormState();
 }
 
+/// Where the form is in saving the name (`DL-135` (10)): typing, the rename on
+/// its way, the reloaded profile being read after an uncertain answer, or the
+/// name saved and ✓ showing before the editor closes.
+enum _Phase { editing, saving, checking, saved }
+
+/// Why the last save did not end as saved; each has its own strip.
+enum _Problem { notSaved, unsure, failed }
+
+/// Refuses every edit while [frozen] answers true. The field is never
+/// disabled or read-only: either would close the input connection and drop
+/// the keyboard (`DL-135` (10)).
+class _FreezeFormatter extends TextInputFormatter {
+  const _FreezeFormatter(this.frozen);
+
+  final bool Function() frozen;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) => frozen() ? oldValue : newValue;
+}
+
 class _EditFormState extends ConsumerState<_EditForm> {
   static const int _maxLength = 120;
+  static const Duration _leaveAfter = Duration(milliseconds: 650);
 
   late final String _saved = widget.profile.fullName ?? '';
   late final TextEditingController _name = TextEditingController(text: _saved)
     ..selection = TextSelection.collapsed(offset: _saved.length);
   final FocusNode _focus = FocusNode();
 
+  _Phase _phase = _Phase.editing;
+  _Problem? _problem;
+  late String _lastText = _name.text;
+  Timer? _leave;
+
+  @override
+  void initState() {
+    super.initState();
+    _name.addListener(_onText);
+  }
+
   @override
   void dispose() {
+    _leave?.cancel();
     _name.dispose();
     _focus.dispose();
     super.dispose();
   }
 
-  /// What the save button shows: busy while a rename is on its way, off while
-  /// the name is empty or the saved one, ready otherwise.
+  /// Typing a different name takes the strip away.
+  void _onText() {
+    if (_name.text == _lastText) {
+      return;
+    }
+    _lastText = _name.text;
+    if (_problem != null) {
+      setState(() => _problem = null);
+    }
+  }
+
+  bool get _editing => _phase == _Phase.editing;
+
+  /// A trimmed name that is not empty and not the saved one.
+  bool get _pending {
+    final String name = _name.text.trim();
+    return name.isNotEmpty && name != _saved;
+  }
+
+  /// What the save button shows: busy while the rename or the check runs,
+  /// done after ✓, off while the name is empty or the saved one, ready
+  /// otherwise.
   ({SubmitFace face, String label, String? hint}) _button(
     AppLocalizations l10n,
-    MutationState rename,
   ) {
-    final String name = _name.text.trim();
-    if (rename.isBusy) {
-      return (face: SubmitFace.busy, label: l10n.saveButton, hint: null);
+    switch (_phase) {
+      case _Phase.saving:
+        return (face: SubmitFace.busy, label: l10n.profileSaving, hint: null);
+      case _Phase.checking:
+        return (face: SubmitFace.busy, label: l10n.profileChecking, hint: null);
+      case _Phase.saved:
+        return (face: SubmitFace.done, label: l10n.profileSaved, hint: null);
+      case _Phase.editing:
+        break;
     }
+    final String name = _name.text.trim();
     if (name.isEmpty) {
       return (face: SubmitFace.off, label: l10n.profileNameEnter, hint: null);
     }
@@ -112,25 +176,125 @@ class _EditFormState extends ConsumerState<_EditForm> {
     return (face: SubmitFace.ready, label: l10n.saveButton, hint: null);
   }
 
+  String _problemText(AppLocalizations l10n, _Problem problem) =>
+      switch (problem) {
+        _Problem.notSaved => l10n.profileNameNotSaved,
+        _Problem.unsure => l10n.profileNameUnsure,
+        _Problem.failed => l10n.profileNameSaveFailed,
+      };
+
+  /// Saves the trimmed name (`DL-135` (10), (11)): an answer with a profile
+  /// is saved; a failure that surely did not leave, or a refusal, is a strip;
+  /// any other failure is checked against the reloaded profile.
   Future<void> _submit() async {
     final String name = _name.text.trim();
-    if (name.isEmpty || name == _saved) {
+    if (!_editing || name.isEmpty || name == _saved) {
       return;
     }
-    final GoRouter router = GoRouter.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String saved = AppLocalizations.of(context).profileSaved;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    announce(context, l10n.profileSavingSpoken);
+    setState(() {
+      _phase = _Phase.saving;
+      _problem = null;
+    });
 
     final CustomerProfile? result = await ref
         .read(renameControllerProvider.notifier)
         .rename(widget.profile, name);
-    // A save for another account says nothing, and neither does one the
-    // Customer has moved on from.
-    if (result != null &&
-        mounted &&
-        (ModalRoute.of(context)?.isCurrent ?? false)) {
-      router.pop();
-      messenger.showSnackBar(SnackBar(content: Text(saved)));
+    if (!mounted) {
+      return;
+    }
+    if (result != null) {
+      _finish(l10n);
+      return;
+    }
+    final ApiFailure? failure = ref.read(renameControllerProvider).failure;
+    // An answer for another account says nothing.
+    if (failure == null || failure is CancelledFailure) {
+      setState(() => _phase = _Phase.editing);
+      return;
+    }
+    final bool changedNothing =
+        (failure is NetworkFailure && !failure.mayHaveArrived) ||
+        (failure is ApiRefusal &&
+            failure.status != 404 &&
+            failure.status != 409);
+    if (changedNothing) {
+      _fail(l10n, failure);
+      return;
+    }
+
+    setState(() => _phase = _Phase.checking);
+    final CustomerProfile reloaded;
+    try {
+      reloaded = await ref.read(profileControllerProvider.future);
+    } catch (_) {
+      // The reload failed as well: the name may or may not have landed.
+      if (mounted) {
+        _showProblem(l10n, _Problem.unsure);
+      }
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    if ((reloaded.fullName ?? '').trim() == name) {
+      _finish(l10n);
+    } else {
+      _fail(l10n, failure);
+    }
+  }
+
+  void _fail(AppLocalizations l10n, ApiFailure failure) => _showProblem(
+    l10n,
+    failure is NetworkFailure ? _Problem.notSaved : _Problem.failed,
+  );
+
+  void _showProblem(AppLocalizations l10n, _Problem problem) {
+    setState(() {
+      _phase = _Phase.editing;
+      _problem = problem;
+    });
+    announce(context, _problemText(l10n, problem));
+  }
+
+  /// ✓ for 650 ms, then the editor hands `true` to the profile.
+  void _finish(AppLocalizations l10n) {
+    setState(() {
+      _phase = _Phase.saved;
+      _problem = null;
+    });
+    unawaited(HapticFeedback.lightImpact());
+    announce(context, l10n.profileSaved);
+    _leave = Timer(_leaveAfter, () {
+      if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
+        Navigator.of(context).pop(true);
+      }
+    });
+  }
+
+  /// A refused back: with a new name pending, asks what to do with it.
+  Future<void> _askBeforeLeaving() async {
+    if (!_editing || !_pending) {
+      return;
+    }
+    _focus.unfocus();
+    final NameLeaveChoice? choice = await showNameLeaveSheet(
+      context,
+      name: _name.text.trim(),
+      old: _saved.isEmpty ? null : _saved,
+    );
+    if (!mounted) {
+      return;
+    }
+    switch (choice) {
+      case NameLeaveChoice.save:
+        unawaited(_submit());
+      case NameLeaveChoice.drop:
+        Navigator.of(context).pop();
+      case null:
+        _name.selection = TextSelection.collapsed(offset: _name.text.length);
+        _focus.requestFocus();
     }
   }
 
@@ -148,7 +312,8 @@ class _EditFormState extends ConsumerState<_EditForm> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState rename = ref.watch(renameControllerProvider);
+    // Watched so the controller outlives its answer, which is read after it.
+    ref.watch(renameControllerProvider);
     final bool keyboardUp = View.of(context).viewInsets.bottom > 0;
 
     return ListenableBuilder(
@@ -158,141 +323,177 @@ class _EditFormState extends ConsumerState<_EditForm> {
         final bool focused = _focus.hasFocus;
         final ({SubmitFace face, String label, String? hint}) button = _button(
           l10n,
-          rename,
         );
+        final _Problem? problem = _problem;
         final TextStyle labelStyle = TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: focused ? KitColors.primaryDark : KitColors.muted,
         );
 
-        return Column(
-          children: <Widget>[
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                children: <Widget>[
-                  ExcludeSemantics(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _focus.unfocus,
-                      child: Center(
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            color: KitColors.primarySoft,
-                            shape: BoxShape.circle,
-                          ),
-                          child: initials == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 36,
-                                  color: KitColors.primaryDark,
-                                )
-                              : Text(
-                                  initials,
-                                  style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w700,
-                                    color: KitColors.primaryDark,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Semantics(
-                    hint: l10n.profileNameHelper,
-                    child: TextField(
-                      key: const ValueKey<String>('profile-name-field'),
-                      controller: _name,
-                      focusNode: _focus,
-                      autofocus: true,
-                      enabled: !rename.isBusy,
-                      inputFormatters: <TextInputFormatter>[
-                        LengthLimitingTextInputFormatter(_maxLength),
-                      ],
-                      textCapitalization: TextCapitalization.words,
-                      textInputAction: TextInputAction.done,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: KitColors.ink,
-                      ),
-                      onSubmitted: (String _) {
-                        if (button.face == SubmitFace.ready) {
-                          _submit();
-                        }
-                      },
-                      decoration: InputDecoration(
-                        labelText: l10n.profileNameLabel,
-                        labelStyle: labelStyle,
-                        floatingLabelStyle: labelStyle,
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        helper: ExcludeSemantics(
-                          child: Text(
-                            l10n.profileNameHelper,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              height: 1.4,
-                              color: KitColors.muted,
+        return PopScope(
+          canPop: _editing && !_pending,
+          onPopInvokedWithResult: (bool didPop, Object? _) {
+            if (!didPop) {
+              unawaited(_askBeforeLeaving());
+            }
+          },
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints box) => Column(
+              children: <Widget>[
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    children: <Widget>[
+                      ExcludeSemantics(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _editing ? _focus.unfocus : null,
+                          child: Center(
+                            child: Container(
+                              width: 70,
+                              height: 70,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: KitColors.primarySoft,
+                                shape: BoxShape.circle,
+                              ),
+                              child: initials == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 36,
+                                      color: KitColors.primaryDark,
+                                    )
+                                  : Text(
+                                      initials,
+                                      style: const TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w700,
+                                        color: KitColors.primaryDark,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
-                        helperMaxLines: 3,
-                        constraints: const BoxConstraints(minHeight: 58),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: _border(KitColors.fieldEdge, 1),
-                        enabledBorder: _border(KitColors.fieldEdge, 1),
-                        disabledBorder: _border(KitColors.fieldEdge, 1),
-                        focusedBorder: _border(KitColors.primary, 2),
-                        suffixIconConstraints: const BoxConstraints.tightFor(
-                          width: 44,
-                          height: 44,
-                        ),
-                        suffixIcon: focused && _name.text.isNotEmpty
-                            ? IconButton(
-                                key: const ValueKey<String>(
-                                  'profile-name-clear',
+                      ),
+                      const SizedBox(height: 28),
+                      Semantics(
+                        hint: l10n.profileNameHelper,
+                        child: TextField(
+                          key: const ValueKey<String>('profile-name-field'),
+                          controller: _name,
+                          focusNode: _focus,
+                          autofocus: true,
+                          inputFormatters: <TextInputFormatter>[
+                            LengthLimitingTextInputFormatter(_maxLength),
+                            _FreezeFormatter(() => !_editing),
+                          ],
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.done,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: KitColors.ink,
+                          ),
+                          onSubmitted: (String _) {
+                            if (_editing && button.face == SubmitFace.ready) {
+                              unawaited(_submit());
+                            }
+                          },
+                          decoration: InputDecoration(
+                            labelText: l10n.profileNameLabel,
+                            labelStyle: labelStyle,
+                            floatingLabelStyle: labelStyle,
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                            helper: ExcludeSemantics(
+                              child: Text(
+                                l10n.profileNameHelper,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  height: 1.4,
+                                  color: KitColors.muted,
                                 ),
-                                padding: EdgeInsets.zero,
-                                iconSize: 20,
-                                constraints: const BoxConstraints.tightFor(
+                              ),
+                            ),
+                            helperMaxLines: 3,
+                            constraints: const BoxConstraints(minHeight: 58),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            border: _border(KitColors.fieldEdge, 1),
+                            enabledBorder: _border(KitColors.fieldEdge, 1),
+                            focusedBorder: _border(KitColors.primary, 2),
+                            suffixIconConstraints:
+                                const BoxConstraints.tightFor(
                                   width: 44,
                                   height: 44,
                                 ),
-                                tooltip: l10n.profileClearName,
-                                color: KitColors.muted,
-                                icon: const Icon(Icons.cancel),
-                                onPressed: _clear,
-                              )
-                            : null,
+                            suffixIcon:
+                                focused && _editing && _name.text.isNotEmpty
+                                ? IconButton(
+                                    key: const ValueKey<String>(
+                                      'profile-name-clear',
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 20,
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 44,
+                                      height: 44,
+                                    ),
+                                    tooltip: l10n.profileClearName,
+                                    color: KitColors.muted,
+                                    icon: const Icon(Icons.cancel),
+                                    onPressed: _clear,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ),
+                      _PhoneBlock(phone: widget.profile.phone),
+                    ],
+                  ),
+                ),
+                // A strip at large text can outgrow the room the keyboard
+                // leaves, so the footer scrolls past 70 % of it.
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: box.maxHeight * 0.7),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        12,
+                        20,
+                        keyboardUp ? 12 : 28,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          if (problem != null)
+                            RetryStrip(
+                              key: ValueKey<_Problem>(problem),
+                              message: _problemText(l10n, problem),
+                              stripKey: const ValueKey<String>('profile-strip'),
+                              retryKey: const ValueKey<String>('profile-retry'),
+                              onRetry: () => unawaited(_submit()),
+                            ),
+                          SubmitButton(
+                            buttonKey: const ValueKey<String>('profile-save'),
+                            face: button.face,
+                            label: button.label,
+                            offHint: button.hint,
+                            onPressed: () => unawaited(_submit()),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  _PhoneBlock(phone: widget.profile.phone),
-                  FailureMessage(rename.failure),
-                ],
-              ),
+                ),
+              ],
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, keyboardUp ? 12 : 28),
-              child: SubmitButton(
-                buttonKey: const ValueKey<String>('profile-save'),
-                face: button.face,
-                label: button.label,
-                offHint: button.hint,
-                onPressed: _submit,
-              ),
-            ),
-          ],
+          ),
         );
       },
     );

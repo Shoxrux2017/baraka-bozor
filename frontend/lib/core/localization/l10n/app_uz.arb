@@ -596,6 +596,33 @@
   "profileNameUnchanged": "ism o'zgarmadi",
   "profileClearName": "Ismni tozalash",
   "profileNameCleared": "Maydon tozalandi",
+  "profileSaving": "Saqlanmoqda…",
+  "profileSavingSpoken": "Ism saqlanmoqda…",
+  "profileChecking": "Tekshirilmoqda…",
+  "profileNameNotSaved": "Aloqa yo'q — ism saqlanmadi",
+  "profileNameUnsure": "Aloqa yo'q — ism saqlanganini tekshirib bo'lmadi",
+  "profileNameSaveFailed": "Ismni saqlab bo'lmadi",
+  "profileLeaveTitle": "Yangi ism saqlansinmi?",
+  "profileLeaveInstead": "«{old}» o'rniga «{name}»",
+  "@profileLeaveInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "old": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveNew": "Ism: «{name}»",
+  "@profileLeaveNew": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveDrop": "Saqlamaslik",
   "profilePhoneSpoken": "{label}: {phone}. {note}",
   "@profilePhoneSpoken": {
     "placeholders": {

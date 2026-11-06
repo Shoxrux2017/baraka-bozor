@@ -1233,6 +1233,41 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileNameCleared => 'Maydon tozalandi';
 
   @override
+  String get profileSaving => 'Saqlanmoqda…';
+
+  @override
+  String get profileSavingSpoken => 'Ism saqlanmoqda…';
+
+  @override
+  String get profileChecking => 'Tekshirilmoqda…';
+
+  @override
+  String get profileNameNotSaved => 'Aloqa yo\'q — ism saqlanmadi';
+
+  @override
+  String get profileNameUnsure =>
+      'Aloqa yo\'q — ism saqlanganini tekshirib bo\'lmadi';
+
+  @override
+  String get profileNameSaveFailed => 'Ismni saqlab bo\'lmadi';
+
+  @override
+  String get profileLeaveTitle => 'Yangi ism saqlansinmi?';
+
+  @override
+  String profileLeaveInstead(String name, String old) {
+    return '«$old» o\'rniga «$name»';
+  }
+
+  @override
+  String profileLeaveNew(String name) {
+    return 'Ism: «$name»';
+  }
+
+  @override
+  String get profileLeaveDrop => 'Saqlamaslik';
+
+  @override
   String profilePhoneSpoken(String label, String phone, String note) {
     return '$label: $phone. $note';
   }

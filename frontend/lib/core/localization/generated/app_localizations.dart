@@ -2300,6 +2300,66 @@ abstract class AppLocalizations {
   /// **'Maydon tozalandi'**
   String get profileNameCleared;
 
+  /// No description provided for @profileSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda…'**
+  String get profileSaving;
+
+  /// No description provided for @profileSavingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism saqlanmoqda…'**
+  String get profileSavingSpoken;
+
+  /// No description provided for @profileChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirilmoqda…'**
+  String get profileChecking;
+
+  /// No description provided for @profileNameNotSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — ism saqlanmadi'**
+  String get profileNameNotSaved;
+
+  /// No description provided for @profileNameUnsure.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — ism saqlanganini tekshirib bo\'lmadi'**
+  String get profileNameUnsure;
+
+  /// No description provided for @profileNameSaveFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni saqlab bo\'lmadi'**
+  String get profileNameSaveFailed;
+
+  /// No description provided for @profileLeaveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi ism saqlansinmi?'**
+  String get profileLeaveTitle;
+
+  /// No description provided for @profileLeaveInstead.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{old}» o\'rniga «{name}»'**
+  String profileLeaveInstead(String name, String old);
+
+  /// No description provided for @profileLeaveNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism: «{name}»'**
+  String profileLeaveNew(String name);
+
+  /// No description provided for @profileLeaveDrop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamaslik'**
+  String get profileLeaveDrop;
+
   /// No description provided for @profilePhoneSpoken.
   ///
   /// In uz, this message translates to:

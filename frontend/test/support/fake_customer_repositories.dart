@@ -21,6 +21,10 @@ class FakeProfileRepository implements ProfileRepository {
   /// The next load answers this instead.
   ApiFailure? loadFailure;
 
+  /// The next rename saves the name, then throws a [NetworkFailure] as if the
+  /// answer was lost on the way back.
+  bool loseAnswer = false;
+
   /// While set, a load or a rename answers only once it completes.
   Completer<void>? hold;
 
@@ -53,6 +57,10 @@ class FakeProfileRepository implements ProfileRepository {
       fullName: fullName,
       supportPhone: current.supportPhone,
     );
+    if (loseAnswer) {
+      loseAnswer = false;
+      throw const NetworkFailure();
+    }
     return current;
   }
 }

@@ -1248,6 +1248,41 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileNameCleared => 'Поле очищено';
 
   @override
+  String get profileSaving => 'Сохраняем…';
+
+  @override
+  String get profileSavingSpoken => 'Сохраняем имя…';
+
+  @override
+  String get profileChecking => 'Проверяем…';
+
+  @override
+  String get profileNameNotSaved => 'Нет связи — имя не сохранено';
+
+  @override
+  String get profileNameUnsure =>
+      'Нет связи — не удалось проверить, сохранилось ли имя';
+
+  @override
+  String get profileNameSaveFailed => 'Не удалось сохранить имя';
+
+  @override
+  String get profileLeaveTitle => 'Сохранить новое имя?';
+
+  @override
+  String profileLeaveInstead(String name, String old) {
+    return '«$name» вместо «$old»';
+  }
+
+  @override
+  String profileLeaveNew(String name) {
+    return 'Имя: «$name»';
+  }
+
+  @override
+  String get profileLeaveDrop => 'Не сохранять';
+
+  @override
   String profilePhoneSpoken(String label, String phone, String note) {
     return '$label: $phone. $note';
   }

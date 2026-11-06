@@ -565,6 +565,30 @@ void main() {
       expect(_flashColor(tester).a, 0);
     });
 
+    testWidgets('a real save from the editor makes the header flash', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('profile-name-field'), 'Диля');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 650));
+      await tester.pump();
+      await tester.pump();
+
+      expect(_flashColor(tester), KitColors.headerFlash);
+      await tester.pump(const Duration(milliseconds: 1600));
+      await tester.pumpAndSettle();
+      expect(_flashColor(tester).a, 0);
+      expect(find.text('Диля'), findsOneWidget);
+    });
+
     testWidgets('a closed editor does not flash the header', (tester) async {
       profile.current = named('Дилноза Каримова');
       await openProfile(tester);

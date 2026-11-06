@@ -530,6 +530,33 @@
   "profileNameUnchanged": "имя не изменилось",
   "profileClearName": "Очистить имя",
   "profileNameCleared": "Поле очищено",
+  "profileSaving": "Сохраняем…",
+  "profileSavingSpoken": "Сохраняем имя…",
+  "profileChecking": "Проверяем…",
+  "profileNameNotSaved": "Нет связи — имя не сохранено",
+  "profileNameUnsure": "Нет связи — не удалось проверить, сохранилось ли имя",
+  "profileNameSaveFailed": "Не удалось сохранить имя",
+  "profileLeaveTitle": "Сохранить новое имя?",
+  "profileLeaveInstead": "«{name}» вместо «{old}»",
+  "@profileLeaveInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "old": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveNew": "Имя: «{name}»",
+  "@profileLeaveNew": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveDrop": "Не сохранять",
   "profilePhoneSpoken": "{label}: {phone}. {note}",
   "@profilePhoneSpoken": {
     "placeholders": {

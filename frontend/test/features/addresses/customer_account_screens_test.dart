@@ -188,7 +188,7 @@ void main() {
 
       expect(profile.renames, <String>['Aziza Karimova']);
       expect(byKey('edit-profile'), findsNothing);
-      expect(find.text(l10n(tester).profileSaved), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
       expect(find.text(l10n(tester).profileNoName), findsNothing);
       expect(find.text('Aziza Karimova'), findsOneWidget);
     });
@@ -1130,7 +1130,7 @@ void main() {
       await tester.enterText(byKey('profile-name-field'), 'Aziza Karimova');
       await tapAndSettle(tester, byKey('profile-save'));
 
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).profileNameNotSaved), findsOneWidget);
       expect(
         tester.widget<TextField>(byKey('profile-name-field')).controller!.text,
         'Aziza Karimova',
@@ -1160,7 +1160,7 @@ void main() {
       expect(find.text(l10n(tester).profileSaved), findsNothing);
     });
 
-    testWidgets('a rename answered after the Customer moved on says nothing', (
+    testWidgets('the Customer cannot move on while the rename is on its way', (
       WidgetTester tester,
     ) async {
       await openProfile(tester);
@@ -1172,13 +1172,16 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      await tapAndSettle(tester, byKey('profile-addresses'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('edit-profile'), findsOneWidget);
+      expect(byKey('name-leave-sheet'), findsNothing);
+
       profile.hold!.complete();
       await tester.pumpAndSettle();
 
       expect(profile.renames, <String>['Aziza Karimova']);
-      expect(find.text(l10n(tester).profileSaved), findsNothing);
+      expect(byKey('edit-profile'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('an unchanged address is not sent and says so', (
