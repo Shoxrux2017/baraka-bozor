@@ -1207,9 +1207,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileSaved => 'Ism saqlandi';
 
   @override
-  String get profileEditTitle => 'Profilni tahrirlash';
-
-  @override
   String get profileNameLabel => 'Ism';
 
   @override
@@ -1217,11 +1214,28 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get profilePhoneLocked =>
-      'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.';
+      'Shu raqam bilan kirasiz — uni o\'zgartirib bo\'lmaydi.';
 
   @override
-  String get profileNameRequired =>
-      'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.';
+  String get profileNameHelper =>
+      'Yig\'uvchi va kuryer sizni shunday chaqiradi';
+
+  @override
+  String get profileNameEnter => 'Ismni kiriting';
+
+  @override
+  String get profileNameUnchanged => 'ism o\'zgarmadi';
+
+  @override
+  String get profileClearName => 'Ismni tozalash';
+
+  @override
+  String get profileNameCleared => 'Maydon tozalandi';
+
+  @override
+  String profilePhoneSpoken(String label, String phone, String note) {
+    return '$label: $phone. $note';
+  }
 
   @override
   String get addressesTitle => 'Manzillarim';

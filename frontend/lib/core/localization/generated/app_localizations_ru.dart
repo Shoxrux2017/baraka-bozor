@@ -1223,9 +1223,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileSaved => 'Имя сохранено';
 
   @override
-  String get profileEditTitle => 'Редактирование профиля';
-
-  @override
   String get profileNameLabel => 'Имя';
 
   @override
@@ -1233,10 +1230,27 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profilePhoneLocked =>
-      'Номер — ваш вход в приложение, его не меняют.';
+      'По этому номеру вы входите — изменить его нельзя.';
 
   @override
-  String get profileNameRequired => 'Введите имя — без него заказ не оформить.';
+  String get profileNameHelper => 'Так вас назовут сборщик и курьер';
+
+  @override
+  String get profileNameEnter => 'Введите имя';
+
+  @override
+  String get profileNameUnchanged => 'имя не изменилось';
+
+  @override
+  String get profileClearName => 'Очистить имя';
+
+  @override
+  String get profileNameCleared => 'Поле очищено';
+
+  @override
+  String profilePhoneSpoken(String label, String phone, String note) {
+    return '$label: $phone. $note';
+  }
 
   @override
   String get addressesTitle => 'Мои адреса';

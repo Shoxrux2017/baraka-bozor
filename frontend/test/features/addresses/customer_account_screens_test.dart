@@ -204,7 +204,7 @@ void main() {
       await tester.tap(byKey('profile-save'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).profileNameRequired), findsOneWidget);
+      expect(find.text(l10n(tester).profileNameEnter), findsOneWidget);
       expect(
         tester.widget<FilledButton>(byKey('profile-save')).onPressed,
         isNull,
@@ -1148,10 +1148,15 @@ void main() {
       await openProfile(tester);
 
       await openEditor(tester);
-      await tapAndSettle(tester, byKey('profile-save'));
+      await tester.tap(byKey('profile-save'), warnIfMissed: false);
+      await tester.pumpAndSettle();
 
       expect(profile.renames, isEmpty);
-      expect(byKey('edit-profile'), findsNothing);
+      expect(byKey('edit-profile'), findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(byKey('profile-save')).onPressed,
+        isNull,
+      );
       expect(find.text(l10n(tester).profileSaved), findsNothing);
     });
 

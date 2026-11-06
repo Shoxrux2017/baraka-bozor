@@ -118,11 +118,14 @@ class _SubmitButtonState extends State<SubmitButton> {
       child: AnimatedScale(
         scale: _pressed && ready && !reduced ? 0.98 : 1,
         duration: reduced ? Duration.zero : const Duration(milliseconds: 100),
-        child: widget.face == SubmitFace.off && widget.offHint != null
-            ? MergeSemantics(
-                child: Semantics(hint: widget.offHint, child: button),
-              )
-            : button,
+        // One tree for every face, so the button keeps its element and its
+        // colour change plays when it goes from off to ready.
+        child: MergeSemantics(
+          child: Semantics(
+            hint: widget.face == SubmitFace.off ? widget.offHint : null,
+            child: button,
+          ),
+        ),
       ),
     );
   }

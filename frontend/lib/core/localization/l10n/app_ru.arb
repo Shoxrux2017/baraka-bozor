@@ -522,11 +522,28 @@
   "profilePrivacy": "Конфиденциальность",
   "profileName": "Ваше имя",
   "profileSaved": "Имя сохранено",
-  "profileEditTitle": "Редактирование профиля",
   "profileNameLabel": "Имя",
   "profilePhoneLabel": "Номер телефона",
-  "profilePhoneLocked": "Номер — ваш вход в приложение, его не меняют.",
-  "profileNameRequired": "Введите имя — без него заказ не оформить.",
+  "profilePhoneLocked": "По этому номеру вы входите — изменить его нельзя.",
+  "profileNameHelper": "Так вас назовут сборщик и курьер",
+  "profileNameEnter": "Введите имя",
+  "profileNameUnchanged": "имя не изменилось",
+  "profileClearName": "Очистить имя",
+  "profileNameCleared": "Поле очищено",
+  "profilePhoneSpoken": "{label}: {phone}. {note}",
+  "@profilePhoneSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "addressesTitle": "Мои адреса",
   "addressNone": "Адресов пока нет",
   "addressNew": "Новый адрес",

@@ -588,11 +588,28 @@
   "profilePrivacy": "Maxfiylik",
   "profileName": "Ismingiz",
   "profileSaved": "Ism saqlandi",
-  "profileEditTitle": "Profilni tahrirlash",
   "profileNameLabel": "Ism",
   "profilePhoneLabel": "Telefon raqami",
-  "profilePhoneLocked": "Raqam — ilovaga kirishingiz, uni o'zgartirib bo'lmaydi.",
-  "profileNameRequired": "Ismni kiriting — usiz buyurtma berib bo'lmaydi.",
+  "profilePhoneLocked": "Shu raqam bilan kirasiz — uni o'zgartirib bo'lmaydi.",
+  "profileNameHelper": "Yig'uvchi va kuryer sizni shunday chaqiradi",
+  "profileNameEnter": "Ismni kiriting",
+  "profileNameUnchanged": "ism o'zgarmadi",
+  "profileClearName": "Ismni tozalash",
+  "profileNameCleared": "Maydon tozalandi",
+  "profilePhoneSpoken": "{label}: {phone}. {note}",
+  "@profilePhoneSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "addressesTitle": "Manzillarim",
   "addressNone": "Hali manzil qo'shilmagan",
   "addressNew": "Yangi manzil",

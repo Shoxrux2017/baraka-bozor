@@ -88,6 +88,19 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('off to ready keeps the same button, so its colour can fade', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(SubmitFace.off, onPressed: () {}, offHint: 'имя не изменилось'),
+    );
+    final Element before = tester.element(find.byKey(_key));
+    await tester.pumpWidget(
+      _app(SubmitFace.ready, onPressed: () {}, offHint: 'имя не изменилось'),
+    );
+    expect(tester.element(find.byKey(_key)), same(before));
+  });
+
   testWidgets('the check pops and stands still with reduced motion', (
     tester,
   ) async {

@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/submit_button.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:baraka_bozor/features/profile/presentation/initials.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,6 +19,7 @@ import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 
 void main() {
   late InMemoryTokenStore tokens;
@@ -45,6 +50,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(800, 1200),
     Locale device = const Locale('uz'),
+    TextScaler? textScaler,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -54,6 +60,7 @@ void main() {
         tokens: tokens,
         repository: auth,
         device: device,
+        textScaler: textScaler,
         overrides: [profileRepositoryProvider.overrideWithValue(profile)],
       ),
     );
@@ -68,6 +75,13 @@ void main() {
   String nameText(WidgetTester tester) =>
       tester.widget<TextField>(byKey('profile-name-field')).controller!.text;
 
+  EditableText nameEditable(WidgetTester tester) => tester.widget<EditableText>(
+    find.descendant(
+      of: byKey('profile-name-field'),
+      matching: find.byType(EditableText),
+    ),
+  );
+
   Future<void> save(WidgetTester tester) async {
     await tester.pump();
     await tester.tap(byKey('profile-save'));
@@ -75,35 +89,226 @@ void main() {
   }
 
   group('the name editor', () {
-    testWidgets('shows the name and the phone read-only', (tester) async {
+    testWidgets('the field is ready on open', (tester) async {
       profile.current = named('Aziza');
       await openEditor(tester);
 
-      expect(byKey('edit-profile'), findsOneWidget);
-      expect(nameText(tester), 'Aziza');
-      final TextField phone = tester.widget<TextField>(
-        byKey('profile-phone-field'),
+      expect(nameEditable(tester).focusNode.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
+      expect(
+        nameEditable(tester).controller.selection,
+        const TextSelection.collapsed(offset: 5),
       );
-      expect(phone.readOnly, isTrue);
-      expect(phone.controller!.text, '+998 90 123 45 67');
-      expect(find.text(l10n(tester).profilePhoneLocked), findsOneWidget);
-      expect(find.text('A'), findsOneWidget);
+      expect(byKey('profile-name-clear'), findsOneWidget);
+
+      tester.takeAnnouncements();
+      await tester.tap(byKey('profile-name-clear'));
+      await tester.pumpAndSettle();
+
+      expect(nameText(tester), isEmpty);
+      expect(nameEditable(tester).focusNode.hasFocus, isTrue);
+      expect(byKey('profile-name-clear'), findsNothing);
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        <String>[l10n(tester).profileNameCleared],
+      );
     });
 
-    testWidgets('an empty name shows the message and disables the button', (
+    testWidgets('the frame is grey and green only while focused, never red', (
       tester,
     ) async {
       profile.current = named('Aziza');
-      await openEditor(tester);
+      await openEditor(tester, device: const Locale('ru'));
+
+      InputDecoration decoration() =>
+          tester.widget<TextField>(byKey('profile-name-field')).decoration!;
+
+      expect(decoration().focusedBorder!.borderSide.color, KitColors.primary);
+      expect(decoration().focusedBorder!.borderSide.width, 2);
+
+      await tester.tap(find.text('A'));
+      await tester.pumpAndSettle();
+      expect(nameEditable(tester).focusNode.hasFocus, isFalse);
+      expect(decoration().enabledBorder!.borderSide.color, KitColors.fieldEdge);
+      expect(decoration().enabledBorder!.borderSide.width, 1);
+
+      await tester.enterText(byKey('profile-name-field'), '');
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Введите имя — без него заказ не оформить.'),
+        findsNothing,
+      );
+      final InputDecoration d = decoration();
+      expect(d.errorText, isNull);
+      for (final InputBorder? b in <InputBorder?>[
+        d.border,
+        d.enabledBorder,
+        d.focusedBorder,
+        d.errorBorder,
+        d.focusedErrorBorder,
+        d.disabledBorder,
+      ]) {
+        expect(b?.borderSide.color, isNot(KitColors.danger));
+      }
+      expect(find.text('Так вас назовут сборщик и курьер'), findsOneWidget);
+    });
+
+    testWidgets('save is grey until the name differs', (tester) async {
+      profile.current = named('Aziza');
+      await openEditor(tester, device: const Locale('ru'));
+
+      SubmitFace face() =>
+          tester.widget<SubmitButton>(find.byType(SubmitButton)).face;
+      VoidCallback? pressed() =>
+          tester.widget<FilledButton>(byKey('profile-save')).onPressed;
+
+      expect(face(), SubmitFace.off);
+      expect(find.text('Сохранить'), findsOneWidget);
+      await tester.tap(byKey('profile-save'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(profile.renames, isEmpty);
+      expect(byKey('edit-profile'), findsOneWidget);
+
+      await tester.enterText(byKey('profile-name-field'), 'Aziza K');
+      await tester.pumpAndSettle();
+      expect(face(), SubmitFace.ready);
+      expect(pressed(), isNotNull);
+
+      await tester.enterText(byKey('profile-name-field'), '  Aziza  ');
+      await tester.pumpAndSettle();
+      expect(face(), SubmitFace.off);
+      expect(pressed(), isNull);
+      expect(find.text('Сохранить'), findsOneWidget);
+      expect(profile.renames, isEmpty);
 
       await tester.enterText(byKey('profile-name-field'), '   ');
       await tester.pumpAndSettle();
+      expect(face(), SubmitFace.off);
+      expect(find.text('Введите имя'), findsOneWidget);
+    });
 
-      expect(find.text(l10n(tester).profileNameRequired), findsOneWidget);
+    testWidgets('the title follows the saved name', (tester) async {
+      profile.current = named('Aziza');
+      await openEditor(tester, device: const Locale('ru'));
       expect(
-        tester.widget<FilledButton>(byKey('profile-save')).onPressed,
-        isNull,
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Изменить имя'),
+        ),
+        findsOneWidget,
       );
+    });
+
+    testWidgets('the title without a saved name asks to set one', (
+      tester,
+    ) async {
+      await openEditor(tester, device: const Locale('ru'));
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Указать имя'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the phone is a text block that takes no focus', (
+      tester,
+    ) async {
+      profile.current = named('Aziza');
+      await openEditor(tester, device: const Locale('ru'));
+
+      expect(find.byType(TextField), findsOneWidget);
+      await tester.tap(byKey('profile-phone-block'));
+      await tester.pumpAndSettle();
+      expect(nameEditable(tester).focusNode.hasFocus, isTrue);
+
+      for (final String text in <String>[
+        'Номер телефона',
+        '+998 90 123 45 67',
+        'По этому номеру вы входите — изменить его нельзя.',
+      ]) {
+        expect(
+          find.descendant(
+            of: byKey('profile-phone-block'),
+            matching: find.text(text),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(
+        find.descendant(
+          of: byKey('profile-phone-block'),
+          matching: find.byIcon(Icons.lock_outline),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a reader meets the field and its helper as one stop', (
+      tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      profile.current = named('Дилноза Каримова');
+      await openEditor(tester, device: const Locale('ru'));
+
+      const String helper = 'Так вас назовут сборщик и курьер';
+      final List<SemanticsNode> nodes = <SemanticsNode>[];
+      void walk(SemanticsNode n) {
+        nodes.add(n);
+        n.visitChildren((SemanticsNode c) {
+          walk(c);
+          return true;
+        });
+      }
+
+      walk(
+        tester
+            .binding
+            .renderViews
+            .first
+            .owner!
+            .semanticsOwner!
+            .rootSemanticsNode!,
+      );
+      String words(SemanticsNode n) {
+        final SemanticsData d = n.getSemanticsData();
+        return '${d.label}|${d.hint}|${d.value}';
+      }
+
+      final SemanticsNode field = tester.getSemantics(
+        byKey('profile-name-field'),
+      );
+      expect(words(field), contains('Имя'));
+      expect(words(field), contains(helper));
+      expect(
+        nodes.where((SemanticsNode n) => words(n).contains(helper)),
+        <SemanticsNode>[field],
+      );
+      expect(
+        nodes.where((SemanticsNode n) => words(n).contains('ДК')),
+        isEmpty,
+      );
+
+      final List<SemanticsNode> phone = nodes
+          .where((SemanticsNode n) => words(n).contains('+998 90 123 45 67'))
+          .toList();
+      expect(phone, hasLength(1));
+      expect(
+        phone.single.getSemanticsData().label,
+        'Номер телефона: +998 90 123 45 67. '
+        'По этому номеру вы входите — изменить его нельзя.',
+      );
+
+      final SemanticsData save = tester
+          .getSemantics(byKey('profile-save'))
+          .getSemanticsData();
+      expect(save.label, 'Сохранить');
+      expect(save.hint, 'имя не изменилось');
+      expect(save.flagsCollection.isEnabled, isNot(Tristate.isTrue));
+      handle.dispose();
     });
 
     testWidgets('a trimmed name renames once, closes and says saved', (
@@ -117,17 +322,6 @@ void main() {
       expect(profile.renames, <String>['Aziza']);
       expect(byKey('edit-profile'), findsNothing);
       expect(find.text(l10n(tester).profileSaved), findsOneWidget);
-    });
-
-    testWidgets('an unchanged name closes with no rename', (tester) async {
-      profile.current = named('Aziza');
-      await openEditor(tester);
-
-      await tester.enterText(byKey('profile-name-field'), ' Aziza ');
-      await save(tester);
-
-      expect(profile.renames, isEmpty);
-      expect(byKey('edit-profile'), findsNothing);
     });
 
     testWidgets('a failed rename keeps the screen and shows the failure', (
@@ -160,19 +354,33 @@ void main() {
     });
 
     for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
-      testWidgets('holds at 320x640 with text x2 (${device.languageCode})', (
-        tester,
-      ) async {
-        tester.platformDispatcher.textScaleFactorTestValue = 2;
-        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-        profile.current = named('Aziza');
-        await openEditor(tester, size: const Size(320, 640), device: device);
-        await tester.enterText(byKey('profile-name-field'), '');
-        await tester.pumpAndSettle();
+      for (final double scale in <double>[1, 2]) {
+        testWidgets('holds at 360x640 with the keyboard up at x$scale '
+            '(${device.languageCode})', (tester) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+          addTearDown(tester.view.resetViewInsets);
+          profile.current = named('Aziza');
+          await openEditor(
+            tester,
+            size: const Size(360, 640),
+            device: device,
+            textScaler: NonlinearTextScaler(scale),
+          );
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
 
-        expect(byKey('profile-save'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
+          await tester.enterText(byKey('profile-name-field'), 'Aziza K');
+          await tester.pumpAndSettle();
+          expect(byKey('profile-save'), findsOneWidget);
+          expect(
+            tester.getRect(byKey('profile-save')).bottom,
+            lessThanOrEqualTo(640 - 300),
+          );
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          expect(tester.takeException(), isNull);
+          handle.dispose();
+        });
+      }
     }
   });
 

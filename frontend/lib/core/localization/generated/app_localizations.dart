@@ -2252,12 +2252,6 @@ abstract class AppLocalizations {
   /// **'Ism saqlandi'**
   String get profileSaved;
 
-  /// No description provided for @profileEditTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Profilni tahrirlash'**
-  String get profileEditTitle;
-
   /// No description provided for @profileNameLabel.
   ///
   /// In uz, this message translates to:
@@ -2273,14 +2267,44 @@ abstract class AppLocalizations {
   /// No description provided for @profilePhoneLocked.
   ///
   /// In uz, this message translates to:
-  /// **'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.'**
+  /// **'Shu raqam bilan kirasiz — uni o\'zgartirib bo\'lmaydi.'**
   String get profilePhoneLocked;
 
-  /// No description provided for @profileNameRequired.
+  /// No description provided for @profileNameHelper.
   ///
   /// In uz, this message translates to:
-  /// **'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.'**
-  String get profileNameRequired;
+  /// **'Yig\'uvchi va kuryer sizni shunday chaqiradi'**
+  String get profileNameHelper;
+
+  /// No description provided for @profileNameEnter.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni kiriting'**
+  String get profileNameEnter;
+
+  /// No description provided for @profileNameUnchanged.
+  ///
+  /// In uz, this message translates to:
+  /// **'ism o\'zgarmadi'**
+  String get profileNameUnchanged;
+
+  /// No description provided for @profileClearName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni tozalash'**
+  String get profileClearName;
+
+  /// No description provided for @profileNameCleared.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maydon tozalandi'**
+  String get profileNameCleared;
+
+  /// No description provided for @profilePhoneSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label}: {phone}. {note}'**
+  String profilePhoneSpoken(String label, String phone, String note);
 
   /// No description provided for @addressesTitle.
   ///
