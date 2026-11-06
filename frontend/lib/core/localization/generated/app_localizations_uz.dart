@@ -4438,10 +4438,54 @@ class AppLocalizationsUz extends AppLocalizations {
       'Operator bahoni ko\'radi va vaziyatni aniqlash uchun siz bilan bog\'lanadi.';
 
   @override
-  String get rateSend => 'Yuborish';
+  String get rateSend => 'Bahoni yuborish';
 
   @override
-  String get rateSending => 'Baho yuborilmoqda';
+  String get rateSending => 'Yuborilmoqda…';
+
+  @override
+  String get rateSent => 'Baho yuborildi';
+
+  @override
+  String get rateShorten => 'Izohni qisqartiring';
+
+  @override
+  String get rateSendAgain => 'Yana yuborish';
+
+  @override
+  String get rateUnsent => 'Aloqa yo\'q — baho yuborilmadi';
+
+  @override
+  String get rateUnsure =>
+      'Javob kelmadi — baho saqlangan bo\'lishi mumkin. Yana yuboring: u ikki marta saqlanmaydi.';
+
+  @override
+  String get rateClosedTitle => 'Baholash muddati o\'tdi';
+
+  @override
+  String get rateClosedText =>
+      'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin.';
+
+  @override
+  String get rateBackToOrder => 'Buyurtmaga qaytish';
+
+  @override
+  String get rateSendingSpoken => 'Baho yuborilmoqda…';
+
+  @override
+  String rateSentSpoken(int stars) {
+    return 'Baho yuborildi: 5 dan $stars.';
+  }
+
+  @override
+  String get rateOperatorWillContact => 'Operator siz bilan bog\'lanadi.';
+
+  @override
+  String get rateUnsentSpoken => 'Baho yuborilmadi: aloqa yo\'q.';
+
+  @override
+  String get rateUnsureSpoken =>
+      'Javob kelmadi. Baho saqlangan bo\'lishi mumkin. Yana yuboring.';
 
   @override
   String get rateBlockTitle => 'Buyurtma yoqdimi?';
@@ -4459,10 +4503,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get ratedThanks => 'Baho uchun rahmat!';
-
-  @override
-  String get rateWindowClosed =>
-      'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.';
 
   @override
   String get deleteAccountTitle => 'Akkauntni o\'chirasizmi?';

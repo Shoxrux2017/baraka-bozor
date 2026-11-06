@@ -3224,14 +3224,33 @@
   "rateCommentHintGood": "Nima yoqdi?",
   "rateCommentHintBad": "Nima bo'ldi?",
   "rateOperatorWillCall": "Operator bahoni ko'radi va vaziyatni aniqlash uchun siz bilan bog'lanadi.",
-  "rateSend": "Yuborish",
-  "rateSending": "Baho yuborilmoqda",
+  "rateSend": "Bahoni yuborish",
+  "rateSending": "Yuborilmoqda…",
+  "rateSent": "Baho yuborildi",
+  "rateShorten": "Izohni qisqartiring",
+  "rateSendAgain": "Yana yuborish",
+  "rateUnsent": "Aloqa yo'q — baho yuborilmadi",
+  "rateUnsure": "Javob kelmadi — baho saqlangan bo'lishi mumkin. Yana yuboring: u ikki marta saqlanmaydi.",
+  "rateClosedTitle": "Baholash muddati o'tdi",
+  "rateClosedText": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin.",
+  "rateBackToOrder": "Buyurtmaga qaytish",
+  "rateSendingSpoken": "Baho yuborilmoqda…",
+  "rateSentSpoken": "Baho yuborildi: 5 dan {stars}.",
+  "@rateSentSpoken": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "rateOperatorWillContact": "Operator siz bilan bog'lanadi.",
+  "rateUnsentSpoken": "Baho yuborilmadi: aloqa yo'q.",
+  "rateUnsureSpoken": "Javob kelmadi. Baho saqlangan bo'lishi mumkin. Yana yuboring.",
   "rateBlockTitle": "Buyurtma yoqdimi?",
   "rateBlockHint": "Yangilik, og'irlik, yetkazish — 7 kun ichida baholash mumkin",
   "ratedTitle": "Sizning bahoingiz",
   "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
   "ratedThanks": "Baho uchun rahmat!",
-  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi.",
   "deleteAccountTitle": "Akkauntni o'chirasizmi?",
   "deleteErasedHeading": "O'chiriladi",
   "deleteErasedName": "Ism va telefon raqami",

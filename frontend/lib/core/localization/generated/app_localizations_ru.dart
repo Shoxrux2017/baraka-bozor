@@ -4492,10 +4492,54 @@ class AppLocalizationsRu extends AppLocalizations {
       'Оператор увидит оценку и свяжется с вами, чтобы разобраться.';
 
   @override
-  String get rateSend => 'Отправить';
+  String get rateSend => 'Отправить оценку';
 
   @override
-  String get rateSending => 'Отправляем оценку';
+  String get rateSending => 'Отправляем…';
+
+  @override
+  String get rateSent => 'Оценка отправлена';
+
+  @override
+  String get rateShorten => 'Сократите комментарий';
+
+  @override
+  String get rateSendAgain => 'Отправить ещё раз';
+
+  @override
+  String get rateUnsent => 'Нет связи — оценка не отправлена';
+
+  @override
+  String get rateUnsure =>
+      'Ответ не дошёл — оценка могла сохраниться. Отправьте ещё раз: дважды она не сохранится.';
+
+  @override
+  String get rateClosedTitle => 'Срок оценки прошёл';
+
+  @override
+  String get rateClosedText =>
+      'Оценить заказ можно в течение 7 дней после доставки.';
+
+  @override
+  String get rateBackToOrder => 'Вернуться к заказу';
+
+  @override
+  String get rateSendingSpoken => 'Отправляем оценку…';
+
+  @override
+  String rateSentSpoken(int stars) {
+    return 'Оценка отправлена: $stars из 5.';
+  }
+
+  @override
+  String get rateOperatorWillContact => 'Оператор свяжется с вами.';
+
+  @override
+  String get rateUnsentSpoken => 'Оценка не отправлена: нет связи.';
+
+  @override
+  String get rateUnsureSpoken =>
+      'Ответ не дошёл. Оценка могла сохраниться. Отправьте ещё раз.';
 
   @override
   String get rateBlockTitle => 'Как вам заказ?';
@@ -4512,10 +4556,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get ratedThanks => 'Спасибо за оценку!';
-
-  @override
-  String get rateWindowClosed =>
-      'Оценить заказ можно в течение 7 дней после доставки — это время прошло.';
 
   @override
   String get deleteAccountTitle => 'Удалить аккаунт?';

@@ -2814,14 +2814,33 @@
   "rateCommentHintGood": "Что понравилось?",
   "rateCommentHintBad": "Что случилось?",
   "rateOperatorWillCall": "Оператор увидит оценку и свяжется с вами, чтобы разобраться.",
-  "rateSend": "Отправить",
-  "rateSending": "Отправляем оценку",
+  "rateSend": "Отправить оценку",
+  "rateSending": "Отправляем…",
+  "rateSent": "Оценка отправлена",
+  "rateShorten": "Сократите комментарий",
+  "rateSendAgain": "Отправить ещё раз",
+  "rateUnsent": "Нет связи — оценка не отправлена",
+  "rateUnsure": "Ответ не дошёл — оценка могла сохраниться. Отправьте ещё раз: дважды она не сохранится.",
+  "rateClosedTitle": "Срок оценки прошёл",
+  "rateClosedText": "Оценить заказ можно в течение 7 дней после доставки.",
+  "rateBackToOrder": "Вернуться к заказу",
+  "rateSendingSpoken": "Отправляем оценку…",
+  "rateSentSpoken": "Оценка отправлена: {stars} из 5.",
+  "@rateSentSpoken": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "rateOperatorWillContact": "Оператор свяжется с вами.",
+  "rateUnsentSpoken": "Оценка не отправлена: нет связи.",
+  "rateUnsureSpoken": "Ответ не дошёл. Оценка могла сохраниться. Отправьте ещё раз.",
   "rateBlockTitle": "Как вам заказ?",
   "rateBlockHint": "Свежесть, вес, доставка — оценить можно 7 дней",
   "ratedTitle": "Ваша оценка",
   "ratedThanksLow": "Спасибо! Оператор свяжется с вами, чтобы разобраться.",
   "ratedThanks": "Спасибо за оценку!",
-  "rateWindowClosed": "Оценить заказ можно в течение 7 дней после доставки — это время прошло.",
   "deleteAccountTitle": "Удалить аккаунт?",
   "deleteErasedHeading": "Сотрём",
   "deleteErasedName": "Имя и номер телефона",

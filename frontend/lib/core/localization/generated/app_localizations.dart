@@ -7445,14 +7445,92 @@ abstract class AppLocalizations {
   /// No description provided for @rateSend.
   ///
   /// In uz, this message translates to:
-  /// **'Yuborish'**
+  /// **'Bahoni yuborish'**
   String get rateSend;
 
   /// No description provided for @rateSending.
   ///
   /// In uz, this message translates to:
-  /// **'Baho yuborilmoqda'**
+  /// **'Yuborilmoqda…'**
   String get rateSending;
+
+  /// No description provided for @rateSent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho yuborildi'**
+  String get rateSent;
+
+  /// No description provided for @rateShorten.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izohni qisqartiring'**
+  String get rateShorten;
+
+  /// No description provided for @rateSendAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana yuborish'**
+  String get rateSendAgain;
+
+  /// No description provided for @rateUnsent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — baho yuborilmadi'**
+  String get rateUnsent;
+
+  /// No description provided for @rateUnsure.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob kelmadi — baho saqlangan bo\'lishi mumkin. Yana yuboring: u ikki marta saqlanmaydi.'**
+  String get rateUnsure;
+
+  /// No description provided for @rateClosedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baholash muddati o\'tdi'**
+  String get rateClosedTitle;
+
+  /// No description provided for @rateClosedText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin.'**
+  String get rateClosedText;
+
+  /// No description provided for @rateBackToOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmaga qaytish'**
+  String get rateBackToOrder;
+
+  /// No description provided for @rateSendingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho yuborilmoqda…'**
+  String get rateSendingSpoken;
+
+  /// No description provided for @rateSentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho yuborildi: 5 dan {stars}.'**
+  String rateSentSpoken(int stars);
+
+  /// No description provided for @rateOperatorWillContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator siz bilan bog\'lanadi.'**
+  String get rateOperatorWillContact;
+
+  /// No description provided for @rateUnsentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho yuborilmadi: aloqa yo\'q.'**
+  String get rateUnsentSpoken;
+
+  /// No description provided for @rateUnsureSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob kelmadi. Baho saqlangan bo\'lishi mumkin. Yana yuboring.'**
+  String get rateUnsureSpoken;
 
   /// No description provided for @rateBlockTitle.
   ///
@@ -7483,12 +7561,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Baho uchun rahmat!'**
   String get ratedThanks;
-
-  /// No description provided for @rateWindowClosed.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.'**
-  String get rateWindowClosed;
 
   /// No description provided for @deleteAccountTitle.
   ///
