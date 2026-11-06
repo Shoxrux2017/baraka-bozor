@@ -1183,7 +1183,19 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileLanguage => 'Til';
 
   @override
-  String get profileSupport => 'Qo\'llab-quvvatlash';
+  String get profileGroupAccount => 'Akkaunt';
+
+  @override
+  String get profileGroupApp => 'Ilova';
+
+  @override
+  String get profileGroupHelp => 'Yordam';
+
+  @override
+  String get profileCallSupport => 'Qo\'llab-quvvatlashga qo\'ng\'iroq';
+
+  @override
+  String get profileDeleteHint => 'avval so\'raymiz';
 
   @override
   String get profilePrivacy => 'Maxfiylik';

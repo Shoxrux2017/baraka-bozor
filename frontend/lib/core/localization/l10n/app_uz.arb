@@ -580,7 +580,11 @@
     }
   },
   "profileLanguage": "Til",
-  "profileSupport": "Qo'llab-quvvatlash",
+  "profileGroupAccount": "Akkaunt",
+  "profileGroupApp": "Ilova",
+  "profileGroupHelp": "Yordam",
+  "profileCallSupport": "Qo'llab-quvvatlashga qo'ng'iroq",
+  "profileDeleteHint": "avval so'raymiz",
   "profilePrivacy": "Maxfiylik",
   "profileName": "Ismingiz",
   "profileSaved": "Ism saqlandi",

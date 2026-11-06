@@ -514,7 +514,11 @@
     }
   },
   "profileLanguage": "Язык",
-  "profileSupport": "Поддержка",
+  "profileGroupAccount": "Аккаунт",
+  "profileGroupApp": "Приложение",
+  "profileGroupHelp": "Помощь",
+  "profileCallSupport": "Позвонить в поддержку",
+  "profileDeleteHint": "сначала спросим",
   "profilePrivacy": "Конфиденциальность",
   "profileName": "Ваше имя",
   "profileSaved": "Имя сохранено",

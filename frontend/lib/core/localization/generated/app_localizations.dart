@@ -2204,11 +2204,35 @@ abstract class AppLocalizations {
   /// **'Til'**
   String get profileLanguage;
 
-  /// No description provided for @profileSupport.
+  /// No description provided for @profileGroupAccount.
   ///
   /// In uz, this message translates to:
-  /// **'Qo\'llab-quvvatlash'**
-  String get profileSupport;
+  /// **'Akkaunt'**
+  String get profileGroupAccount;
+
+  /// No description provided for @profileGroupApp.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova'**
+  String get profileGroupApp;
+
+  /// No description provided for @profileGroupHelp.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yordam'**
+  String get profileGroupHelp;
+
+  /// No description provided for @profileCallSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llab-quvvatlashga qo\'ng\'iroq'**
+  String get profileCallSupport;
+
+  /// No description provided for @profileDeleteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'avval so\'raymiz'**
+  String get profileDeleteHint;
 
   /// No description provided for @profilePrivacy.
   ///

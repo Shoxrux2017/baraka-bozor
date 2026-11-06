@@ -1199,7 +1199,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileLanguage => 'Язык';
 
   @override
-  String get profileSupport => 'Поддержка';
+  String get profileGroupAccount => 'Аккаунт';
+
+  @override
+  String get profileGroupApp => 'Приложение';
+
+  @override
+  String get profileGroupHelp => 'Помощь';
+
+  @override
+  String get profileCallSupport => 'Позвонить в поддержку';
+
+  @override
+  String get profileDeleteHint => 'сначала спросим';
 
   @override
   String get profilePrivacy => 'Конфиденциальность';
