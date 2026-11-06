@@ -2722,8 +2722,7 @@
   "requestSheetHint": "Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.",
   "orderCancelKeepKit": "Оставить заказ",
   "rateTitle": "Оценка заказа",
-  "rateQuestion": "Как вам заказ № {number}?",
-  "rateHint": "Оцените всё: свежесть продуктов, вес и доставку",
+  "rateHint": "Оцените всё: свежесть, вес и доставку",
   "rateStar1": "Очень плохо",
   "rateStar2": "Плохо",
   "rateStar3": "Нормально",
@@ -2742,6 +2741,74 @@
     }
   },
   "rateStarsNone": "не выбрана",
+  "rateNamesTwo": "{first}, {second}",
+  "@rateNamesTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "rateNamesMore": "{first}, {second} и ещё {count}",
+  "@rateNamesMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rateHeaderSub": "{names} · доставлен {when}",
+  "@rateHeaderSub": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "rateHeaderSpoken": "Как вам заказ? Заказ № {number}, доставлен {when}: {names}",
+  "@rateHeaderSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "when": {
+        "type": "String"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "rateReasonsShown": "Появился вопрос: что пошло не так?",
+  "rateReasonsHidden": "Причины скрыты — они не отправятся.",
+  "rateDraftRestored": "Черновик восстановлен.",
+  "rateWhatWrongMany": "Можно выбрать несколько",
+  "rateExampleNotFresh": "Какой товар был несвежим?",
+  "rateExampleWrongWeight": "Какой товар и насколько не тот вес?",
+  "rateExampleLate": "На сколько опоздал курьер?",
+  "rateExampleRude": "Что случилось? Мы разберёмся",
+  "rateExampleMany": "Расскажите, что случилось",
+  "rateCommentSpoken": "Комментарий, необязательно",
+  "rateOver": "{count, plural, one{На {count} знак больше, чем можно} few{На {count} знака больше, чем можно} many{На {count} знаков больше, чем можно} other{На {count} знака больше, чем можно}}",
+  "@rateOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rateWhatWrong": "Что пошло не так?",
   "rateComment": "Комментарий (необязательно)",
   "rateCommentHintGood": "Что понравилось?",

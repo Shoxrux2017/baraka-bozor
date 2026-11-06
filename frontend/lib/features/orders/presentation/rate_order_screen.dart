@@ -2,26 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/formatting/server_text.dart';
+import '../../../core/accessibility/announce.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/orders/order_values.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
-import '../../../core/widgets/kit/kit_star.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../application/customer_orders_controllers.dart';
+import '../application/rate_draft.dart';
 import '../domain/customer_orders.dart';
+import 'rate_order_form.dart';
+import 'rating_stars.dart';
 
-const int _commentMax = 500;
-
-/// The Customer rates a delivered order (drawings 30 to 30б): stars, the
-/// reasons at one to three of them, an optional comment. The server decides
-/// whether the order can still be rated (`DL-92` item 6).
+/// The Customer rates a delivered order (`DL-134`): stars, the reasons at one
+/// to three of them, an optional comment. The server decides whether the
+/// order can still be rated (`DL-92` item 6).
 class RateOrderScreen extends ConsumerStatefulWidget {
   const RateOrderScreen({required this.orderId, this.stars, super.key});
 
@@ -36,18 +34,45 @@ class RateOrderScreen extends ConsumerStatefulWidget {
 }
 
 class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
-  final TextEditingController _comment = TextEditingController();
-  late int? _stars =
-      widget.stars != null && widget.stars! >= 1 && widget.stars! <= 5
-      ? widget.stars
-      : null;
-  final Set<RatingReason> _reasons = <RatingReason>{};
+  late final TextEditingController _comment;
+  late RateDraft _draft;
   bool _checked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final RateDraft? kept = ref.read(rateDraftsProvider)[widget.orderId];
+    final int? tapped = widget.stars;
+    _draft = (kept ?? RateDraft.empty).copyWith(
+      stars: tapped != null && tapped >= 1 && tapped <= 5 ? tapped : null,
+    );
+    _comment = TextEditingController(text: _draft.comment);
+    if (kept != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _announceRestored();
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
     _comment.dispose();
     super.dispose();
+  }
+
+  /// A kept draft came back: the reader hears the stars with it.
+  void _announceRestored() {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final int? stars = _draft.stars;
+    announce(
+      context,
+      stars == null
+          ? l10n.rateDraftRestored
+          : '${l10n.rateStarsValue(stars, RateOrderForm.wordOf(l10n, stars))}. '
+                '${l10n.rateDraftRestored}',
+    );
   }
 
   void _leave() {
@@ -58,33 +83,41 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
     }
   }
 
-  int get _length => trimLikeServer(_comment.text).runes.length;
-
-  bool get _low => _stars != null && _stars! <= 3;
-
-  void _choose(int stars) {
-    setState(() {
-      _stars = stars;
-      if (stars > 3) {
-        _reasons.clear();
+  /// The stars changed. A tap or a slide says the new value and, when the
+  /// reasons appear or hide with chosen ones, that too; a screen reader's step
+  /// says only the latter, since the reader speaks the value itself.
+  void _onStars(int stars, RatingInput how) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool wasLow = isLowRating(_draft.stars);
+    final bool isLow = isLowRating(stars);
+    final String? extra = isLow && !wasLow
+        ? l10n.rateReasonsShown
+        : !isLow && wasLow && _draft.reasons.isNotEmpty
+        ? l10n.rateReasonsHidden
+        : null;
+    setState(() => _draft = _draft.copyWith(stars: stars));
+    if (how == RatingInput.reader) {
+      if (extra != null) {
+        announce(context, extra);
       }
-    });
+      return;
+    }
+    final String value = l10n.rateStarsValue(
+      stars,
+      RateOrderForm.wordOf(l10n, stars),
+    );
+    final String said = RegExp(r'[.?!]$').hasMatch(value) ? value : '$value.';
+    announce(context, extra == null ? said : '$said $extra');
   }
 
   Future<void> _send() async {
-    final int? stars = _stars;
-    if (stars == null || _length > _commentMax) {
+    final RateBody? body = _draft.body;
+    if (body == null || _draft.tooLong) {
       return;
     }
-    final RateController rating = ref.read(
-      rateProvider(widget.orderId).notifier,
-    );
-    final String comment = trimLikeServer(_comment.text);
-    final CustomerOrder? order = await rating.rate(stars, <RatingReason>[
-      if (stars <= 3)
-        for (final RatingReason reason in RatingReason.values)
-          if (_reasons.contains(reason)) reason,
-    ], comment.isEmpty ? null : comment);
+    final CustomerOrder? order = await ref
+        .read(rateProvider(widget.orderId).notifier)
+        .rate(body.stars, body.reasons, body.comment);
     if (!mounted) {
       return;
     }
@@ -153,198 +186,27 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
     MutationState sending,
   ) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final int? stars = _stars;
     final ApiFailure? failure = sending.failure;
     final bool windowClosed =
         failure is ApiRefusal && failure.code == 'rating_window_closed';
-    final bool tooLong = _length > _commentMax;
     final bool busy = sending.isBusy;
-    final bool canSend = stars != null && !tooLong && !busy && !windowClosed;
+    final bool canSend =
+        _draft.body != null && !_draft.tooLong && !busy && !windowClosed;
 
     return Column(
       children: <Widget>[
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const Center(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: KitColors.primaryWash,
-                      shape: BoxShape.circle,
-                    ),
-                    child: SizedBox.square(
-                      dimension: 72,
-                      child: Icon(
-                        Icons.shopping_bag,
-                        size: 32,
-                        color: KitColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.rateQuestion(order.orderNumber),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.rateHint,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    color: KitColors.muted,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  children: <Widget>[
-                    for (int star = 1; star <= 5; star++)
-                      Semantics(
-                        button: true,
-                        selected: stars == star,
-                        label: l10n.rateStarsLabel(star),
-                        excludeSemantics: true,
-                        child: InkResponse(
-                          key: ValueKey<String>('rate-star-$star'),
-                          radius: 26,
-                          onTap: () => _choose(star),
-                          child: SizedBox.square(
-                            dimension: 52,
-                            child: Center(
-                              child: KitStar(
-                                filled: stars != null && star <= stars,
-                                size: 44,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                if (stars != null) ...<Widget>[
-                  const SizedBox(height: 4),
-                  Text(
-                    _word(l10n, stars),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: KitColors.ink,
-                    ),
-                  ),
-                ],
-                if (_low) ...<Widget>[
-                  const SizedBox(height: 20),
-                  Text(
-                    l10n.rateWhatWrong,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      for (final RatingReason reason in RatingReason.values)
-                        FilterChip(
-                          key: ValueKey<String>('rate-reason-${reason.code}'),
-                          label: _reasons.contains(reason)
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    const Icon(
-                                      Icons.check,
-                                      size: 16,
-                                      color: KitColors.primaryDark,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        OrderLabels.ratingReason(l10n, reason),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Text(OrderLabels.ratingReason(l10n, reason)),
-                          selected: _reasons.contains(reason),
-                          showCheckmark: false,
-                          selectedColor: KitColors.primaryWash,
-                          backgroundColor: KitColors.field,
-                          onSelected: (bool on) => setState(
-                            () => on
-                                ? _reasons.add(reason)
-                                : _reasons.remove(reason),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 20),
-                TextField(
-                  key: const ValueKey<String>('rate-comment'),
-                  controller: _comment,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: l10n.rateComment,
-                    hintText: _low
-                        ? l10n.rateCommentHintBad
-                        : l10n.rateCommentHintGood,
-                    counterText: '$_length / $_commentMax',
-                    errorText: tooLong ? l10n.fieldTooLong(_commentMax) : null,
-                  ),
-                ),
-                if (_low) ...<Widget>[
-                  const SizedBox(height: 16),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: KitColors.primaryWash,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Icon(
-                            Icons.support_agent,
-                            size: 22,
-                            color: KitColors.primary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              l10n.rateOperatorWillCall,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                height: 1.4,
-                                color: KitColors.ink,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            child: RateOrderForm(
+              order: order,
+              draft: _draft,
+              onDraft: (RateDraft draft) => setState(() => _draft = draft),
+              onStars: _onStars,
+              comment: _comment,
+              frozen: false,
+              locked: false,
             ),
           ),
         ),
@@ -421,12 +283,4 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
       ],
     );
   }
-
-  static String _word(AppLocalizations l10n, int stars) => switch (stars) {
-    1 => l10n.rateStar1,
-    2 => l10n.rateStar2,
-    3 => l10n.rateStar3,
-    4 => l10n.rateStar4,
-    _ => l10n.rateStar5,
-  };
 }

@@ -4336,13 +4336,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get rateTitle => 'Buyurtmani baholash';
 
   @override
-  String rateQuestion(int number) {
-    return 'Buyurtma № $number sizga yoqdimi?';
-  }
-
-  @override
-  String get rateHint =>
-      'Hammasini baholang: mahsulotlar yangiligi, og\'irligi va yetkazib berish';
+  String get rateHint => 'Hammasini baholang: yangilik, og\'irlik va yetkazish';
 
   @override
   String get rateStar1 => 'Juda yomon';
@@ -4369,6 +4363,63 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get rateStarsNone => 'tanlanmagan';
+
+  @override
+  String rateNamesTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String rateNamesMore(String first, String second, int count) {
+    return '$first, $second va yana $count ta';
+  }
+
+  @override
+  String rateHeaderSub(String names, String when) {
+    return '$names · $when yetkazildi';
+  }
+
+  @override
+  String rateHeaderSpoken(int number, String when, String names) {
+    return 'Buyurtma yoqdimi? Buyurtma № $number, $when yetkazildi: $names';
+  }
+
+  @override
+  String get rateReasonsShown =>
+      'Savol paydo bo\'ldi: nima noto\'g\'ri bo\'ldi?';
+
+  @override
+  String get rateReasonsHidden => 'Sabablar yashirildi — ular yuborilmaydi.';
+
+  @override
+  String get rateDraftRestored => 'Qoralama tiklandi.';
+
+  @override
+  String get rateWhatWrongMany => 'Bir nechtasini tanlash mumkin';
+
+  @override
+  String get rateExampleNotFresh => 'Qaysi mahsulot yangi emas edi?';
+
+  @override
+  String get rateExampleWrongWeight =>
+      'Qaysi mahsulot va og\'irligi qanchaga farq qildi?';
+
+  @override
+  String get rateExampleLate => 'Kuryer qancha kechikdi?';
+
+  @override
+  String get rateExampleRude => 'Nima bo\'ldi? Biz aniqlaymiz';
+
+  @override
+  String get rateExampleMany => 'Nima bo\'lganini aytib bering';
+
+  @override
+  String get rateCommentSpoken => 'Izoh, ixtiyoriy';
+
+  @override
+  String rateOver(int count) {
+    return '$count ta belgi ortiqcha';
+  }
 
   @override
   String get rateWhatWrong => 'Nima noto\'g\'ri bo\'ldi?';

@@ -7268,16 +7268,10 @@ abstract class AppLocalizations {
   /// **'Buyurtmani baholash'**
   String get rateTitle;
 
-  /// No description provided for @rateQuestion.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma № {number} sizga yoqdimi?'**
-  String rateQuestion(int number);
-
   /// No description provided for @rateHint.
   ///
   /// In uz, this message translates to:
-  /// **'Hammasini baholang: mahsulotlar yangiligi, og\'irligi va yetkazib berish'**
+  /// **'Hammasini baholang: yangilik, og\'irlik va yetkazish'**
   String get rateHint;
 
   /// No description provided for @rateStar1.
@@ -7327,6 +7321,96 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'tanlanmagan'**
   String get rateStarsNone;
+
+  /// No description provided for @rateNamesTwo.
+  ///
+  /// In uz, this message translates to:
+  /// **'{first}, {second}'**
+  String rateNamesTwo(String first, String second);
+
+  /// No description provided for @rateNamesMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'{first}, {second} va yana {count} ta'**
+  String rateNamesMore(String first, String second, int count);
+
+  /// No description provided for @rateHeaderSub.
+  ///
+  /// In uz, this message translates to:
+  /// **'{names} · {when} yetkazildi'**
+  String rateHeaderSub(String names, String when);
+
+  /// No description provided for @rateHeaderSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yoqdimi? Buyurtma № {number}, {when} yetkazildi: {names}'**
+  String rateHeaderSpoken(int number, String when, String names);
+
+  /// No description provided for @rateReasonsShown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savol paydo bo\'ldi: nima noto\'g\'ri bo\'ldi?'**
+  String get rateReasonsShown;
+
+  /// No description provided for @rateReasonsHidden.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sabablar yashirildi — ular yuborilmaydi.'**
+  String get rateReasonsHidden;
+
+  /// No description provided for @rateDraftRestored.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qoralama tiklandi.'**
+  String get rateDraftRestored;
+
+  /// No description provided for @rateWhatWrongMany.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bir nechtasini tanlash mumkin'**
+  String get rateWhatWrongMany;
+
+  /// No description provided for @rateExampleNotFresh.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaysi mahsulot yangi emas edi?'**
+  String get rateExampleNotFresh;
+
+  /// No description provided for @rateExampleWrongWeight.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaysi mahsulot va og\'irligi qanchaga farq qildi?'**
+  String get rateExampleWrongWeight;
+
+  /// No description provided for @rateExampleLate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer qancha kechikdi?'**
+  String get rateExampleLate;
+
+  /// No description provided for @rateExampleRude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima bo\'ldi? Biz aniqlaymiz'**
+  String get rateExampleRude;
+
+  /// No description provided for @rateExampleMany.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima bo\'lganini aytib bering'**
+  String get rateExampleMany;
+
+  /// No description provided for @rateCommentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh, ixtiyoriy'**
+  String get rateCommentSpoken;
+
+  /// No description provided for @rateOver.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta belgi ortiqcha'**
+  String rateOver(int count);
 
   /// No description provided for @rateWhatWrong.
   ///

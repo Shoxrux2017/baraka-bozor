@@ -3132,15 +3132,7 @@
   "requestSheetHint": "Yig'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.",
   "orderCancelKeepKit": "Buyurtmani qoldirish",
   "rateTitle": "Buyurtmani baholash",
-  "rateQuestion": "Buyurtma № {number} sizga yoqdimi?",
-  "@rateQuestion": {
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
-  "rateHint": "Hammasini baholang: mahsulotlar yangiligi, og'irligi va yetkazib berish",
+  "rateHint": "Hammasini baholang: yangilik, og'irlik va yetkazish",
   "rateStar1": "Juda yomon",
   "rateStar2": "Yomon",
   "rateStar3": "O'rtacha",
@@ -3159,6 +3151,74 @@
     }
   },
   "rateStarsNone": "tanlanmagan",
+  "rateNamesTwo": "{first}, {second}",
+  "@rateNamesTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "rateNamesMore": "{first}, {second} va yana {count} ta",
+  "@rateNamesMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rateHeaderSub": "{names} · {when} yetkazildi",
+  "@rateHeaderSub": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "rateHeaderSpoken": "Buyurtma yoqdimi? Buyurtma № {number}, {when} yetkazildi: {names}",
+  "@rateHeaderSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "when": {
+        "type": "String"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "rateReasonsShown": "Savol paydo bo'ldi: nima noto'g'ri bo'ldi?",
+  "rateReasonsHidden": "Sabablar yashirildi — ular yuborilmaydi.",
+  "rateDraftRestored": "Qoralama tiklandi.",
+  "rateWhatWrongMany": "Bir nechtasini tanlash mumkin",
+  "rateExampleNotFresh": "Qaysi mahsulot yangi emas edi?",
+  "rateExampleWrongWeight": "Qaysi mahsulot va og'irligi qanchaga farq qildi?",
+  "rateExampleLate": "Kuryer qancha kechikdi?",
+  "rateExampleRude": "Nima bo'ldi? Biz aniqlaymiz",
+  "rateExampleMany": "Nima bo'lganini aytib bering",
+  "rateCommentSpoken": "Izoh, ixtiyoriy",
+  "rateOver": "{count} ta belgi ortiqcha",
+  "@rateOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rateWhatWrong": "Nima noto'g'ri bo'ldi?",
   "rateComment": "Izoh (ixtiyoriy)",
   "rateCommentHintGood": "Nima yoqdi?",

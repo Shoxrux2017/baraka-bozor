@@ -4384,12 +4384,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rateTitle => 'Оценка заказа';
 
   @override
-  String rateQuestion(int number) {
-    return 'Как вам заказ № $number?';
-  }
-
-  @override
-  String get rateHint => 'Оцените всё: свежесть продуктов, вес и доставку';
+  String get rateHint => 'Оцените всё: свежесть, вес и доставку';
 
   @override
   String get rateStar1 => 'Очень плохо';
@@ -4416,6 +4411,69 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rateStarsNone => 'не выбрана';
+
+  @override
+  String rateNamesTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String rateNamesMore(String first, String second, int count) {
+    return '$first, $second и ещё $count';
+  }
+
+  @override
+  String rateHeaderSub(String names, String when) {
+    return '$names · доставлен $when';
+  }
+
+  @override
+  String rateHeaderSpoken(int number, String when, String names) {
+    return 'Как вам заказ? Заказ № $number, доставлен $when: $names';
+  }
+
+  @override
+  String get rateReasonsShown => 'Появился вопрос: что пошло не так?';
+
+  @override
+  String get rateReasonsHidden => 'Причины скрыты — они не отправятся.';
+
+  @override
+  String get rateDraftRestored => 'Черновик восстановлен.';
+
+  @override
+  String get rateWhatWrongMany => 'Можно выбрать несколько';
+
+  @override
+  String get rateExampleNotFresh => 'Какой товар был несвежим?';
+
+  @override
+  String get rateExampleWrongWeight => 'Какой товар и насколько не тот вес?';
+
+  @override
+  String get rateExampleLate => 'На сколько опоздал курьер?';
+
+  @override
+  String get rateExampleRude => 'Что случилось? Мы разберёмся';
+
+  @override
+  String get rateExampleMany => 'Расскажите, что случилось';
+
+  @override
+  String get rateCommentSpoken => 'Комментарий, необязательно';
+
+  @override
+  String rateOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'На $count знака больше, чем можно',
+      many: 'На $count знаков больше, чем можно',
+      few: 'На $count знака больше, чем можно',
+      one: 'На $count знак больше, чем можно',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get rateWhatWrong => 'Что пошло не так?';
