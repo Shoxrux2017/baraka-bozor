@@ -558,18 +558,85 @@
   "homeNavOrders": "Buyurtmalar",
   "profileTitle": "Profil",
   "profileNoName": "Ismingiz nima?",
-  "profileEdit": "Profilni tahrirlash",
   "profileSetName": "Ismni kiritish",
+  "profileChangeName": "Ismni o'zgartirish",
+  "profileNoNameSpoken": "Ism kiritilmagan",
+  "profileLoadingSpoken": "Profil yuklanmoqda",
+  "profileLoadFailed": "Profil yuklanmadi",
+  "profileLoadFailedOffline": "Aloqa yo'q. Manzillar, til va chiqish ishlaydi.",
+  "profileLoadFailedOther": "Manzillar, til va chiqish ishlaydi.",
+  "profileHeaderSpoken": "{name}, {phone}. {action}",
+  "@profileHeaderSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "profileLanguage": "Til",
-  "profileSupport": "Qo'llab-quvvatlash",
+  "profileGroupAccount": "Akkaunt",
+  "profileGroupApp": "Ilova",
+  "profileGroupHelp": "Yordam",
+  "profileCallSupport": "Qo'llab-quvvatlashga qo'ng'iroq",
+  "profileDeleteHint": "avval so'raymiz",
   "profilePrivacy": "Maxfiylik",
   "profileName": "Ismingiz",
   "profileSaved": "Ism saqlandi",
-  "profileEditTitle": "Profilni tahrirlash",
   "profileNameLabel": "Ism",
   "profilePhoneLabel": "Telefon raqami",
-  "profilePhoneLocked": "Raqam — ilovaga kirishingiz, uni o'zgartirib bo'lmaydi.",
-  "profileNameRequired": "Ismni kiriting — usiz buyurtma berib bo'lmaydi.",
+  "profilePhoneLocked": "Shu raqam bilan kirasiz — uni o'zgartirib bo'lmaydi.",
+  "profileNameHelper": "Yig'uvchi va kuryer sizni shunday chaqiradi",
+  "profileNameEnter": "Ismni kiriting",
+  "profileNameUnchanged": "ism o'zgarmadi",
+  "profileClearName": "Ismni tozalash",
+  "profileNameCleared": "Maydon tozalandi",
+  "profileSaving": "Saqlanmoqda…",
+  "profileSavingSpoken": "Ism saqlanmoqda…",
+  "profileChecking": "Tekshirilmoqda…",
+  "profileNameNotSaved": "Aloqa yo'q — ism saqlanmadi",
+  "profileNameUnsure": "Aloqa yo'q — ism saqlanganini tekshirib bo'lmadi",
+  "profileNameSaveFailed": "Ismni saqlab bo'lmadi",
+  "profileLeaveTitle": "Yangi ism saqlansinmi?",
+  "profileLeaveInstead": "«{old}» o'rniga «{name}»",
+  "@profileLeaveInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "old": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveNew": "Ism: «{name}»",
+  "@profileLeaveNew": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveDrop": "Saqlamaslik",
+  "profilePhoneSpoken": "{label}: {phone}. {note}",
+  "@profilePhoneSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "addressesTitle": "Manzillarim",
   "addressNone": "Hali manzil qo'shilmagan",
   "addressNew": "Yangi manzil",
@@ -4142,5 +4209,23 @@
     }
   },
   "cancelBannerHint": "Qayta buyurtma berish — pastdagi «Buyurtmani takrorlash»",
-  "requestBannerHint": "Operator hal qiladi — sizga xabar beramiz"
+  "requestBannerHint": "Operator hal qiladi — sizga xabar beramiz",
+  "logoutTitle": "Akkauntdan chiqasizmi?",
+  "logoutBody": "Qayta kirish uchun {phone} raqamiga Telegram orqali kod keladi. Savat, manzillar va buyurtmalar saqlanadi.",
+  "@logoutBody": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "logoutStaffStays": "Xodim rejimi telefonda qoladi.",
+  "languageChosenSpoken": "Til: {language}, tanlangan",
+  "@languageChosenSpoken": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  }
 }

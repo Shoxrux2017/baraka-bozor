@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
@@ -14,6 +16,9 @@ class FakeLegalRepository implements LegalRepository {
       <(LegalDocumentKind, AppLanguage), LegalDocument?>{};
 
   ApiFailure? indexFailure;
+
+  /// While set, an index read answers only once it completes.
+  Completer<void>? indexHold;
   ApiFailure? documentFailure;
 
   int indexCalls = 0;
@@ -51,6 +56,7 @@ class FakeLegalRepository implements LegalRepository {
   @override
   Future<LegalIndex> index(AppLanguage language) async {
     indexCalls++;
+    await indexHold?.future;
     final ApiFailure? failure = indexFailure;
     if (failure != null) {
       throw failure;

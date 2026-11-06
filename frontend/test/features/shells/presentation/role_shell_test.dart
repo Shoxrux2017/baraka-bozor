@@ -130,6 +130,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(logoutButton);
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('logout-confirm')));
+    await tester.pumpAndSettle();
 
     expect(repository.calls, contains('logout:customer'));
     expect(tokens.tokens.keys, <SessionSlot>[SessionSlot.staff]);

@@ -1,13 +1,23 @@
+import 'dart:async';
+import 'dart:ui' show Tristate;
+
 import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
+import 'package:baraka_bozor/core/widgets/entrance_fade.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/profile/presentation/profile_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../support/app_harness.dart';
@@ -17,6 +27,7 @@ import '../../../support/fake_customer_repositories.dart';
 import '../../../support/fake_legal_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 
 void main() {
   late InMemoryTokenStore tokens;
@@ -28,7 +39,6 @@ void main() {
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
   const List<String> allRows = <String>[
-    'profile-edit',
     'profile-addresses',
     'profile-language',
     'profile-support',
@@ -61,7 +71,10 @@ void main() {
     Locale device = const Locale('ru'),
     double textScale = 1,
     bool staff = false,
+    bool settle = true,
+    TextScaler? textScaler,
     FakeCartRepository? cart,
+    FakeAddressesRepository? addresses,
   }) async {
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -83,6 +96,8 @@ void main() {
         legal: legal,
         phoneCalls: calls,
         cart: cart,
+        addresses: addresses,
+        textScaler: textScaler,
         overrides: [profileRepositoryProvider.overrideWithValue(profile)],
       ),
     );
@@ -94,11 +109,17 @@ void main() {
       await tester.pumpAndSettle();
     }
     await tester.tap(byKey('open-profile'));
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      // A skeleton pulses for ever, so it never settles.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+    }
   }
 
   group('the profile tab', () {
-    testWidgets('a named Customer sees the header and the seven rows', (
+    testWidgets('a named Customer sees the header and the six rows', (
       tester,
     ) async {
       profile.current = named('Дилноза Каримова');
@@ -108,7 +129,6 @@ void main() {
       expect(find.text('ДК'), findsOneWidget);
       expect(find.text('Дилноза Каримова'), findsOneWidget);
       expect(find.text('+998 90 123 45 67'), findsOneWidget);
-      expect(find.text('Редактировать профиль'), findsOneWidget);
       expect(find.text('Русский'), findsOneWidget);
       expect(find.text('+998 71 200 00 00'), findsOneWidget);
       double previous = -1;
@@ -198,7 +218,7 @@ void main() {
       profile.current = named('Дилноза Каримова');
       await openProfile(tester, size: const Size(400, 900));
 
-      expect(tester.getSize(find.byType(ProfileHeader)).height, 155);
+      expect(tester.getSize(find.byType(ProfileHeader)).height, 152);
     });
 
     testWidgets('every target meets iOSTapTargetGuideline', (tester) async {
@@ -233,10 +253,13 @@ void main() {
             ),
           )
           .dx;
-      expect(chevronRight('profile-language'), chevronRight('profile-edit'));
       expect(
-        tester.getTopRight(find.text('+998 71 200 00 00')).dx,
-        tester.getTopRight(byKey('profile-support')).dx,
+        chevronRight('profile-language'),
+        chevronRight('profile-addresses'),
+      );
+      expect(
+        tester.getTopRight(find.byIcon(Icons.call)).dx,
+        lessThanOrEqualTo(tester.getTopRight(byKey('profile-support')).dx),
       );
     });
 
@@ -336,20 +359,13 @@ void main() {
       expect(auth.calls, contains('language:customer:uz'));
     });
 
-    testWidgets('the edit row opens the editor', (tester) async {
-      profile.current = named('Дилноза Каримова');
-      await openProfile(tester);
-
-      await tester.tap(byKey('profile-edit'));
-      await tester.pumpAndSettle();
-      expect(byKey('edit-profile'), findsOneWidget);
-    });
-
     testWidgets('the logout button signs the Customer out', (tester) async {
       profile.current = named('Дилноза Каримова');
       await openProfile(tester);
 
       await tester.tap(byKey('logout-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-confirm'));
       await tester.pumpAndSettle();
       expect(auth.calls, contains('logout:customer'));
       expect(byKey('profile-list'), findsNothing);
@@ -365,6 +381,308 @@ void main() {
       expect(byKey('logout-button'), findsOneWidget);
       expect(find.text('Повторить'), findsOneWidget);
     });
+
+    testWidgets(
+      'while the profile loads the rows stand and the header holds a skeleton',
+      (tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        profile.current = named('Дилноза Каримова');
+        profile.hold = Completer<void>();
+        await openProfile(tester, settle: false);
+
+        expect(byKey('profile-addresses'), findsOneWidget);
+        expect(byKey('profile-language'), findsOneWidget);
+        expect(byKey('logout-button'), findsOneWidget);
+        expect(byKey('profile-header-skeleton'), findsOneWidget);
+        expect(
+          tester.getSemantics(byKey('profile-header-skeleton')).label,
+          'Загружаем профиль',
+        );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        profile.hold!.complete();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 130));
+        final double opacity = _opacityOf(tester, byKey('profile-name'));
+        expect(opacity, greaterThan(0.3));
+        expect(opacity, lessThan(0.7));
+        await tester.pumpAndSettle();
+        expect(find.text('Дилноза Каримова'), findsOneWidget);
+        expect(_opacityOf(tester, byKey('profile-name')), 1);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'offline the header says it could not load and offers a retry',
+      (tester) async {
+        profile.current = named('Дилноза Каримова');
+        profile.loadFailure = const NetworkFailure();
+        await openProfile(tester);
+
+        expect(find.text('Не удалось загрузить профиль'), findsOneWidget);
+        expect(
+          find.text('Нет связи. Адреса, язык и выход работают.'),
+          findsOneWidget,
+        );
+        expect(byKey('profile-addresses'), findsOneWidget);
+        expect(byKey('profile-language'), findsOneWidget);
+        expect(byKey('logout-button'), findsOneWidget);
+
+        await tester.tap(byKey('profile-header-retry'));
+        await tester.pumpAndSettle();
+        expect(byKey('profile-header-failure'), findsNothing);
+        expect(find.text('Дилноза Каримова'), findsOneWidget);
+      },
+    );
+
+    testWidgets('another failure leaves out the connection', (tester) async {
+      profile.loadFailure = const UnexpectedFailure();
+      await openProfile(tester);
+
+      expect(find.text('Адреса, язык и выход работают.'), findsOneWidget);
+      expect(find.textContaining('Нет связи'), findsNothing);
+    });
+
+    testWidgets('a reader meets the header as one button', (tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      final SemanticsNode node = tester.getSemantics(byKey('profile-identity'));
+      expect(node.label, 'Дилноза Каримова, +998 90 123 45 67. Изменить имя');
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(find.bySemanticsLabel('ДК'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a reader meets an unnamed header as one button', (
+      tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openProfile(tester);
+
+      final SemanticsNode node = tester.getSemantics(byKey('profile-identity'));
+      expect(node.label, 'Имя не указано, +998 90 123 45 67. Указать имя');
+      expect(node.flagsCollection.isButton, isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('the header opens the name editor', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      expect(byKey('profile-edit'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('profile-identity'),
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      expect(byKey('edit-profile'), findsOneWidget);
+    });
+
+    testWidgets('without a name the header asks and offers a pill', (
+      tester,
+    ) async {
+      await openProfile(tester);
+
+      expect(find.text('Как вас зовут?'), findsOneWidget);
+      expect(find.text('Указать имя'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('profile-identity'),
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+        findsOneWidget,
+        reason: 'only the pill has a chevron',
+      );
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      expect(byKey('edit-profile'), findsOneWidget);
+    });
+
+    testWidgets('the header is dark green with a 15 px phone', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      final DecoratedBox box = tester.widget<DecoratedBox>(
+        find
+            .descendant(
+              of: find.byType(ProfileHeader),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      expect((box.decoration as BoxDecoration).color, KitColors.primaryDark);
+      expect(
+        tester.widget<ColoredBox>(byKey('profile-status-band')).color,
+        KitColors.primaryDark,
+      );
+      expect(tester.widget<Text>(byKey('profile-phone')).style?.fontSize, 15);
+    });
+
+    testWidgets('two sessions put the mode pill in the header', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, staff: true);
+
+      expect(
+        find.descendant(
+          of: find.byType(ProfileHeader),
+          matching: byKey('active-mode'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(ActiveModeBar), findsNothing);
+      final DecoratedBox pill = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: byKey('active-mode'),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      expect((pill.decoration as BoxDecoration).color, KitColors.headerPill);
+    });
+
+    testWidgets('a saved name rises and the header flashes', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(byKey('edit-profile'))).pop(true);
+      await tester.pump();
+      await tester.pump();
+
+      expect(_flashColor(tester), KitColors.headerFlash);
+      await tester.pump(const Duration(milliseconds: 1600));
+      await tester.pumpAndSettle();
+      expect(_flashColor(tester).a, 0);
+    });
+
+    testWidgets('a real save from the editor makes the header flash', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('profile-name-field'), 'Диля');
+      await tester.pump();
+      await tester.tap(byKey('profile-save'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 650));
+      await tester.pump();
+      await tester.pump();
+
+      expect(_flashColor(tester), KitColors.headerFlash);
+      await tester.pump(const Duration(milliseconds: 1600));
+      await tester.pumpAndSettle();
+      expect(_flashColor(tester).a, 0);
+      expect(find.text('Диля'), findsOneWidget);
+    });
+
+    testWidgets('a closed editor does not flash the header', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(byKey('edit-profile'))).pop();
+      await tester.pump();
+      await tester.pump();
+      expect(_flashColor(tester).a, 0);
+    });
+
+    testWidgets('with reduced motion a saved name does not flash', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester);
+
+      await tester.tap(byKey('profile-identity'));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(byKey('edit-profile'))).pop(true);
+      await tester.pump();
+      await tester.pump();
+      expect(_flashColor(tester).a, 0);
+      expect(_opacityOf(tester, byKey('profile-name')), 1);
+    });
+
+    testWidgets('at large text the name and phone wrap', (tester) async {
+      profile.current = named('Ж' * 40);
+      await openProfile(
+        tester,
+        size: const Size(360, 640),
+        textScaler: const NonlinearTextScaler(2),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(tester.widget<Text>(byKey('profile-name')).maxLines, isNull);
+      expect(tester.widget<Text>(byKey('profile-phone')).maxLines, isNull);
+      expect(tester.getSize(byKey('profile-name')).height, greaterThan(60));
+    });
+
+    testWidgets('at 100 % the name and phone keep one line', (tester) async {
+      profile.current = named('Ж' * 40);
+      await openProfile(tester, size: const Size(360, 640));
+
+      expect(tester.widget<Text>(byKey('profile-name')).maxLines, 1);
+      expect(tester.widget<Text>(byKey('profile-phone')).maxLines, 1);
+    });
+
+    for (final (String, double?) scale in <(String, double?)>[
+      ('100 %', null),
+      ('200 %', 2),
+    ]) {
+      for (final String face in <String>[
+        'loaded',
+        'loading',
+        'failed',
+        'unnamed',
+        'two sessions',
+      ]) {
+        testWidgets('the $face profile meets the tap targets at ${scale.$1}', (
+          tester,
+        ) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          if (face != 'unnamed') {
+            profile.current = named('Дилноза Каримова');
+          }
+          if (face == 'loading') {
+            profile.hold = Completer<void>();
+          }
+          if (face == 'failed') {
+            profile.loadFailure = const NetworkFailure();
+          }
+          legal.publishBoth();
+          await openProfile(
+            tester,
+            size: const Size(360, 640),
+            staff: face == 'two sessions',
+            settle: face != 'loading',
+            textScaler: scale.$2 == null
+                ? null
+                : NonlinearTextScaler(scale.$2!),
+          );
+
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          handle.dispose();
+        });
+      }
+    }
 
     for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
       testWidgets(
@@ -383,6 +701,15 @@ void main() {
           await tester.drag(byKey('profile-list'), const Offset(0, -3000));
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
+          await tester.scrollUntilVisible(
+            byKey('profile-language'),
+            -300,
+            scrollable: find.descendant(
+              of: byKey('profile-list'),
+              matching: find.byType(Scrollable),
+            ),
+          );
+          await tester.pumpAndSettle();
           await tester.tap(byKey('profile-language'));
           await tester.pumpAndSettle();
           expect(byKey('language-sheet'), findsOneWidget);
@@ -391,4 +718,636 @@ void main() {
       );
     }
   });
+
+  group('the rows', () {
+    Finder support() => byKey('profile-support');
+
+    testWidgets('rows come in groups with logout then deletion last', (
+      tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      profile.current = named('Дилноза Каримова');
+      legal.publishBoth();
+      await openProfile(tester, size: const Size(400, 1400));
+
+      double previous = -1;
+      for (final String key in <String>[
+        'profile-group-account',
+        'profile-addresses',
+        'profile-group-app',
+        'profile-language',
+        'profile-group-help',
+        'profile-support',
+        'profile-privacy',
+        'profile-terms',
+        'logout-button',
+        'profile-delete',
+      ]) {
+        final double top = tester.getTopLeft(byKey(key)).dy;
+        expect(top, greaterThan(previous), reason: key);
+        previous = top;
+      }
+      expect(
+        tester.getSemantics(byKey('profile-group-help')),
+        matchesSemantics(label: 'Помощь', isHeader: true),
+      );
+      expect(find.text('Аккаунт'), findsOneWidget);
+      expect(find.text('Приложение'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('without support and documents there is no help heading', (
+      tester,
+    ) async {
+      await openProfile(tester, size: const Size(400, 1400));
+      expect(byKey('profile-group-help'), findsNothing);
+      expect(byKey('profile-group-account'), findsOneWidget);
+    });
+
+    testWidgets('a staff session has no deletion row', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400), staff: true);
+      expect(byKey('profile-delete'), findsNothing);
+      expect(byKey('logout-button'), findsOneWidget);
+    });
+
+    testWidgets('rows say what is inside', (tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      profile.current = named('Дилноза Каримова');
+      legal.publishBoth();
+      await openProfile(
+        tester,
+        size: const Size(400, 1400),
+        addresses: FakeAddressesRepository(
+          rows: <Address>[address(label: 'Дом')],
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: byKey('profile-addresses'),
+          matching: find.text('Дом'),
+        ),
+        findsOneWidget,
+      );
+      final SemanticsNode node = tester.getSemantics(
+        byKey('profile-addresses'),
+      );
+      expect(node.label, 'Мои адреса, Дом');
+      expect(node.getSemanticsData().flagsCollection.isButton, isTrue);
+      final Finder title = find.descendant(
+        of: support(),
+        matching: find.text('Позвонить в поддержку'),
+      );
+      final Finder number = find.descendant(
+        of: support(),
+        matching: find.text('+998 71 200 00 00'),
+      );
+      expect(title, findsOneWidget);
+      expect(
+        tester.getTopLeft(number).dy,
+        greaterThan(tester.getBottomLeft(title).dy - 1),
+      );
+      final Icon call = tester.widget<Icon>(
+        find.descendant(of: support(), matching: find.byIcon(Icons.call)),
+      );
+      expect(call.color, KitColors.primary);
+      expect(
+        find.descendant(
+          of: support(),
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: byKey('profile-terms'),
+          matching: find.byIcon(Icons.description),
+        ),
+        findsOneWidget,
+      );
+      final SemanticsNode delete = tester.getSemantics(byKey('profile-delete'));
+      expect(delete.label, 'Удалить аккаунт');
+      expect(delete.hint, 'сначала спросим');
+      handle.dispose();
+    });
+
+    testWidgets('an address without a label shows its street line', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(
+        tester,
+        size: const Size(400, 1400),
+        addresses: FakeAddressesRepository(
+          rows: <Address>[address(label: null)],
+        ),
+      );
+      expect(find.text('Amir Temur, 12'), findsOneWidget);
+    });
+
+    testWidgets(
+      'support and documents wait as skeletons and fold if they fail',
+      (tester) async {
+        profile.current = named('Дилноза Каримова');
+        profile.hold = Completer<void>();
+        legal.indexHold = Completer<void>();
+        await openProfile(tester, size: const Size(400, 1400), settle: false);
+
+        expect(byKey('profile-support-skeleton'), findsOneWidget);
+        expect(byKey('profile-privacy-skeleton'), findsOneWidget);
+        expect(byKey('profile-terms-skeleton'), findsOneWidget);
+
+        legal.indexFailure = const NetworkFailure();
+        legal.indexHold!.complete();
+        profile.current = named('Дилноза Каримова', support: null);
+        profile.hold!.complete();
+        await tester.pump();
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(byKey('profile-support-skeleton'), findsNothing);
+        expect(byKey('profile-privacy-skeleton'), findsNothing);
+        expect(byKey('profile-terms-skeleton'), findsNothing);
+        expect(byKey('profile-group-help'), findsNothing);
+        expect(byKey('logout-button'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a row that replaces its skeleton fades in', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      profile.hold = Completer<void>();
+      await openProfile(tester, size: const Size(400, 1400), settle: false);
+      expect(byKey('profile-support-skeleton'), findsOneWidget);
+
+      profile.hold!.complete();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 130));
+      final double mid = _opacityOf(tester, support());
+      expect(mid, greaterThan(0.1));
+      expect(mid, lessThan(0.95));
+      await tester.pumpAndSettle();
+      expect(_opacityOf(tester, support()), 1);
+      expect(byKey('profile-support-skeleton'), findsNothing);
+    });
+
+    testWidgets('a language change keeps the rows in place', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      legal.publishBoth();
+      await openProfile(tester, size: const Size(400, 1400));
+      expect(find.text('Конфиденциальность'), findsOneWidget);
+
+      legal.indexHold = Completer<void>();
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(byKey('profile-privacy-skeleton'), findsNothing);
+      expect(byKey('profile-terms-skeleton'), findsNothing);
+      expect(byKey('profile-privacy'), findsOneWidget);
+
+      legal.indexHold!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Maxfiylik'), findsOneWidget);
+      expect(find.text('Til'), findsOneWidget);
+    });
+
+    testWidgets('logout and deletion are red rows', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+
+      final Finder logout = find.descendant(
+        of: byKey('logout-button'),
+        matching: find.text('Выйти'),
+      );
+      final Text text = tester.widget<Text>(logout);
+      expect(text.style?.fontSize, 16);
+      expect(text.style?.fontWeight, FontWeight.w600);
+      expect(text.style?.color, KitColors.danger);
+      expect(tester.getCenter(logout).dx, closeTo(200, 1));
+      expect(
+        find.descendant(
+          of: byKey('logout-button'),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
+      final Icon bin = tester.widget<Icon>(
+        find.descendant(
+          of: byKey('profile-delete'),
+          matching: find.byIcon(Icons.delete),
+        ),
+      );
+      expect(bin.color, KitColors.danger);
+    });
+
+    for (final (String, double?) scale in <(String, double?)>[
+      ('100 %', null),
+      ('200 %', 2),
+    ]) {
+      testWidgets('the rows meet the tap targets at ${scale.$1}', (
+        tester,
+      ) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        profile.current = named('Дилноза Каримова');
+        legal.publishBoth();
+        await openProfile(
+          tester,
+          size: const Size(360, 640),
+          textScaler: scale.$2 == null ? null : NonlinearTextScaler(scale.$2!),
+        );
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    }
+
+    testWidgets('at large text values go under the titles', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      legal.publishBoth();
+      await openProfile(
+        tester,
+        size: const Size(360, 640),
+        textScaler: NonlinearTextScaler(2),
+      );
+
+      expect(
+        tester.getTopLeft(find.text('Русский')).dy,
+        greaterThan(tester.getBottomLeft(find.text('Язык')).dy - 1),
+      );
+      expect(
+        tester.getTopLeft(find.text('+998 71 200 00 00')).dy,
+        greaterThan(
+          tester.getBottomLeft(find.text('Позвонить в поддержку')).dy - 1,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the logout sheet', () {
+    ProviderContainer container(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(byKey('profile-list')));
+
+    Future<void> openLogout(WidgetTester tester) async {
+      await tester.ensureVisible(byKey('logout-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-button'));
+      await tester.pumpAndSettle();
+    }
+
+    double fadeOpacity(WidgetTester tester) => tester
+        .widget<FadeTransition>(
+          find
+              .descendant(
+                of: find.byType(EntranceFade),
+                matching: find.byType(FadeTransition),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    testWidgets('logout asks first and says what stays', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+
+      await openLogout(tester);
+      expect(byKey('logout-sheet'), findsOneWidget);
+      expect(find.text('Выйти из аккаунта?'), findsOneWidget);
+      expect(
+        find.text(
+          'Чтобы войти снова, на +998 90 123 45 67 придёт код в Telegram. '
+          'Корзина, адреса и заказы сохранятся.',
+        ),
+        findsOneWidget,
+      );
+      expect(auth.calls, isNot(contains('logout:customer')));
+
+      await tester.tap(byKey('logout-cancel'));
+      await tester.pumpAndSettle();
+      expect(byKey('logout-sheet'), findsNothing);
+      expect(byKey('profile-list'), findsOneWidget);
+
+      await openLogout(tester);
+      await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
+      expect(byKey('logout-sheet'), findsNothing);
+      expect(byKey('profile-list'), findsOneWidget);
+      expect(auth.calls, isNot(contains('logout:customer')));
+    });
+
+    testWidgets('logout from the sheet fades the sign-in in', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+
+      await openLogout(tester);
+      await tester.tap(byKey('logout-confirm'));
+      for (int i = 0; i < 40 && byKey('phone-field').evaluate().isEmpty; i++) {
+        await tester.pump();
+      }
+      expect(byKey('phone-field'), findsOneWidget);
+      expect(fadeOpacity(tester), 0);
+      await tester.pump(const Duration(milliseconds: 320));
+      expect(fadeOpacity(tester), 1);
+      await tester.pumpAndSettle();
+      expect(tokens.tokens[SessionSlot.customer], isNull);
+    });
+
+    testWidgets('with a staff session the sheet says the staff mode stays', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400), staff: true);
+
+      await openLogout(tester);
+      expect(
+        find.text('Режим сотрудника останется на телефоне.'),
+        findsOneWidget,
+      );
+      final ProviderContainer scope = container(tester);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(byKey('staff-menu'), findsOneWidget);
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+    });
+
+    testWidgets('logout works from a profile that failed', (tester) async {
+      profile.loadFailure = const NetworkFailure();
+      await openProfile(tester, size: const Size(400, 1400));
+
+      await openLogout(tester);
+      expect(find.textContaining('+998 90 123 45 67'), findsOneWidget);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('logout:customer'));
+    });
+
+    testWidgets('a logout that throws leaves no fade request behind', (
+      tester,
+    ) async {
+      tokens = _FailingClearTokenStore()..tokens[SessionSlot.customer] = 'c';
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      final ProviderContainer scope = container(tester);
+
+      // The failure is not caught on the profile; it reaches the zone that
+      // started the logout.
+      final List<Object> uncaught = <Object>[];
+      await runZonedGuarded(() async {
+        await openLogout(tester);
+        await tester.tap(byKey('logout-confirm'));
+        await tester.pumpAndSettle();
+      }, (Object error, StackTrace _) => uncaught.add(error));
+
+      expect(uncaught.single, isA<StateError>());
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+    });
+
+    testWidgets('a fade request is spent once', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      final ProviderContainer scope = container(tester);
+
+      await openLogout(tester);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(byKey('phone-field'), findsOneWidget);
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+
+      auth.verifyResult = IssuedSession(
+        token: 'c2',
+        user: user(id: 'c2'),
+      );
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      await tester.enterText(byKey('phone-field'), '901234567');
+      await tester.tap(byKey('continue-button'));
+      await tester.pumpAndSettle();
+      if (byKey('confirm-phone-send').evaluate().isNotEmpty) {
+        await tester.tap(byKey('confirm-phone-send'));
+        await tester.pumpAndSettle();
+      }
+      await tester.enterText(byKey('code-field'), '482913');
+      await tester.tap(byKey('verify-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('open-profile'));
+      await tester.pumpAndSettle();
+      await openLogout(tester);
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
+      expect(byKey('staff-menu'), findsOneWidget);
+      expect(scope.read(entranceFadeProvider).pending, isFalse);
+    });
+
+    testWidgets('at large text the logout buttons stack with Выйти on top', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(
+        tester,
+        size: const Size(360, 640),
+        textScaler: const NonlinearTextScaler(2),
+      );
+
+      await openLogout(tester);
+      expect(
+        tester.getTopLeft(byKey('logout-confirm')).dy,
+        lessThan(tester.getTopLeft(byKey('logout-cancel')).dy),
+      );
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    });
+  });
+
+  group('the language sheet', () {
+    late List<MethodCall> platformCalls;
+
+    void mockPlatform() {
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+    }
+
+    double checkScale() {
+      double scale = 1;
+      for (final Element e
+          in find
+              .ancestor(
+                of: byKey('language-check'),
+                matching: find.byType(Transform),
+              )
+              .evaluate()) {
+        scale *= (e.widget as Transform).transform.getMaxScaleOnAxis();
+      }
+      return scale;
+    }
+
+    double listOpacity(WidgetTester tester) =>
+        _opacityOf(tester, byKey('profile-list'));
+
+    testWidgets('the language sheet ticks the choice, buzzes and waits', (
+      tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      mockPlatform();
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('language-check'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('language-ru'),
+          matching: byKey('language-check'),
+        ),
+        findsOneWidget,
+      );
+      final SemanticsData ru = tester
+          .getSemantics(byKey('language-ru'))
+          .getSemanticsData();
+      expect(ru.label, 'Русский');
+      expect(ru.flagsCollection.isSelected, Tristate.isTrue);
+      expect(ru.flagsCollection.isInMutuallyExclusiveGroup, isTrue);
+      expect(ru.flagsCollection.isButton, isTrue);
+      tester.takeAnnouncements();
+
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(
+        platformCalls.where(
+          (MethodCall c) =>
+              c.method == 'HapticFeedback.vibrate' &&
+              c.arguments == 'HapticFeedbackType.selectionClick',
+        ),
+        hasLength(1),
+      );
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains("Til: O'zbekcha, tanlangan"),
+      );
+      expect(listOpacity(tester), lessThan(0.5));
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(
+        find.descendant(
+          of: byKey('language-uz'),
+          matching: byKey('language-check'),
+        ),
+        findsOneWidget,
+      );
+      expect(checkScale(), greaterThan(1.2));
+      await tester.pump(const Duration(milliseconds: 130));
+      expect(byKey('language-sheet'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pumpAndSettle();
+      expect(byKey('language-sheet'), findsNothing);
+      expect(listOpacity(tester), 1);
+      handle.dispose();
+    });
+
+    testWidgets('the profile list fades from 0.25 to 1 in 280 ms', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(listOpacity(tester), closeTo(0.25, 0.05));
+      await tester.pump(const Duration(milliseconds: 280));
+      expect(listOpacity(tester), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with reduced motion no pop and no fade, the sheet waits', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(checkScale(), 1);
+      expect(listOpacity(tester), 1);
+      expect(byKey('language-sheet'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+      expect(byKey('language-sheet'), findsNothing);
+    });
+
+    testWidgets('a second tap while the sheet waits is ignored', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 1400));
+      await tester.tap(byKey('profile-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('language-uz'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('language-ru'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Til'), findsOneWidget);
+      expect(auth.calls, isNot(contains('language:customer:ru')));
+    });
+  });
+}
+
+/// The product of every opacity above [finder] — what the eye sees.
+double _opacityOf(WidgetTester tester, Finder finder) {
+  double product = 1;
+  final Iterable<Element> above = find
+      .ancestor(
+        of: finder,
+        matching: find.byWidgetPredicate(
+          (Widget w) => w is Opacity || w is FadeTransition,
+        ),
+      )
+      .evaluate();
+  for (final Element element in above) {
+    final Widget w = element.widget;
+    product *= w is Opacity ? w.opacity : (w as FadeTransition).opacity.value;
+  }
+  return product;
+}
+
+/// The colour of the identity button's flash layer.
+Color _flashColor(WidgetTester tester) {
+  final DecoratedBox box = tester.widget<DecoratedBox>(
+    find.byKey(const ValueKey<String>('profile-identity-flash')),
+  );
+  return (box.decoration as BoxDecoration).color ?? Colors.transparent;
+}
+
+/// A token store that cannot forget a session, so a logout throws.
+class _FailingClearTokenStore extends InMemoryTokenStore {
+  @override
+  Future<void> clear(SessionSlot slot) async =>
+      throw StateError('the token store cannot clear');
 }

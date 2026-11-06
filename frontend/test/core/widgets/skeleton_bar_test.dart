@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +71,29 @@ void main() {
           .excluding,
       isTrue,
     );
+  });
+
+  testWidgets('a skeleton bar takes a colour', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Column(
+          children: <Widget>[
+            SkeletonBar(width: 80, pulsing: false),
+            SkeletonBar(width: 80, pulsing: false, color: KitColors.headerSoft),
+          ],
+        ),
+      ),
+    );
+    final List<DecoratedBox> boxes = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(SkeletonBar),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .toList();
+    expect((boxes[0].decoration as BoxDecoration).color, KitColors.line);
+    expect((boxes[1].decoration as BoxDecoration).color, KitColors.headerSoft);
   });
 
   testWidgets('a radius rounds its corners', (tester) async {

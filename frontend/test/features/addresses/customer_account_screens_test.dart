@@ -106,9 +106,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// The name editor, opened from the profile's first row.
+  /// The name editor, opened from the profile's header.
   Future<void> openEditor(WidgetTester tester) async {
-    await tapAndSettle(tester, byKey('profile-edit'));
+    await tapAndSettle(tester, byKey('profile-identity'));
     expect(byKey('edit-profile'), findsOneWidget);
   }
 
@@ -167,6 +167,8 @@ void main() {
       await openProfile(tester);
       await tester.tap(byKey('logout-button'));
       await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-confirm'));
+      await tester.pumpAndSettle();
       expect(auth.calls, contains('logout:customer'));
       expect(byKey('profile-list'), findsNothing);
     });
@@ -186,10 +188,9 @@ void main() {
 
       expect(profile.renames, <String>['Aziza Karimova']);
       expect(byKey('edit-profile'), findsNothing);
-      expect(find.text(l10n(tester).profileSaved), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
       expect(find.text(l10n(tester).profileNoName), findsNothing);
       expect(find.text('Aziza Karimova'), findsOneWidget);
-      expect(find.text(l10n(tester).profileEdit), findsOneWidget);
     });
 
     testWidgets('an empty name is refused before sending', (
@@ -203,7 +204,7 @@ void main() {
       await tester.tap(byKey('profile-save'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).profileNameRequired), findsOneWidget);
+      expect(find.text(l10n(tester).profileNameEnter), findsOneWidget);
       expect(
         tester.widget<FilledButton>(byKey('profile-save')).onPressed,
         isNull,
@@ -231,7 +232,7 @@ void main() {
     ) async {
       profile.loadFailure = const NetworkFailure();
       await openProfile(tester);
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailedOffline), findsOneWidget);
       expect(byKey('profile-language'), findsOneWidget);
 
       await tapAndSettle(tester, byKey('profile-language'));
@@ -1075,12 +1076,12 @@ void main() {
     ) async {
       profile.loadFailure = const NetworkFailure();
       await openProfile(tester);
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailedOffline), findsOneWidget);
 
       profile.hold = Completer<void>();
-      await tester.tap(find.text(l10n(tester).retryButton));
+      await tester.tap(byKey('profile-header-retry'));
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(byKey('profile-header-skeleton'), findsOneWidget);
 
       profile.hold!.complete();
       await tester.pumpAndSettle();
@@ -1114,7 +1115,8 @@ void main() {
       );
       await openProfile(tester);
 
-      expect(find.text(l10n(tester).errorServerError), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailed), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailedOther), findsOneWidget);
       expect(find.text('Begona'), findsNothing);
     });
 
@@ -1128,7 +1130,7 @@ void main() {
       await tester.enterText(byKey('profile-name-field'), 'Aziza Karimova');
       await tapAndSettle(tester, byKey('profile-save'));
 
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).profileNameNotSaved), findsOneWidget);
       expect(
         tester.widget<TextField>(byKey('profile-name-field')).controller!.text,
         'Aziza Karimova',
@@ -1146,14 +1148,19 @@ void main() {
       await openProfile(tester);
 
       await openEditor(tester);
-      await tapAndSettle(tester, byKey('profile-save'));
+      await tester.tap(byKey('profile-save'), warnIfMissed: false);
+      await tester.pumpAndSettle();
 
       expect(profile.renames, isEmpty);
-      expect(byKey('edit-profile'), findsNothing);
+      expect(byKey('edit-profile'), findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(byKey('profile-save')).onPressed,
+        isNull,
+      );
       expect(find.text(l10n(tester).profileSaved), findsNothing);
     });
 
-    testWidgets('a rename answered after the Customer moved on says nothing', (
+    testWidgets('the Customer cannot move on while the rename is on its way', (
       WidgetTester tester,
     ) async {
       await openProfile(tester);
@@ -1165,13 +1172,16 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      await tapAndSettle(tester, byKey('profile-addresses'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('edit-profile'), findsOneWidget);
+      expect(byKey('name-leave-sheet'), findsNothing);
+
       profile.hold!.complete();
       await tester.pumpAndSettle();
 
       expect(profile.renames, <String>['Aziza Karimova']);
-      expect(find.text(l10n(tester).profileSaved), findsNothing);
+      expect(byKey('edit-profile'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('an unchanged address is not sent and says so', (

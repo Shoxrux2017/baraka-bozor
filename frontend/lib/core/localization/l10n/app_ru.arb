@@ -492,18 +492,85 @@
   "homeNavOrders": "Заказы",
   "profileTitle": "Профиль",
   "profileNoName": "Как вас зовут?",
-  "profileEdit": "Редактировать профиль",
   "profileSetName": "Указать имя",
+  "profileChangeName": "Изменить имя",
+  "profileNoNameSpoken": "Имя не указано",
+  "profileLoadingSpoken": "Загружаем профиль",
+  "profileLoadFailed": "Не удалось загрузить профиль",
+  "profileLoadFailedOffline": "Нет связи. Адреса, язык и выход работают.",
+  "profileLoadFailedOther": "Адреса, язык и выход работают.",
+  "profileHeaderSpoken": "{name}, {phone}. {action}",
+  "@profileHeaderSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "profileLanguage": "Язык",
-  "profileSupport": "Поддержка",
+  "profileGroupAccount": "Аккаунт",
+  "profileGroupApp": "Приложение",
+  "profileGroupHelp": "Помощь",
+  "profileCallSupport": "Позвонить в поддержку",
+  "profileDeleteHint": "сначала спросим",
   "profilePrivacy": "Конфиденциальность",
   "profileName": "Ваше имя",
   "profileSaved": "Имя сохранено",
-  "profileEditTitle": "Редактирование профиля",
   "profileNameLabel": "Имя",
   "profilePhoneLabel": "Номер телефона",
-  "profilePhoneLocked": "Номер — ваш вход в приложение, его не меняют.",
-  "profileNameRequired": "Введите имя — без него заказ не оформить.",
+  "profilePhoneLocked": "По этому номеру вы входите — изменить его нельзя.",
+  "profileNameHelper": "Так вас назовут сборщик и курьер",
+  "profileNameEnter": "Введите имя",
+  "profileNameUnchanged": "имя не изменилось",
+  "profileClearName": "Очистить имя",
+  "profileNameCleared": "Поле очищено",
+  "profileSaving": "Сохраняем…",
+  "profileSavingSpoken": "Сохраняем имя…",
+  "profileChecking": "Проверяем…",
+  "profileNameNotSaved": "Нет связи — имя не сохранено",
+  "profileNameUnsure": "Нет связи — не удалось проверить, сохранилось ли имя",
+  "profileNameSaveFailed": "Не удалось сохранить имя",
+  "profileLeaveTitle": "Сохранить новое имя?",
+  "profileLeaveInstead": "«{name}» вместо «{old}»",
+  "@profileLeaveInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "old": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveNew": "Имя: «{name}»",
+  "@profileLeaveNew": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLeaveDrop": "Не сохранять",
+  "profilePhoneSpoken": "{label}: {phone}. {note}",
+  "@profilePhoneSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "addressesTitle": "Мои адреса",
   "addressNone": "Адресов пока нет",
   "addressNew": "Новый адрес",
@@ -3445,5 +3512,23 @@
     }
   },
   "cancelBannerHint": "Заказать снова — «Повторить заказ» внизу",
-  "requestBannerHint": "Решит оператор — мы сообщим"
+  "requestBannerHint": "Решит оператор — мы сообщим",
+  "logoutTitle": "Выйти из аккаунта?",
+  "logoutBody": "Чтобы войти снова, на {phone} придёт код в Telegram. Корзина, адреса и заказы сохранятся.",
+  "@logoutBody": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "logoutStaffStays": "Режим сотрудника останется на телефоне.",
+  "languageChosenSpoken": "Язык: {language}, выбрано",
+  "@languageChosenSpoken": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  }
 }

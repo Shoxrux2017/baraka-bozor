@@ -301,7 +301,7 @@ void main() {
       await open(tester);
       await tab(tester, 'open-profile');
 
-      await tester.tap(byKey('profile-edit'));
+      await tester.tap(byKey('profile-identity'));
       await tester.pumpAndSettle();
       expect(find.byType(EditProfileScreen), findsOneWidget);
       expect(find.byType(CustomerTabBar), findsNothing);
@@ -318,7 +318,7 @@ void main() {
     (WidgetTester tester) async {
       await open(tester);
       await tab(tester, 'open-profile');
-      await tester.tap(byKey('profile-edit'));
+      await tester.tap(byKey('profile-identity'));
       await tester.pumpAndSettle();
       expect(find.byType(EditProfileScreen), findsOneWidget);
 
@@ -483,6 +483,8 @@ void main() {
       await tester.pumpAndSettle();
       await tab(tester, 'open-profile');
       await tester.tap(byKey('logout-button'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('logout-confirm'));
       await tester.pumpAndSettle();
       expect(find.byType(ProfileScreen), findsNothing);
 

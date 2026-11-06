@@ -1153,16 +1153,49 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileNoName => 'Ismingiz nima?';
 
   @override
-  String get profileEdit => 'Profilni tahrirlash';
+  String get profileSetName => 'Ismni kiritish';
 
   @override
-  String get profileSetName => 'Ismni kiritish';
+  String get profileChangeName => 'Ismni o\'zgartirish';
+
+  @override
+  String get profileNoNameSpoken => 'Ism kiritilmagan';
+
+  @override
+  String get profileLoadingSpoken => 'Profil yuklanmoqda';
+
+  @override
+  String get profileLoadFailed => 'Profil yuklanmadi';
+
+  @override
+  String get profileLoadFailedOffline =>
+      'Aloqa yo\'q. Manzillar, til va chiqish ishlaydi.';
+
+  @override
+  String get profileLoadFailedOther => 'Manzillar, til va chiqish ishlaydi.';
+
+  @override
+  String profileHeaderSpoken(String name, String phone, String action) {
+    return '$name, $phone. $action';
+  }
 
   @override
   String get profileLanguage => 'Til';
 
   @override
-  String get profileSupport => 'Qo\'llab-quvvatlash';
+  String get profileGroupAccount => 'Akkaunt';
+
+  @override
+  String get profileGroupApp => 'Ilova';
+
+  @override
+  String get profileGroupHelp => 'Yordam';
+
+  @override
+  String get profileCallSupport => 'Qo\'llab-quvvatlashga qo\'ng\'iroq';
+
+  @override
+  String get profileDeleteHint => 'avval so\'raymiz';
 
   @override
   String get profilePrivacy => 'Maxfiylik';
@@ -1174,9 +1207,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileSaved => 'Ism saqlandi';
 
   @override
-  String get profileEditTitle => 'Profilni tahrirlash';
-
-  @override
   String get profileNameLabel => 'Ism';
 
   @override
@@ -1184,11 +1214,63 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get profilePhoneLocked =>
-      'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.';
+      'Shu raqam bilan kirasiz — uni o\'zgartirib bo\'lmaydi.';
 
   @override
-  String get profileNameRequired =>
-      'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.';
+  String get profileNameHelper =>
+      'Yig\'uvchi va kuryer sizni shunday chaqiradi';
+
+  @override
+  String get profileNameEnter => 'Ismni kiriting';
+
+  @override
+  String get profileNameUnchanged => 'ism o\'zgarmadi';
+
+  @override
+  String get profileClearName => 'Ismni tozalash';
+
+  @override
+  String get profileNameCleared => 'Maydon tozalandi';
+
+  @override
+  String get profileSaving => 'Saqlanmoqda…';
+
+  @override
+  String get profileSavingSpoken => 'Ism saqlanmoqda…';
+
+  @override
+  String get profileChecking => 'Tekshirilmoqda…';
+
+  @override
+  String get profileNameNotSaved => 'Aloqa yo\'q — ism saqlanmadi';
+
+  @override
+  String get profileNameUnsure =>
+      'Aloqa yo\'q — ism saqlanganini tekshirib bo\'lmadi';
+
+  @override
+  String get profileNameSaveFailed => 'Ismni saqlab bo\'lmadi';
+
+  @override
+  String get profileLeaveTitle => 'Yangi ism saqlansinmi?';
+
+  @override
+  String profileLeaveInstead(String name, String old) {
+    return '«$old» o\'rniga «$name»';
+  }
+
+  @override
+  String profileLeaveNew(String name) {
+    return 'Ism: «$name»';
+  }
+
+  @override
+  String get profileLeaveDrop => 'Saqlamaslik';
+
+  @override
+  String profilePhoneSpoken(String label, String phone, String note) {
+    return '$label: $phone. $note';
+  }
 
   @override
   String get addressesTitle => 'Manzillarim';
@@ -5340,4 +5422,20 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get requestBannerHint => 'Operator hal qiladi — sizga xabar beramiz';
+
+  @override
+  String get logoutTitle => 'Akkauntdan chiqasizmi?';
+
+  @override
+  String logoutBody(String phone) {
+    return 'Qayta kirish uchun $phone raqamiga Telegram orqali kod keladi. Savat, manzillar va buyurtmalar saqlanadi.';
+  }
+
+  @override
+  String get logoutStaffStays => 'Xodim rejimi telefonda qoladi.';
+
+  @override
+  String languageChosenSpoken(String language) {
+    return 'Til: $language, tanlangan';
+  }
 }

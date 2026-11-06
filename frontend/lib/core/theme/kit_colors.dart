@@ -38,6 +38,23 @@ abstract final class KitColors {
   /// (`DL-132`).
   static const Color buttonOff = Color(0xFFE3E6E4);
 
+  /// A resting field's frame (`DL-135`).
+  static const Color fieldEdge = Color(0xFFDADDDB);
+
+  /// The skeleton and the failure circle on the profile's green header
+  /// (`DL-135`).
+  static const Color headerSoft = Color(0x33FFFFFF);
+
+  /// The mode pill under the profile's title (`DL-135`).
+  static const Color headerPill = Color(0x2E000000);
+
+  /// The profile's identity button while held (`DL-135`).
+  static const Color headerPressed = Color(0x29000000);
+
+  /// The flash that fades over the identity button when a new name arrives
+  /// (`DL-135`).
+  static const Color headerFlash = Color(0x47FFFFFF);
+
   /// Text field background.
   static const Color field = Color(0xFFF9F9F9);
 

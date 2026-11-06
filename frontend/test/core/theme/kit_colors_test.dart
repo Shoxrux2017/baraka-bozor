@@ -85,6 +85,14 @@ void main() {
     );
   });
 
+  test('the profile and editor tokens (DL-135)', () {
+    expect(KitColors.fieldEdge, const Color(0xFFDADDDB));
+    expect(KitColors.headerSoft, const Color(0x33FFFFFF));
+    expect(KitColors.headerPill, const Color(0x2E000000));
+    expect(KitColors.headerPressed, const Color(0x29000000));
+    expect(KitColors.headerFlash, const Color(0x47FFFFFF));
+  });
+
   test('icons and star edges stand out at 3:1', () {
     for (final Color c in <Color>[
       KitColors.primary,

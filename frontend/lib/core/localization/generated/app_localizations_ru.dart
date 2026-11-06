@@ -1169,16 +1169,49 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileNoName => 'Как вас зовут?';
 
   @override
-  String get profileEdit => 'Редактировать профиль';
+  String get profileSetName => 'Указать имя';
 
   @override
-  String get profileSetName => 'Указать имя';
+  String get profileChangeName => 'Изменить имя';
+
+  @override
+  String get profileNoNameSpoken => 'Имя не указано';
+
+  @override
+  String get profileLoadingSpoken => 'Загружаем профиль';
+
+  @override
+  String get profileLoadFailed => 'Не удалось загрузить профиль';
+
+  @override
+  String get profileLoadFailedOffline =>
+      'Нет связи. Адреса, язык и выход работают.';
+
+  @override
+  String get profileLoadFailedOther => 'Адреса, язык и выход работают.';
+
+  @override
+  String profileHeaderSpoken(String name, String phone, String action) {
+    return '$name, $phone. $action';
+  }
 
   @override
   String get profileLanguage => 'Язык';
 
   @override
-  String get profileSupport => 'Поддержка';
+  String get profileGroupAccount => 'Аккаунт';
+
+  @override
+  String get profileGroupApp => 'Приложение';
+
+  @override
+  String get profileGroupHelp => 'Помощь';
+
+  @override
+  String get profileCallSupport => 'Позвонить в поддержку';
+
+  @override
+  String get profileDeleteHint => 'сначала спросим';
 
   @override
   String get profilePrivacy => 'Конфиденциальность';
@@ -1190,9 +1223,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileSaved => 'Имя сохранено';
 
   @override
-  String get profileEditTitle => 'Редактирование профиля';
-
-  @override
   String get profileNameLabel => 'Имя';
 
   @override
@@ -1200,10 +1230,62 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profilePhoneLocked =>
-      'Номер — ваш вход в приложение, его не меняют.';
+      'По этому номеру вы входите — изменить его нельзя.';
 
   @override
-  String get profileNameRequired => 'Введите имя — без него заказ не оформить.';
+  String get profileNameHelper => 'Так вас назовут сборщик и курьер';
+
+  @override
+  String get profileNameEnter => 'Введите имя';
+
+  @override
+  String get profileNameUnchanged => 'имя не изменилось';
+
+  @override
+  String get profileClearName => 'Очистить имя';
+
+  @override
+  String get profileNameCleared => 'Поле очищено';
+
+  @override
+  String get profileSaving => 'Сохраняем…';
+
+  @override
+  String get profileSavingSpoken => 'Сохраняем имя…';
+
+  @override
+  String get profileChecking => 'Проверяем…';
+
+  @override
+  String get profileNameNotSaved => 'Нет связи — имя не сохранено';
+
+  @override
+  String get profileNameUnsure =>
+      'Нет связи — не удалось проверить, сохранилось ли имя';
+
+  @override
+  String get profileNameSaveFailed => 'Не удалось сохранить имя';
+
+  @override
+  String get profileLeaveTitle => 'Сохранить новое имя?';
+
+  @override
+  String profileLeaveInstead(String name, String old) {
+    return '«$name» вместо «$old»';
+  }
+
+  @override
+  String profileLeaveNew(String name) {
+    return 'Имя: «$name»';
+  }
+
+  @override
+  String get profileLeaveDrop => 'Не сохранять';
+
+  @override
+  String profilePhoneSpoken(String label, String phone, String note) {
+    return '$label: $phone. $note';
+  }
 
   @override
   String get addressesTitle => 'Мои адреса';
@@ -5436,4 +5518,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get requestBannerHint => 'Решит оператор — мы сообщим';
+
+  @override
+  String get logoutTitle => 'Выйти из аккаунта?';
+
+  @override
+  String logoutBody(String phone) {
+    return 'Чтобы войти снова, на $phone придёт код в Telegram. Корзина, адреса и заказы сохранятся.';
+  }
+
+  @override
+  String get logoutStaffStays => 'Режим сотрудника останется на телефоне.';
+
+  @override
+  String languageChosenSpoken(String language) {
+    return 'Язык: $language, выбрано';
+  }
 }
