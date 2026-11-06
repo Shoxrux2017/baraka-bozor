@@ -30,7 +30,7 @@ Rules for every stage:
 | 11 | Order | 9 | approval amounts and picture | Merged (PR #133) |
 | 12 | My orders | 10 | list summary fields | Merged (PR #134) |
 | 13 | Order editing | 12 | edit preview, minimum | Merged (PR #135) |
-| 14 | Cancellation | 12 | cancel reason | Planned |
+| 14 | Cancellation | 12 | cancel reason | Merged (PR #136) |
 | 15 | Rating | 10 | `reviewed_at` | Planned |
 | 16 | Profile and name | 18 | — | Planned |
 | 17 | Documents | 9 | — | Planned |
@@ -356,7 +356,9 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app reads the list summary's new keys as required (`pending_approval_expires_at`, `preview`), like `working_hours` (`DL-125` (7)) and the order screen's keys (`DL-130`): deploy the backend before any build of stage 12 reaches a phone (`DL-131`).
 - The stage 13 editor asks `POST /customer/orders/{order}/items/preview` for the order's sums (`DL-132`): an editor of this build against an older server finds no preview (`404`) and shows «Доставку, сбор и итог пересчитаем после сохранения», so deploy the backend first.
 - The app reads the order's `cancellation_note` as a required key, like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 14 reaches a phone (`DL-133`).
+- The app reads the rating's `reviewed_at` as a required key (its value may be `null`), like `working_hours` (`DL-125` (7)): deploy the backend before any build of stage 15 reaches a phone (`DL-134`).
 - After a cancel, focus moves to the order's status heading through its input focus (`DL-133` (9)); that TalkBack and VoiceOver follow it there is checked only on a real phone, at the wave's manual check.
+- The rating's screen-reader behaviour (the one adjustable control, the announcements, Ruling (14)(b) of `DL-134`) is checked only on a real phone, at the wave's manual check.
 
 ## Review findings not acted on
 
@@ -415,3 +417,6 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 13 re-review, P3: with the keyboard up at 200 % on a 640 px phone the footer (strips and total capped at 45 % over the fixed button) leaves the editor's list about 50 px. Ruling: nothing overflows and the list scrolls; a later improvement folds the total while the keyboard is up.
 - Stage 13 re-review, P3: the red failure line now sits in the footer's scrolling part, so at the cap it can scroll out of view. Ruling: it starts at the top and needs a refusal, a strip and 200 % text at once; kept.
 - Stage 14 final review, P3: focus moves to the status card by retrying once a frame (at most 120) until the page's focus scope holds focus again after the cancel sheet leaves. Ruling: a modal bottom sheet never drives the order page's `secondaryAnimation`, so there is no exit event to wait on, and a single request is lost to the sheet's scope (the focus test fails); the retries stop at the first success and on unmount.
+- Stage 15 final review, P3: rating from «Мои заказы» an order already rated on another phone closes the screen and the list card shows the stored stars without a word. Ruling: the «уже оценили» banner (`rate-8`) was approved for the order page; the list shows the stored stars at once; a list banner is taken if the wave's manual check finds it confusing.
+- Stage 15 fix wave, P3: the tap-target guideline is checked on the over-limit form at 5 stars, not 3 — at 3 stars a long comment leaves a reason chip half under the app bar, and the guideline measures the clipped node. Ruling: the chips are 44 high by construction and the 2-star form with its chips is checked; the 3-star over-limit form stays unchecked.
+- Stage 15 re-review, P3: the draft strip on the order is one reader button «Оценка не отправлена. Продолжить» acting through its semantic tap. Ruling: TalkBack, VoiceOver and switch control act on that node, and keyboard focus still reaches the button's `InkWell`; checked on a real phone at the wave's manual check, with the rating's other reader behaviour.

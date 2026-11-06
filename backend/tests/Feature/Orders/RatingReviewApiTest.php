@@ -40,6 +40,26 @@ final class RatingReviewApiTest extends TestCase
         $this->assertSame($data['rating']['reviewed_at'], $again['rating']['reviewed_at']);
     }
 
+    public function test_the_customer_sees_when_the_rating_was_reviewed(): void
+    {
+        $operator = User::factory()->role(Role::Operator)->create();
+        $rating = OrderRating::factory()->low()->create();
+        $order = Order::query()->findOrFail($rating->order_id);
+        $customer = $order->customer;
+
+        $this->as($customer)->getJson('/api/v1/customer/orders/'.$order->id)
+            ->assertOk()->assertJsonPath('data.rating.reviewed_at', null);
+
+        $this->travelTo(now()->startOfSecond());
+        $this->review($operator, $order->id)->assertOk();
+        $reviewedAt = now()->toIso8601ZuluString();
+
+        $shown = $this->as($customer)->getJson('/api/v1/customer/orders/'.$order->id)->assertOk()->json('data.rating');
+
+        $this->assertSame($reviewedAt, $shown['reviewed_at']);
+        $this->assertSame(['stars', 'reasons', 'comment', 'created_at', 'reviewed_at'], array_keys($shown));
+    }
+
     public function test_reviewing_an_unrated_order_is_refused(): void
     {
         $operator = User::factory()->role(Role::Operator)->create();

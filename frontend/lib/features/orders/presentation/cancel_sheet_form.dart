@@ -5,6 +5,7 @@ import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../application/cancel_draft.dart';
+import 'kit_choice_chip.dart';
 
 /// The reason part of the cancel sheet (`DL-133`): the chips, the button that
 /// opens the details, the field with its label and counter, and the tips.
@@ -146,10 +147,10 @@ class CancelReasonForm extends StatelessWidget {
           runSpacing: 8,
           children: <Widget>[
             for (final CancelChip chip in CancelChip.values)
-              _ChipButton(
+              KitChoiceChip(
                 key: ValueKey<String>('cancel-chip-${chip.name}'),
                 label: cancelChipLabel(l10n, chip),
-                position: l10n.cancelChipPosition(
+                hint: l10n.cancelChipPosition(
                   chip.index + 1,
                   CancelChip.values.length,
                 ),
@@ -258,94 +259,6 @@ class CancelReasonForm extends StatelessWidget {
             ),
         ],
       ],
-    );
-  }
-}
-
-/// One reason as a chip: a button with its state and place for a reader.
-class _ChipButton extends StatelessWidget {
-  const _ChipButton({
-    required this.label,
-    required this.position,
-    required this.chosen,
-    required this.enabled,
-    required this.onTap,
-    super.key,
-  });
-
-  final String label;
-  final String position;
-  final bool chosen;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    const Duration fade = Duration(milliseconds: 200);
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      selected: chosen,
-      label: label,
-      hint: position,
-      excludeSemantics: true,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: fade,
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: chosen ? KitColors.primaryWash : Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: chosen ? KitColors.primary : KitColors.outline,
-            width: chosen ? 1.5 : 1,
-          ),
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 44),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    if (chosen) ...<Widget>[
-                      const Icon(
-                        Icons.check,
-                        size: 18,
-                        color: KitColors.primaryDark,
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Flexible(
-                      child: AnimatedDefaultTextStyle(
-                        duration: fade,
-                        curve: Curves.easeOut,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.25,
-                          fontWeight: chosen
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: chosen ? KitColors.primaryDark : KitColors.ink,
-                        ),
-                        child: Text(label),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

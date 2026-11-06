@@ -162,7 +162,7 @@ An item carries `id, product_id, name_uz, name_ru, image_url, unit_code, price_m
 
 `payment` is `null` until one is made, then `{method, status, amount_uzs, paid_at}`: the cash the Courier took at the door, `paid` (`DL-64` (4)); `refunds` stays `[]` until Wave 5.
 
-`rating` is `null` until the Customer rates, then `{stars, reasons, comment, created_at}`; `can_rate` is true for a `completed` order with no rating whose completion was at most seven days ago (Section 59).
+`rating` is `null` until the Customer rates, then `{stars, reasons, comment, created_at, reviewed_at}` — `reviewed_at` is the instant an Operator or Admin marked it reviewed (Section 60), else `null`, and who reviewed stays staff-side (`DL-134` (1)); `can_rate` is true for a `completed` order with no rating whose completion was at most seven days ago (Section 59).
 
 ## 21. Edit Order
 
@@ -388,7 +388,7 @@ Own orders only; another Customer's order is the scope-safe `404`. Decided under
 
 ## 60. Rating Review
 
-`POST /operations/orders/{order}/rating/review` (no body) — Operator and Admin; a Manager, like every other role, is `403`, and any body field is `422 validation_failed`. An Operator or Admin marks the order's rating reviewed after calling the Customer (`DL-91` (5)). Under the rating's lock, `reviewed_by` and `reviewed_at` are written once and the answer is `200` with the order as `GET /operations/orders/{order}` shows it, `rating` filled; a rating already reviewed is a natural repeat, answered `200` with the first reviewer and instant unchanged. An order with no rating is `409 order_not_rated`; an unknown order is `404`. The review never changes the order, and it takes a `low_rating` item off the attention list (section 38); a rating of 4 or 5 stars may be marked too and has no item.
+`POST /operations/orders/{order}/rating/review` (no body) — Operator and Admin; a Manager, like every other role, is `403`, and any body field is `422 validation_failed`. An Operator or Admin marks the order's rating reviewed after calling the Customer (`DL-91` (5)). Under the rating's lock, `reviewed_by` and `reviewed_at` are written once and the answer is `200` with the order as `GET /operations/orders/{order}` shows it, `rating` filled; a rating already reviewed is a natural repeat, answered `200` with the first reviewer and instant unchanged. An order with no rating is `409 order_not_rated`; an unknown order is `404`. The review never changes the order, and it takes a `low_rating` item off the attention list (section 38); a rating of 4 or 5 stars may be marked too and has no item. The Customer's own order shows only `rating.reviewed_at`, the instant of the first review, never the reviewer (`DL-134` (1)).
 
 # Profile and Documents
 

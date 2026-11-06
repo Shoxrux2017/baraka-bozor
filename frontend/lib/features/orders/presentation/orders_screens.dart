@@ -30,10 +30,12 @@ import '../domain/customer_orders.dart';
 import 'cancel_sheet.dart';
 import 'cancel_outcome.dart';
 import 'order_edited_banner.dart';
+import 'order_notice_banner.dart';
 import 'order_questions.dart';
 import 'order_rating_card.dart';
 import 'order_sections.dart';
 import 'question_pill.dart';
+import 'rate_order_screen.dart';
 
 /// One of the Customer's orders (`docs/09` section 20, drawings 29 to 29з):
 /// where it stands, the questions waiting for their answer, the lines with
@@ -74,6 +76,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   CancelSheetExit? _awaiting;
   int _entrance = 0;
 
+  /// What the rating screen answered (`DL-134`): a sent rating's flash and the
+  /// «already rated» banner wait for the order shown to carry the rating; the
+  /// counts say how many flashes and banners came, so a newer one starts anew.
+  bool _awaitingFlash = false;
+  bool _awaitingAlready = false;
+  int _flashes = 0;
+  int? _alreadyStars;
+  int _alreadies = 0;
+
   /// The status card's focus, which the outcome moves to.
   final FocusNode _statusFocus = FocusNode(debugLabel: 'order status');
 
@@ -86,6 +97,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
         if (next.hasValue && !next.hasError && !next.isLoading) {
           _shownAt = ref.read(clockProvider)();
           _playEntrance(next.value!);
+          _playRating(next.value!);
         }
       },
       fireImmediately: true,
@@ -173,18 +185,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   /// the words; the card changes once the order shown says it.
   void _playOutcome(CancelSheetExit exit, int number) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScrollController? primary = PrimaryScrollController.maybeOf(context);
-    if (primary != null && primary.hasClients) {
-      if (MediaQuery.disableAnimationsOf(context)) {
-        primary.jumpTo(0);
-      } else {
-        primary.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    }
+    _scrollToTop();
     setState(() {
       _outcome = exit;
       _outcomeNumber = number;
@@ -201,6 +202,83 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final CustomerOrder? shown = ref.read(customerOrderProvider(orderId)).value;
     if (shown != null) {
       _playEntrance(shown);
+    }
+  }
+
+  /// The top of the order into view: in 300 ms, or at once with reduced
+  /// motion.
+  void _scrollToTop() {
+    final ScrollController? primary = PrimaryScrollController.maybeOf(context);
+    if (primary != null && primary.hasClients) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        primary.jumpTo(0);
+      } else {
+        primary.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+
+  /// Opens the rating screen, with [stars] chosen or on the kept draft's, and
+  /// plays what it answers (`DL-134`): the top into view, then the rated
+  /// card's flash or the «already rated» banner once the order shown carries
+  /// the rating. A screen left any other way plays nothing.
+  Future<void> _rate(int? stars) async {
+    final String id = orderId;
+    final RateExit? exit = await context.push<RateExit>(
+      AppPaths.customerOrderRate(id, stars: stars),
+    );
+    if (!mounted || id != orderId || exit == null) {
+      return;
+    }
+    _scrollToTop();
+    setState(() {
+      switch (exit) {
+        case RateExit.sent:
+          _awaitingFlash = true;
+        case RateExit.already:
+          _awaitingAlready = true;
+      }
+    });
+    final CustomerOrder? shown = ref.read(customerOrderProvider(id)).value;
+    if (shown != null) {
+      _playRating(shown);
+    }
+  }
+
+  /// Plays the rating's outcome once the order shown has the rating: the
+  /// card flashes, or the banner rises with its words announced.
+  void _playRating(CustomerOrder order) {
+    final CustomerRating? rating = order.rating;
+    if (rating == null || !mounted) {
+      return;
+    }
+    if (_awaitingFlash) {
+      _awaitingFlash = false;
+      // After the frame that builds the rated card, so the card is there to
+      // see the flash change rather than be born with it.
+      WidgetsBinding.instance
+        ..addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() => _flashes++);
+          }
+        })
+        ..ensureVisualUpdate();
+    }
+    if (_awaitingAlready) {
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      setState(() {
+        _awaitingAlready = false;
+        _alreadyStars = rating.stars;
+        _alreadies++;
+      });
+      announce(
+        context,
+        '${l10n.ratedAlreadyTitle(rating.stars)}. ${l10n.ratedAlreadyHint}',
+      );
     }
   }
 
@@ -325,6 +403,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                   child: _Order(
                                     order: shown,
                                     entrance: _entrance,
+                                    flash: _flashes,
+                                    onRate: _rate,
                                     statusFocus: _statusFocus,
                                   ),
                                 ),
@@ -356,6 +436,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   orderNumber: _outcomeNumber,
                 ),
               ),
+            if (_alreadyStars != null)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 10,
+                child: RatedAlreadyBanner(
+                  key: ValueKey<int>(_alreadies),
+                  stars: _alreadyStars!,
+                ),
+              ),
           ],
         ),
       ),
@@ -371,6 +461,8 @@ class _Order extends ConsumerStatefulWidget {
   const _Order({
     required this.order,
     required this.entrance,
+    required this.flash,
+    required this.onRate,
     required this.statusFocus,
   });
 
@@ -379,6 +471,13 @@ class _Order extends ConsumerStatefulWidget {
   /// How many times the cancel's outcome was played on the status card and
   /// the request card (`DL-133`).
   final int entrance;
+
+  /// How many times the rated card was flashed (`DL-134`).
+  final int flash;
+
+  /// Opens the rating screen with the stars the card was tapped on, or on
+  /// the kept draft's.
+  final ValueChanged<int?> onRate;
 
   /// The status card's focus.
   final FocusNode statusFocus;
@@ -800,10 +899,17 @@ class _OrderState extends ConsumerState<_Order> {
         ],
         if (order.canRate) ...<Widget>[
           slot('rating-gap', const SizedBox(height: 16)),
-          slot('rating', RateOrderCard(order: order)),
+          slot('rating', RateOrderCard(order: order, onOpen: widget.onRate)),
         ] else if (order.rating != null) ...<Widget>[
           slot('rating-gap', const SizedBox(height: 16)),
-          slot('rating', RatedOrderCard(rating: order.rating!)),
+          slot(
+            'rating',
+            RatedOrderCard(
+              rating: order.rating!,
+              now: now,
+              flash: widget.flash,
+            ),
+          ),
         ],
         if (onTheWay) ...<Widget>[
           slot('info-gap', const SizedBox(height: 16)),

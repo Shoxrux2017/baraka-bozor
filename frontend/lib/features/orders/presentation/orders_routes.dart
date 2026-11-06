@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import '../../../core/routing/rising_page.dart';
 import 'order_edit_screen.dart';
 import 'order_product_picker.dart';
 import 'orders_list_screen.dart';
@@ -62,13 +63,14 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
       path: AppPaths.customerOrderRatePattern,
       name: 'customer-order-rate',
       // The stars tapped before the screen opened; anything but 1 to 5 is
-      // ignored.
-      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+      // ignored. The screen rises over the order as a dialog (`DL-134`).
+      pageBuilder: (BuildContext context, GoRouterState state) => risingPage(
         state,
         RateOrderScreen(
           orderId: state.pathParameters['order']!.toLowerCase(),
           stars: int.tryParse(state.uri.queryParameters['stars'] ?? ''),
         ),
+        reduced: MediaQuery.maybeDisableAnimationsOf(context) ?? false,
       ),
     ),
   ],

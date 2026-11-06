@@ -3132,33 +3132,144 @@
   "requestSheetHint": "Yig'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.",
   "orderCancelKeepKit": "Buyurtmani qoldirish",
   "rateTitle": "Buyurtmani baholash",
-  "rateQuestion": "Buyurtma № {number} sizga yoqdimi?",
-  "@rateQuestion": {
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
-  "rateHint": "Hammasini baholang: mahsulotlar yangiligi, og'irligi va yetkazib berish",
+  "rateHint": "Hammasini baholang: yangilik, og'irlik va yetkazish",
   "rateStar1": "Juda yomon",
   "rateStar2": "Yomon",
   "rateStar3": "O'rtacha",
   "rateStar4": "Yaxshi",
   "rateStar5": "A'lo!",
+  "rateStarsSpokenLabel": "Baho",
+  "rateStarsValue": "5 dan {stars}, {word}",
+  "@rateStarsValue": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "rateStarsNone": "tanlanmagan",
+  "rateNamesTwo": "{first}, {second}",
+  "@rateNamesTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "rateNamesMore": "{first}, {second} va yana {count} ta",
+  "@rateNamesMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rateHeaderSub": "{names} · {when} yetkazildi",
+  "@rateHeaderSub": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "rateHeaderSpoken": "Buyurtma yoqdimi? Buyurtma № {number}, {when} yetkazildi: {names}",
+  "@rateHeaderSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "when": {
+        "type": "String"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "rateReasonsShown": "Savol paydo bo'ldi: nima noto'g'ri bo'ldi?",
+  "rateReasonsHidden": "Sabablar yashirildi — ular yuborilmaydi.",
+  "rateDraftRestored": "Qoralama tiklandi.",
+  "rateWhatWrongMany": "Bir nechtasini tanlash mumkin",
+  "rateExampleNotFresh": "Qaysi mahsulot yangi emas edi?",
+  "rateExampleWrongWeight": "Qaysi mahsulot va og'irligi qanchaga farq qildi?",
+  "rateExampleLate": "Kuryer qancha kechikdi?",
+  "rateExampleRude": "Nima bo'ldi? Biz aniqlaymiz",
+  "rateExampleMany": "Nima bo'lganini aytib bering",
+  "rateCommentSpoken": "Izoh, ixtiyoriy",
+  "rateOver": "{count} ta belgi ortiqcha",
+  "@rateOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rateWhatWrong": "Nima noto'g'ri bo'ldi?",
   "rateComment": "Izoh (ixtiyoriy)",
   "rateCommentHintGood": "Nima yoqdi?",
   "rateCommentHintBad": "Nima bo'ldi?",
   "rateOperatorWillCall": "Operator bahoni ko'radi va vaziyatni aniqlash uchun siz bilan bog'lanadi.",
-  "rateSend": "Yuborish",
-  "rateSending": "Baho yuborilmoqda",
+  "rateSend": "Bahoni yuborish",
+  "rateSending": "Yuborilmoqda…",
+  "rateSent": "Baho yuborildi",
+  "rateShorten": "Izohni qisqartiring",
+  "rateSendAgain": "Yana yuborish",
+  "rateUnsent": "Aloqa yo'q — baho yuborilmadi",
+  "rateUnsure": "Javob kelmadi — baho saqlangan bo'lishi mumkin. Yana yuboring: u ikki marta saqlanmaydi.",
+  "rateClosedTitle": "Baholash muddati o'tdi",
+  "rateClosedText": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin.",
+  "rateBackToOrder": "Buyurtmaga qaytish",
+  "rateSendingSpoken": "Baho yuborilmoqda…",
+  "rateSentSpoken": "Baho yuborildi: 5 dan {stars}.",
+  "@rateSentSpoken": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "rateOperatorWillContact": "Operator siz bilan bog'lanadi.",
+  "rateUnsentSpoken": "Baho yuborilmadi: aloqa yo'q.",
+  "rateUnsureSpoken": "Javob kelmadi. Baho saqlangan bo'lishi mumkin. Yana yuboring.",
   "rateBlockTitle": "Buyurtma yoqdimi?",
-  "rateBlockHint": "Yangilik, og'irlik, yetkazish — 7 kun ichida baholash mumkin",
+  "rateBlockHint": "Yangilik, og'irlik va yetkazish · 7 kun ichida baholash mumkin",
   "ratedTitle": "Sizning bahoingiz",
-  "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
+  "rateDraftLine": "Baho yuborilmadi",
+  "rateDraftContinue": "Davom etish",
+  "ratedOperatorWill": "Operator vaziyatni aniqlash uchun siz bilan bog'lanadi",
+  "ratedOperatorCalled": "Operator siz bilan {when} bog'landi",
+  "@ratedOperatorCalled": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "ratedAlreadyTitle": "Bu buyurtma allaqachon baholangan: 5 dan {stars}",
+  "@ratedAlreadyTitle": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "ratedAlreadyHint": "Baho avval yuborilgan — uni o'zgartirib bo'lmaydi",
   "ratedThanks": "Baho uchun rahmat!",
-  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi.",
   "deleteAccountTitle": "Akkauntni o'chirasizmi?",
   "deleteErasedHeading": "O'chiriladi",
   "deleteErasedName": "Ism va telefon raqami",

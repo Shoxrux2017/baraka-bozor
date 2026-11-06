@@ -438,6 +438,7 @@ final class CustomerRating {
     required this.reasons,
     required this.comment,
     required this.createdAt,
+    required this.reviewedAt,
   });
 
   /// 1 to 5.
@@ -445,6 +446,9 @@ final class CustomerRating {
   final List<RatingReason> reasons;
   final String? comment;
   final DateTime createdAt;
+
+  /// When an Operator reviewed a low rating, `null` until then (`DL-134`).
+  final DateTime? reviewedAt;
 }
 
 /// A product the reorder spoke of (`docs/09` section 26).

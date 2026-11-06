@@ -1104,6 +1104,7 @@ void main() {
           'reasons': <Object?>['not_fresh', 'from_the_future'],
           'comment': 'мятые',
           'created_at': '2026-09-29T08:00:00Z',
+          'reviewed_at': null,
         },
         lines: <Object?>[
           orderLineJson(patch: <String, Object?>{'image_url': 'https://i/1'}),
@@ -1142,6 +1143,35 @@ void main() {
           customerOrderJson(
             courier: <String, Object?>{'first_name': 'Ali', 'phone': '1'},
           ),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('a rating says when it was reviewed, or that it was not', () {
+      Map<String, Object?> rating(Object? reviewedAt) => <String, Object?>{
+        'stars': 2,
+        'reasons': <Object?>[],
+        'comment': null,
+        'created_at': '2026-09-29T08:00:00Z',
+        'reviewed_at': reviewedAt,
+      };
+
+      expect(
+        CustomerOrdersApi.parseOrder(
+          customerOrderJson(rating: rating('2026-09-28T10:40:00Z')),
+        ).rating!.reviewedAt,
+        DateTime.utc(2026, 9, 28, 10, 40),
+      );
+      expect(
+        CustomerOrdersApi.parseOrder(customerOrderJson(rating: rating(null)))
+            .rating!
+            .reviewedAt,
+        isNull,
+      );
+      expect(
+        () => CustomerOrdersApi.parseOrder(
+          customerOrderJson(rating: rating(null)..remove('reviewed_at')),
         ),
         throwsFormatException,
       );
@@ -1195,6 +1225,7 @@ void main() {
           'reasons': <Object?>['not_fresh'],
           'comment': 'мятые',
           'created_at': '2026-09-29T08:00:00Z',
+          'reviewed_at': null,
         },
       );
       final CustomerOrder order = await repository.rate(
@@ -1220,6 +1251,7 @@ void main() {
           'reasons': <Object?>[],
           'comment': null,
           'created_at': '2026-09-29T08:00:00Z',
+          'reviewed_at': null,
         },
       );
       await repository.rate(orderOne, 5, const <RatingReason>[], null);

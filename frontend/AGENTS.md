@@ -60,7 +60,7 @@ Route guards are UX only; backend authorization remains authoritative.
 
 Navigation after async completion must happen only if the originating session/target/operation remains current.
 
-Every route builds its page with `appPage` (`lib/core/routing/app_page.dart`); a route never uses go_router's `builder:` (`DL-124`). The one exception is a route that opens with a flight («Рекомендуем», «Все товары», search): it builds its page with `flightPage` (`lib/core/routing/flight_page.dart`), which returns the `appPage` itself when there is no opening to fly (`DL-128`).
+Every route builds its page with `appPage` (`lib/core/routing/app_page.dart`); a route never uses go_router's `builder:` (`DL-124`). Two exceptions: a route that opens with a flight («Рекомендуем», «Все товары», search) builds its page with `flightPage` (`lib/core/routing/flight_page.dart`), which returns the `appPage` itself when there is no opening to fly (`DL-128`); and the rating screen builds its page with `risingPage` (`lib/core/routing/rising_page.dart`), which rises over the screen it was opened from (`DL-134` (3)).
 
 ## 7. Dio and Data Layer
 

@@ -4336,13 +4336,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get rateTitle => 'Buyurtmani baholash';
 
   @override
-  String rateQuestion(int number) {
-    return 'Buyurtma № $number sizga yoqdimi?';
-  }
-
-  @override
-  String get rateHint =>
-      'Hammasini baholang: mahsulotlar yangiligi, og\'irligi va yetkazib berish';
+  String get rateHint => 'Hammasini baholang: yangilik, og\'irlik va yetkazish';
 
   @override
   String get rateStar1 => 'Juda yomon';
@@ -4358,6 +4352,74 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get rateStar5 => 'A\'lo!';
+
+  @override
+  String get rateStarsSpokenLabel => 'Baho';
+
+  @override
+  String rateStarsValue(int stars, String word) {
+    return '5 dan $stars, $word';
+  }
+
+  @override
+  String get rateStarsNone => 'tanlanmagan';
+
+  @override
+  String rateNamesTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String rateNamesMore(String first, String second, int count) {
+    return '$first, $second va yana $count ta';
+  }
+
+  @override
+  String rateHeaderSub(String names, String when) {
+    return '$names · $when yetkazildi';
+  }
+
+  @override
+  String rateHeaderSpoken(int number, String when, String names) {
+    return 'Buyurtma yoqdimi? Buyurtma № $number, $when yetkazildi: $names';
+  }
+
+  @override
+  String get rateReasonsShown =>
+      'Savol paydo bo\'ldi: nima noto\'g\'ri bo\'ldi?';
+
+  @override
+  String get rateReasonsHidden => 'Sabablar yashirildi — ular yuborilmaydi.';
+
+  @override
+  String get rateDraftRestored => 'Qoralama tiklandi.';
+
+  @override
+  String get rateWhatWrongMany => 'Bir nechtasini tanlash mumkin';
+
+  @override
+  String get rateExampleNotFresh => 'Qaysi mahsulot yangi emas edi?';
+
+  @override
+  String get rateExampleWrongWeight =>
+      'Qaysi mahsulot va og\'irligi qanchaga farq qildi?';
+
+  @override
+  String get rateExampleLate => 'Kuryer qancha kechikdi?';
+
+  @override
+  String get rateExampleRude => 'Nima bo\'ldi? Biz aniqlaymiz';
+
+  @override
+  String get rateExampleMany => 'Nima bo\'lganini aytib bering';
+
+  @override
+  String get rateCommentSpoken => 'Izoh, ixtiyoriy';
+
+  @override
+  String rateOver(int count) {
+    return '$count ta belgi ortiqcha';
+  }
 
   @override
   String get rateWhatWrong => 'Nima noto\'g\'ri bo\'ldi?';
@@ -4376,31 +4438,91 @@ class AppLocalizationsUz extends AppLocalizations {
       'Operator bahoni ko\'radi va vaziyatni aniqlash uchun siz bilan bog\'lanadi.';
 
   @override
-  String get rateSend => 'Yuborish';
+  String get rateSend => 'Bahoni yuborish';
 
   @override
-  String get rateSending => 'Baho yuborilmoqda';
+  String get rateSending => 'Yuborilmoqda…';
+
+  @override
+  String get rateSent => 'Baho yuborildi';
+
+  @override
+  String get rateShorten => 'Izohni qisqartiring';
+
+  @override
+  String get rateSendAgain => 'Yana yuborish';
+
+  @override
+  String get rateUnsent => 'Aloqa yo\'q — baho yuborilmadi';
+
+  @override
+  String get rateUnsure =>
+      'Javob kelmadi — baho saqlangan bo\'lishi mumkin. Yana yuboring: u ikki marta saqlanmaydi.';
+
+  @override
+  String get rateClosedTitle => 'Baholash muddati o\'tdi';
+
+  @override
+  String get rateClosedText =>
+      'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin.';
+
+  @override
+  String get rateBackToOrder => 'Buyurtmaga qaytish';
+
+  @override
+  String get rateSendingSpoken => 'Baho yuborilmoqda…';
+
+  @override
+  String rateSentSpoken(int stars) {
+    return 'Baho yuborildi: 5 dan $stars.';
+  }
+
+  @override
+  String get rateOperatorWillContact => 'Operator siz bilan bog\'lanadi.';
+
+  @override
+  String get rateUnsentSpoken => 'Baho yuborilmadi: aloqa yo\'q.';
+
+  @override
+  String get rateUnsureSpoken =>
+      'Javob kelmadi. Baho saqlangan bo\'lishi mumkin. Yana yuboring.';
 
   @override
   String get rateBlockTitle => 'Buyurtma yoqdimi?';
 
   @override
   String get rateBlockHint =>
-      'Yangilik, og\'irlik, yetkazish — 7 kun ichida baholash mumkin';
+      'Yangilik, og\'irlik va yetkazish · 7 kun ichida baholash mumkin';
 
   @override
   String get ratedTitle => 'Sizning bahoingiz';
 
   @override
-  String get ratedThanksLow =>
-      'Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi.';
+  String get rateDraftLine => 'Baho yuborilmadi';
+
+  @override
+  String get rateDraftContinue => 'Davom etish';
+
+  @override
+  String get ratedOperatorWill =>
+      'Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi';
+
+  @override
+  String ratedOperatorCalled(String when) {
+    return 'Operator siz bilan $when bog\'landi';
+  }
+
+  @override
+  String ratedAlreadyTitle(int stars) {
+    return 'Bu buyurtma allaqachon baholangan: 5 dan $stars';
+  }
+
+  @override
+  String get ratedAlreadyHint =>
+      'Baho avval yuborilgan — uni o\'zgartirib bo\'lmaydi';
 
   @override
   String get ratedThanks => 'Baho uchun rahmat!';
-
-  @override
-  String get rateWindowClosed =>
-      'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.';
 
   @override
   String get deleteAccountTitle => 'Akkauntni o\'chirasizmi?';

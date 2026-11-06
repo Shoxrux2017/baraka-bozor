@@ -26,7 +26,7 @@ final class OrderRatingApiTest extends TestCase
         $response = $this->rate($order, ['stars' => 2, 'reasons' => ['not_fresh', 'late'], 'comment' => '  Помидоры мятые  '])->assertCreated();
 
         $rating = $response->json('data.rating');
-        $this->assertSame(['stars', 'reasons', 'comment', 'created_at'], array_keys($rating));
+        $this->assertSame(['stars', 'reasons', 'comment', 'created_at', 'reviewed_at'], array_keys($rating));
         $this->assertSame(2, $rating['stars']);
         $this->assertSame(['not_fresh', 'late'], $rating['reasons']);
         $this->assertSame('Помидоры мятые', $rating['comment']);
@@ -37,6 +37,16 @@ final class OrderRatingApiTest extends TestCase
         $this->assertSame(2, $row['rating_stars']);
         $this->assertFalse($row['can_rate']);
         $this->as($order->customer)->getJson("/api/v1/customer/orders/{$order->id}")->assertOk()->assertJsonPath('data.rating.stars', 2);
+    }
+
+    public function test_a_new_rating_is_not_reviewed(): void
+    {
+        $order = Order::factory()->completed()->create();
+
+        $rating = $this->rate($order, ['stars' => 2, 'reasons' => ['late']])->assertCreated()->json('data.rating');
+
+        $this->assertArrayHasKey('reviewed_at', $rating);
+        $this->assertNull($rating['reviewed_at']);
     }
 
     public function test_an_unrated_delivered_order_can_be_rated(): void

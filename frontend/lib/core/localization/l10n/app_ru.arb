@@ -2722,26 +2722,144 @@
   "requestSheetHint": "Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.",
   "orderCancelKeepKit": "Оставить заказ",
   "rateTitle": "Оценка заказа",
-  "rateQuestion": "Как вам заказ № {number}?",
-  "rateHint": "Оцените всё: свежесть продуктов, вес и доставку",
+  "rateHint": "Оцените всё: свежесть, вес и доставку",
   "rateStar1": "Очень плохо",
   "rateStar2": "Плохо",
   "rateStar3": "Нормально",
   "rateStar4": "Хорошо",
   "rateStar5": "Отлично!",
+  "rateStarsSpokenLabel": "Оценка",
+  "rateStarsValue": "{stars} из 5, {word}",
+  "@rateStarsValue": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "rateStarsNone": "не выбрана",
+  "rateNamesTwo": "{first}, {second}",
+  "@rateNamesTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "rateNamesMore": "{first}, {second} и ещё {count}",
+  "@rateNamesMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rateHeaderSub": "{names} · доставлен {when}",
+  "@rateHeaderSub": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "rateHeaderSpoken": "Как вам заказ? Заказ № {number}, доставлен {when}: {names}",
+  "@rateHeaderSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "when": {
+        "type": "String"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "rateReasonsShown": "Появился вопрос: что пошло не так?",
+  "rateReasonsHidden": "Причины скрыты — они не отправятся.",
+  "rateDraftRestored": "Черновик восстановлен.",
+  "rateWhatWrongMany": "Можно выбрать несколько",
+  "rateExampleNotFresh": "Какой товар был несвежим?",
+  "rateExampleWrongWeight": "Какой товар и насколько не тот вес?",
+  "rateExampleLate": "На сколько опоздал курьер?",
+  "rateExampleRude": "Что случилось? Мы разберёмся",
+  "rateExampleMany": "Расскажите, что случилось",
+  "rateCommentSpoken": "Комментарий, необязательно",
+  "rateOver": "{count, plural, one{На {count} знак больше, чем можно} few{На {count} знака больше, чем можно} many{На {count} знаков больше, чем можно} other{На {count} знака больше, чем можно}}",
+  "@rateOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rateWhatWrong": "Что пошло не так?",
   "rateComment": "Комментарий (необязательно)",
   "rateCommentHintGood": "Что понравилось?",
   "rateCommentHintBad": "Что случилось?",
   "rateOperatorWillCall": "Оператор увидит оценку и свяжется с вами, чтобы разобраться.",
-  "rateSend": "Отправить",
-  "rateSending": "Отправляем оценку",
+  "rateSend": "Отправить оценку",
+  "rateSending": "Отправляем…",
+  "rateSent": "Оценка отправлена",
+  "rateShorten": "Сократите комментарий",
+  "rateSendAgain": "Отправить ещё раз",
+  "rateUnsent": "Нет связи — оценка не отправлена",
+  "rateUnsure": "Ответ не дошёл — оценка могла сохраниться. Отправьте ещё раз: дважды она не сохранится.",
+  "rateClosedTitle": "Срок оценки прошёл",
+  "rateClosedText": "Оценить заказ можно в течение 7 дней после доставки.",
+  "rateBackToOrder": "Вернуться к заказу",
+  "rateSendingSpoken": "Отправляем оценку…",
+  "rateSentSpoken": "Оценка отправлена: {stars} из 5.",
+  "@rateSentSpoken": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "rateOperatorWillContact": "Оператор свяжется с вами.",
+  "rateUnsentSpoken": "Оценка не отправлена: нет связи.",
+  "rateUnsureSpoken": "Ответ не дошёл. Оценка могла сохраниться. Отправьте ещё раз.",
   "rateBlockTitle": "Как вам заказ?",
-  "rateBlockHint": "Свежесть, вес, доставка — оценить можно 7 дней",
+  "rateBlockHint": "Свежесть, вес и доставка · оценить можно 7 дней",
   "ratedTitle": "Ваша оценка",
-  "ratedThanksLow": "Спасибо! Оператор свяжется с вами, чтобы разобраться.",
+  "rateDraftLine": "Оценка не отправлена",
+  "rateDraftContinue": "Продолжить",
+  "ratedOperatorWill": "Оператор свяжется с вами, чтобы разобраться",
+  "ratedOperatorCalled": "Оператор связался с вами {when}",
+  "@ratedOperatorCalled": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "ratedAlreadyTitle": "Этот заказ уже оценили: {stars} из 5",
+  "@ratedAlreadyTitle": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "ratedAlreadyHint": "Оценку отправили раньше — изменить её нельзя",
   "ratedThanks": "Спасибо за оценку!",
-  "rateWindowClosed": "Оценить заказ можно в течение 7 дней после доставки — это время прошло.",
   "deleteAccountTitle": "Удалить аккаунт?",
   "deleteErasedHeading": "Сотрём",
   "deleteErasedName": "Имя и номер телефона",

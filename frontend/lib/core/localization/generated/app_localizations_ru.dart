@@ -4384,12 +4384,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rateTitle => 'Оценка заказа';
 
   @override
-  String rateQuestion(int number) {
-    return 'Как вам заказ № $number?';
-  }
-
-  @override
-  String get rateHint => 'Оцените всё: свежесть продуктов, вес и доставку';
+  String get rateHint => 'Оцените всё: свежесть, вес и доставку';
 
   @override
   String get rateStar1 => 'Очень плохо';
@@ -4405,6 +4400,80 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rateStar5 => 'Отлично!';
+
+  @override
+  String get rateStarsSpokenLabel => 'Оценка';
+
+  @override
+  String rateStarsValue(int stars, String word) {
+    return '$stars из 5, $word';
+  }
+
+  @override
+  String get rateStarsNone => 'не выбрана';
+
+  @override
+  String rateNamesTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String rateNamesMore(String first, String second, int count) {
+    return '$first, $second и ещё $count';
+  }
+
+  @override
+  String rateHeaderSub(String names, String when) {
+    return '$names · доставлен $when';
+  }
+
+  @override
+  String rateHeaderSpoken(int number, String when, String names) {
+    return 'Как вам заказ? Заказ № $number, доставлен $when: $names';
+  }
+
+  @override
+  String get rateReasonsShown => 'Появился вопрос: что пошло не так?';
+
+  @override
+  String get rateReasonsHidden => 'Причины скрыты — они не отправятся.';
+
+  @override
+  String get rateDraftRestored => 'Черновик восстановлен.';
+
+  @override
+  String get rateWhatWrongMany => 'Можно выбрать несколько';
+
+  @override
+  String get rateExampleNotFresh => 'Какой товар был несвежим?';
+
+  @override
+  String get rateExampleWrongWeight => 'Какой товар и насколько не тот вес?';
+
+  @override
+  String get rateExampleLate => 'На сколько опоздал курьер?';
+
+  @override
+  String get rateExampleRude => 'Что случилось? Мы разберёмся';
+
+  @override
+  String get rateExampleMany => 'Расскажите, что случилось';
+
+  @override
+  String get rateCommentSpoken => 'Комментарий, необязательно';
+
+  @override
+  String rateOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'На $count знака больше, чем можно',
+      many: 'На $count знаков больше, чем можно',
+      few: 'На $count знака больше, чем можно',
+      one: 'На $count знак больше, чем можно',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get rateWhatWrong => 'Что пошло не так?';
@@ -4423,30 +4492,88 @@ class AppLocalizationsRu extends AppLocalizations {
       'Оператор увидит оценку и свяжется с вами, чтобы разобраться.';
 
   @override
-  String get rateSend => 'Отправить';
+  String get rateSend => 'Отправить оценку';
 
   @override
-  String get rateSending => 'Отправляем оценку';
+  String get rateSending => 'Отправляем…';
+
+  @override
+  String get rateSent => 'Оценка отправлена';
+
+  @override
+  String get rateShorten => 'Сократите комментарий';
+
+  @override
+  String get rateSendAgain => 'Отправить ещё раз';
+
+  @override
+  String get rateUnsent => 'Нет связи — оценка не отправлена';
+
+  @override
+  String get rateUnsure =>
+      'Ответ не дошёл — оценка могла сохраниться. Отправьте ещё раз: дважды она не сохранится.';
+
+  @override
+  String get rateClosedTitle => 'Срок оценки прошёл';
+
+  @override
+  String get rateClosedText =>
+      'Оценить заказ можно в течение 7 дней после доставки.';
+
+  @override
+  String get rateBackToOrder => 'Вернуться к заказу';
+
+  @override
+  String get rateSendingSpoken => 'Отправляем оценку…';
+
+  @override
+  String rateSentSpoken(int stars) {
+    return 'Оценка отправлена: $stars из 5.';
+  }
+
+  @override
+  String get rateOperatorWillContact => 'Оператор свяжется с вами.';
+
+  @override
+  String get rateUnsentSpoken => 'Оценка не отправлена: нет связи.';
+
+  @override
+  String get rateUnsureSpoken =>
+      'Ответ не дошёл. Оценка могла сохраниться. Отправьте ещё раз.';
 
   @override
   String get rateBlockTitle => 'Как вам заказ?';
 
   @override
-  String get rateBlockHint => 'Свежесть, вес, доставка — оценить можно 7 дней';
+  String get rateBlockHint => 'Свежесть, вес и доставка · оценить можно 7 дней';
 
   @override
   String get ratedTitle => 'Ваша оценка';
 
   @override
-  String get ratedThanksLow =>
-      'Спасибо! Оператор свяжется с вами, чтобы разобраться.';
+  String get rateDraftLine => 'Оценка не отправлена';
+
+  @override
+  String get rateDraftContinue => 'Продолжить';
+
+  @override
+  String get ratedOperatorWill => 'Оператор свяжется с вами, чтобы разобраться';
+
+  @override
+  String ratedOperatorCalled(String when) {
+    return 'Оператор связался с вами $when';
+  }
+
+  @override
+  String ratedAlreadyTitle(int stars) {
+    return 'Этот заказ уже оценили: $stars из 5';
+  }
+
+  @override
+  String get ratedAlreadyHint => 'Оценку отправили раньше — изменить её нельзя';
 
   @override
   String get ratedThanks => 'Спасибо за оценку!';
-
-  @override
-  String get rateWindowClosed =>
-      'Оценить заказ можно в течение 7 дней после доставки — это время прошло.';
 
   @override
   String get deleteAccountTitle => 'Удалить аккаунт?';

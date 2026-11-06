@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -153,6 +155,62 @@ void main() {
           reason: '$type',
         );
       }
+    });
+
+    test('a connection never made has not arrived', () {
+      for (final DioException exception in <DioException>[
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionTimeout,
+        ),
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          error: const SocketException('Failed host lookup'),
+        ),
+      ]) {
+        final ApiFailure failure = ApiFailure.fromDio(exception);
+        expect(failure, isA<NetworkFailure>(), reason: '${exception.type}');
+        expect(
+          (failure as NetworkFailure).mayHaveArrived,
+          isFalse,
+          reason: '${exception.type}',
+        );
+      }
+    });
+
+    test('a connection that broke may have arrived', () {
+      for (final DioException exception in <DioException>[
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          error: const HttpException(
+            'Connection closed before full header was received',
+          ),
+        ),
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.receiveTimeout,
+        ),
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.sendTimeout,
+        ),
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.unknown,
+          error: const SocketException('Connection reset by peer'),
+        ),
+      ]) {
+        final ApiFailure failure = ApiFailure.fromDio(exception);
+        expect(failure, isA<NetworkFailure>(), reason: '${exception.type}');
+        expect(
+          (failure as NetworkFailure).mayHaveArrived,
+          isTrue,
+          reason: '${exception.type}',
+        );
+      }
+      expect(const NetworkFailure().mayHaveArrived, isTrue);
     });
 
     test('a cancelled request is its own kind, with nothing to show', () {
