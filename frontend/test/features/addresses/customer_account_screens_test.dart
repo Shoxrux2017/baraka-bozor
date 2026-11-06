@@ -106,9 +106,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// The name editor, opened from the profile's first row.
+  /// The name editor, opened from the profile's header.
   Future<void> openEditor(WidgetTester tester) async {
-    await tapAndSettle(tester, byKey('profile-edit'));
+    await tapAndSettle(tester, byKey('profile-identity'));
     expect(byKey('edit-profile'), findsOneWidget);
   }
 
@@ -189,7 +189,6 @@ void main() {
       expect(find.text(l10n(tester).profileSaved), findsOneWidget);
       expect(find.text(l10n(tester).profileNoName), findsNothing);
       expect(find.text('Aziza Karimova'), findsOneWidget);
-      expect(find.text(l10n(tester).profileEdit), findsOneWidget);
     });
 
     testWidgets('an empty name is refused before sending', (
@@ -231,7 +230,7 @@ void main() {
     ) async {
       profile.loadFailure = const NetworkFailure();
       await openProfile(tester);
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailedOffline), findsOneWidget);
       expect(byKey('profile-language'), findsOneWidget);
 
       await tapAndSettle(tester, byKey('profile-language'));
@@ -1075,12 +1074,12 @@ void main() {
     ) async {
       profile.loadFailure = const NetworkFailure();
       await openProfile(tester);
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailedOffline), findsOneWidget);
 
       profile.hold = Completer<void>();
-      await tester.tap(find.text(l10n(tester).retryButton));
+      await tester.tap(byKey('profile-header-retry'));
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(byKey('profile-header-skeleton'), findsOneWidget);
 
       profile.hold!.complete();
       await tester.pumpAndSettle();
@@ -1114,7 +1113,8 @@ void main() {
       );
       await openProfile(tester);
 
-      expect(find.text(l10n(tester).errorServerError), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailed), findsOneWidget);
+      expect(find.text(l10n(tester).profileLoadFailedOther), findsOneWidget);
       expect(find.text('Begona'), findsNothing);
     });
 

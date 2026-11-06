@@ -7,14 +7,11 @@ import '../../../core/formatting/phone_format.dart';
 import '../../../core/legal/legal_document_kind.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/network/api_failure.dart';
 import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/theme/kit_colors.dart';
-import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
-import '../../../core/widgets/failure_message.dart';
 import '../../legal/application/legal_providers.dart';
 import '../../legal/domain/legal.dart';
 import '../application/profile_controllers.dart';
@@ -24,16 +21,33 @@ import 'language_sheet.dart';
 import 'profile_header.dart';
 
 /// The Customer's profile tab (`docs/03-features.md` section 3, kit drawings
-/// 32 and 32а): the header with the initials, the name and the phone; the rows
-/// for the name, the addresses, the language, support, the two documents and
-/// the deletion; and the way out of the session under them (`DL-75`,
-/// `DL-96` item 6).
-class ProfileScreen extends ConsumerWidget {
+/// 32 and 32а): the header with the initials, the name and the phone, which is
+/// the name's button; the rows for the addresses, the language, support, the
+/// two documents and the deletion; and the way out of the session under them
+/// (`DL-75`, `DL-96` item 6). One list in every state of the profile: the
+/// header shows a skeleton or the offline face where the data is missing, and
+/// the rows stand under it (`DL-135`).
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  /// Raised each time the name editor comes back with a saved name; the
+  /// header plays its arrival on every new value.
+  int _arrival = 0;
+
+  Future<void> _editName() async {
+    final bool? saved = await context.push<bool>(AppPaths.customerEditProfile);
+    if (saved == true && mounted) {
+      setState(() => _arrival++);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<CustomerProfile> profile = ref.watch(
       profileControllerProvider,
     );
@@ -46,91 +60,36 @@ class ProfileScreen extends ConsumerWidget {
           children: <Widget>[
             // The header runs up under the status bar.
             ColoredBox(
-              color: KitColors.primary,
+              key: const ValueKey<String>('profile-status-band'),
+              color: KitColors.primaryDark,
               child: SizedBox(
                 width: double.infinity,
                 height: MediaQuery.paddingOf(context).top,
               ),
             ),
             Expanded(
-              child: UnderActiveMode(
-                child: profile.when(
-                  skipLoadingOnReload: false,
-                  skipLoadingOnRefresh: !profile.hasError,
-                  data: (CustomerProfile profile) => ListView(
-                    key: const ValueKey<String>('profile-list'),
-                    primary: true,
-                    padding: EdgeInsets.zero,
-                    children: <Widget>[
-                      ProfileHeader(profile: profile),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: _Rows(profile: profile),
-                      ),
-                      const _LogoutButton(),
-                    ],
+              child: ListView(
+                key: const ValueKey<String>('profile-list'),
+                primary: true,
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  ProfileHeader(
+                    profile: profile,
+                    onEdit: _editName,
+                    onRetry: () => ref.invalidate(profileControllerProvider),
+                    arrival: _arrival,
                   ),
                   // The language and the way out are on the profile in every
                   // state of it.
-                  error: (Object error, StackTrace _) => ListView(
+                  Padding(
                     padding: const EdgeInsets.all(20),
-                    children: <Widget>[
-                      const _PlainTitle(),
-                      FailureMessage(
-                        error is ApiFailure ? error : const UnexpectedFailure(),
-                      ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              ref.invalidate(profileControllerProvider),
-                          child: Text(l10n.retryButton),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const _LanguageRow(),
-                      const _LogoutButton(),
-                    ],
+                    child: _Rows(profile: profile.value),
                   ),
-                  loading: () => ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: const <Widget>[
-                      _PlainTitle(),
-                      SizedBox(height: 120),
-                      Center(child: CircularProgressIndicator()),
-                      SizedBox(height: 120),
-                      _LanguageRow(),
-                      _LogoutButton(),
-                    ],
-                  ),
-                ),
+                  const _LogoutButton(),
+                ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The title over a profile that has no header yet.
-class _PlainTitle extends StatelessWidget {
-  const _PlainTitle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Semantics(
-        header: true,
-        child: Text(
-          AppLocalizations.of(context).profileTitle,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
         ),
       ),
     );
@@ -141,24 +100,17 @@ class _PlainTitle extends StatelessWidget {
 class _Rows extends ConsumerWidget {
   const _Rows({required this.profile});
 
-  final CustomerProfile profile;
+  /// Null while the profile has not arrived.
+  final CustomerProfile? profile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final LegalIndex? documents = ref.watch(legalIndexProvider).value;
     final SessionState? session = ref.watch(sessionControllerProvider).value;
-    final String? support = profile.supportPhone;
-    final String? name = profile.fullName;
-    final bool hasName = name != null && name.trim().isNotEmpty;
+    final String? support = profile?.supportPhone;
 
     final List<Widget> rows = <Widget>[
-      _ProfileRow(
-        rowKey: 'profile-edit',
-        icon: Icons.edit_square,
-        title: hasName ? l10n.profileEdit : l10n.profileSetName,
-        onTap: () => context.push(AppPaths.customerEditProfile),
-      ),
       _ProfileRow(
         rowKey: 'profile-addresses',
         icon: Icons.location_on,

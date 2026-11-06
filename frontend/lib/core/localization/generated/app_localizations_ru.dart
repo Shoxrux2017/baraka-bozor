@@ -1169,10 +1169,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileNoName => 'Как вас зовут?';
 
   @override
-  String get profileEdit => 'Редактировать профиль';
+  String get profileSetName => 'Указать имя';
 
   @override
-  String get profileSetName => 'Указать имя';
+  String get profileChangeName => 'Изменить имя';
+
+  @override
+  String get profileNoNameSpoken => 'Имя не указано';
+
+  @override
+  String get profileLoadingSpoken => 'Загружаем профиль';
+
+  @override
+  String get profileLoadFailed => 'Не удалось загрузить профиль';
+
+  @override
+  String get profileLoadFailedOffline =>
+      'Нет связи. Адреса, язык и выход работают.';
+
+  @override
+  String get profileLoadFailedOther => 'Адреса, язык и выход работают.';
+
+  @override
+  String profileHeaderSpoken(String name, String phone, String action) {
+    return '$name, $phone. $action';
+  }
 
   @override
   String get profileLanguage => 'Язык';

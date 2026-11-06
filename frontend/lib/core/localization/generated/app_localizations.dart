@@ -2150,17 +2150,53 @@ abstract class AppLocalizations {
   /// **'Ismingiz nima?'**
   String get profileNoName;
 
-  /// No description provided for @profileEdit.
-  ///
-  /// In uz, this message translates to:
-  /// **'Profilni tahrirlash'**
-  String get profileEdit;
-
   /// No description provided for @profileSetName.
   ///
   /// In uz, this message translates to:
   /// **'Ismni kiritish'**
   String get profileSetName;
+
+  /// No description provided for @profileChangeName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni o\'zgartirish'**
+  String get profileChangeName;
+
+  /// No description provided for @profileNoNameSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism kiritilmagan'**
+  String get profileNoNameSpoken;
+
+  /// No description provided for @profileLoadingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil yuklanmoqda'**
+  String get profileLoadingSpoken;
+
+  /// No description provided for @profileLoadFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil yuklanmadi'**
+  String get profileLoadFailed;
+
+  /// No description provided for @profileLoadFailedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q. Manzillar, til va chiqish ishlaydi.'**
+  String get profileLoadFailedOffline;
+
+  /// No description provided for @profileLoadFailedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar, til va chiqish ishlaydi.'**
+  String get profileLoadFailedOther;
+
+  /// No description provided for @profileHeaderSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {phone}. {action}'**
+  String profileHeaderSpoken(String name, String phone, String action);
 
   /// No description provided for @profileLanguage.
   ///

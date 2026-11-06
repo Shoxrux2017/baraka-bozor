@@ -1153,10 +1153,31 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileNoName => 'Ismingiz nima?';
 
   @override
-  String get profileEdit => 'Profilni tahrirlash';
+  String get profileSetName => 'Ismni kiritish';
 
   @override
-  String get profileSetName => 'Ismni kiritish';
+  String get profileChangeName => 'Ismni o\'zgartirish';
+
+  @override
+  String get profileNoNameSpoken => 'Ism kiritilmagan';
+
+  @override
+  String get profileLoadingSpoken => 'Profil yuklanmoqda';
+
+  @override
+  String get profileLoadFailed => 'Profil yuklanmadi';
+
+  @override
+  String get profileLoadFailedOffline =>
+      'Aloqa yo\'q. Manzillar, til va chiqish ishlaydi.';
+
+  @override
+  String get profileLoadFailedOther => 'Manzillar, til va chiqish ishlaydi.';
+
+  @override
+  String profileHeaderSpoken(String name, String phone, String action) {
+    return '$name, $phone. $action';
+  }
 
   @override
   String get profileLanguage => 'Til';

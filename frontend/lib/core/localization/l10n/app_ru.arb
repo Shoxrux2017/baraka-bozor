@@ -492,8 +492,27 @@
   "homeNavOrders": "Заказы",
   "profileTitle": "Профиль",
   "profileNoName": "Как вас зовут?",
-  "profileEdit": "Редактировать профиль",
   "profileSetName": "Указать имя",
+  "profileChangeName": "Изменить имя",
+  "profileNoNameSpoken": "Имя не указано",
+  "profileLoadingSpoken": "Загружаем профиль",
+  "profileLoadFailed": "Не удалось загрузить профиль",
+  "profileLoadFailedOffline": "Нет связи. Адреса, язык и выход работают.",
+  "profileLoadFailedOther": "Адреса, язык и выход работают.",
+  "profileHeaderSpoken": "{name}, {phone}. {action}",
+  "@profileHeaderSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "profileLanguage": "Язык",
   "profileSupport": "Поддержка",
   "profilePrivacy": "Конфиденциальность",

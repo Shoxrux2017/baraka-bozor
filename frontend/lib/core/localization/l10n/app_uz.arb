@@ -558,8 +558,27 @@
   "homeNavOrders": "Buyurtmalar",
   "profileTitle": "Profil",
   "profileNoName": "Ismingiz nima?",
-  "profileEdit": "Profilni tahrirlash",
   "profileSetName": "Ismni kiritish",
+  "profileChangeName": "Ismni o'zgartirish",
+  "profileNoNameSpoken": "Ism kiritilmagan",
+  "profileLoadingSpoken": "Profil yuklanmoqda",
+  "profileLoadFailed": "Profil yuklanmadi",
+  "profileLoadFailedOffline": "Aloqa yo'q. Manzillar, til va chiqish ishlaydi.",
+  "profileLoadFailedOther": "Manzillar, til va chiqish ishlaydi.",
+  "profileHeaderSpoken": "{name}, {phone}. {action}",
+  "@profileHeaderSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "phone": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "profileLanguage": "Til",
   "profileSupport": "Qo'llab-quvvatlash",
   "profilePrivacy": "Maxfiylik",
