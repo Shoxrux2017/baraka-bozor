@@ -51,6 +51,10 @@ final class Address {
   /// The street and house as one line: how the home's header and checkout
   /// name an address.
   String get streetLine => '$street, $house';
+
+  /// How the address is named wherever it is spoken of: its label, or its
+  /// street line when it has none (`DL-137`).
+  String get name => label ?? streetLine;
 }
 
 /// An address as its form submits it.

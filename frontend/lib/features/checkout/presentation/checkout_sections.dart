@@ -162,11 +162,16 @@ class CheckoutDeliveryCard extends StatelessWidget {
     required this.gone,
     required this.recipient,
     required this.onChange,
+    this.listFailed = false,
     this.sentAddressLine,
     super.key,
   });
 
   final Address? address;
+
+  /// The list of addresses failed to load and there is none to show: the card
+  /// says so and its link loads it again (`DL-137`).
+  final bool listFailed;
 
   /// The address line of a confirmation that was sent, shown when its address
   /// is no longer among the Customer's.
@@ -187,6 +192,9 @@ class CheckoutDeliveryCard extends StatelessWidget {
     } else if (held == null && sentAddressLine != null) {
       title = sentAddressLine!;
       detail = null;
+    } else if (held == null && listFailed) {
+      title = l10n.deliveryAddressRetry;
+      detail = null;
     } else if (held == null) {
       title = l10n.deliveryAddressAdd;
       detail = l10n.deliveryAddressEmptyHint;
@@ -204,7 +212,9 @@ class CheckoutDeliveryCard extends StatelessWidget {
     }
     final String? name = recipient?.fullName;
     final String linkLabel = held == null && !gone && sentAddressLine == null
-        ? l10n.checkoutAddressAdd
+        ? listFailed
+              ? l10n.retryButton
+              : l10n.checkoutAddressAdd
         : l10n.editButton;
 
     return DecoratedBox(

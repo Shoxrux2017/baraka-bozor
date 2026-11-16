@@ -35,8 +35,8 @@ deliveryAddressChoiceProvider = AsyncNotifierProvider.autoDispose
     .family<DeliveryAddressChoice, String?, String>(DeliveryAddressChoice.new);
 
 /// The signed-in Customer's delivery address: the one they chose while it
-/// is still among their active addresses, otherwise the newest of them, or
-/// `null` when they have none.
+/// is still among their active addresses and not being removed, otherwise the
+/// newest of them, or `null` when they have none (`DL-137`).
 ///
 /// Loading while there is no Customer and while the list or the choice
 /// loads or reloads — a reload may still carry another account's list — so
@@ -48,7 +48,9 @@ final Provider<AsyncValue<Address?>> deliveryAddressProvider =
       if (account == null) {
         return const AsyncLoading<Address?>();
       }
-      final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
+      final AsyncValue<List<Address>> addresses = ref.watch(
+        shownAddressesProvider,
+      );
       final AsyncValue<String?> chosen = ref.watch(
         deliveryAddressChoiceProvider(account),
       );

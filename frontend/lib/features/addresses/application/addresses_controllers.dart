@@ -10,6 +10,7 @@ import '../data/address_search_api.dart';
 import '../data/addresses_api.dart';
 import '../domain/address_search.dart';
 import '../domain/addresses.dart';
+import 'address_removals.dart';
 
 final Provider<AddressesRepository> addressesRepositoryProvider =
     Provider<AddressesRepository>(
@@ -28,6 +29,29 @@ final FutureProvider<List<Address>> addressesProvider =
         return Completer<List<Address>>().future;
       }
       return ref.watch(addressesRepositoryProvider).addresses();
+    });
+
+/// The addresses the Customer still sees: [addressesProvider] without the
+/// ones being removed, so the list, the delivery address and checkout agree
+/// until the server has answered (`DL-137`). Its loading and error flags and
+/// its previous value are those of the list itself.
+final Provider<AsyncValue<List<Address>>> shownAddressesProvider =
+    Provider.autoDispose<AsyncValue<List<Address>>>((Ref ref) {
+      final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
+      final Set<String> hidden = ref.watch(
+        addressRemovalsProvider.select(
+          (AddressRemovalsState removals) => removals.hidden,
+        ),
+      );
+      if (hidden.isEmpty) {
+        return addresses;
+      }
+      return addresses.whenData(
+        (List<Address> list) => <Address>[
+          for (final Address a in list)
+            if (!hidden.contains(a.id)) a,
+        ],
+      );
     });
 
 /// A change to the Customer's addresses, from one of their surfaces; it

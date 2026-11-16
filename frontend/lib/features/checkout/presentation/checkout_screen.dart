@@ -149,7 +149,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     _subscriptions.add(
       ref.listenManual<AsyncValue<List<Address>>>(
-        addressesProvider,
+        shownAddressesProvider,
         (AsyncValue<List<Address>>? _, AsyncValue<List<Address>> next) =>
             _addressesChanged(next),
       ),
@@ -233,7 +233,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool get _sent => ref.read(preparedCheckoutProvider)?.sent ?? false;
 
   Address? _heldAddress() => ref
-      .read(addressesProvider)
+      .read(shownAddressesProvider)
       .value
       ?.where((Address a) => a.id == _addressId)
       .firstOrNull;
@@ -553,7 +553,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         .read(deliveryAddressChoiceProvider(account))
         .value;
     final bool listed =
-        ref.read(addressesProvider).value?.any((Address a) => a.id == choice) ??
+        ref
+            .read(shownAddressesProvider)
+            .value
+            ?.any((Address a) => a.id == choice) ??
         false;
     if (choice != null && listed) {
       _pick(choice);
@@ -567,7 +570,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (placed != null) {
       return CheckoutPlacedView(order: placed, opensAt: _placedOpensAt);
     }
-    final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
+    final AsyncValue<List<Address>> addresses = ref.watch(
+      shownAddressesProvider,
+    );
     final bool busyPreview = ref.watch(checkoutPreviewProvider).isBusy;
     final bool busyPlace = ref.watch(placeOrderProvider).isBusy;
     final PreparedCheckout? prepared = ref.watch(preparedCheckoutProvider);
@@ -680,6 +685,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     CheckoutDeliveryCard(
                       address: held,
                       gone: gone,
+                      listFailed: addresses.hasError && !addresses.hasValue,
                       sentAddressLine: sent && held == null
                           ? prepared?.addressLine
                           : null,

@@ -1,6 +1,7 @@
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/features/addresses/application/address_removals.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
@@ -22,6 +23,8 @@ final NotifierProvider<_Account, String?> _account =
     NotifierProvider<_Account, String?>(_Account.new);
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late InMemoryPreferenceStore store;
   late FakeAddressesRepository addresses;
 
@@ -111,5 +114,25 @@ void main() {
     final AsyncValue<Address?> value = await settled(container());
     expect(value.hasError, isTrue);
     expect(value.hasValue, isFalse);
+  });
+
+  test("undoing the delivery address's removal makes it the delivery address again", () async {
+    final ProviderContainer c = container();
+    await settled(c);
+    await c.read(deliveryAddressChoiceProvider('c').notifier).choose('a-old');
+    expect((await settled(c)).value?.id, 'a-old');
+
+    final AddressRemoval removal = AddressRemoval(addresses.rows.last);
+    c.read(addressRemovalsProvider.notifier).hold(removal, closeBar: () {});
+    expect((await settled(c)).value?.id, 'a-new');
+
+    expect(c.read(addressRemovalsProvider.notifier).undo(removal), isTrue);
+    expect((await settled(c)).value?.id, 'a-old');
+
+    final AddressRemoval again = AddressRemoval(addresses.rows.last);
+    c.read(addressRemovalsProvider.notifier).hold(again, closeBar: () {});
+    await c.read(addressRemovalsProvider.notifier).flush();
+    expect((await settled(c)).value?.id, 'a-new');
+    expect(addresses.removed, <String>['a-old']);
   });
 }
