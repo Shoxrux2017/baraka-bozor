@@ -46,13 +46,41 @@ final Provider<AsyncValue<List<Address>>> shownAddressesProvider =
       if (hidden.isEmpty) {
         return addresses;
       }
-      return addresses.whenData(
-        (List<Address> list) => <Address>[
+      final List<Address>? list = addresses.value;
+      if (list == null) {
+        return addresses;
+      }
+      // The filtered value keeps the list's loading and error flags, so a
+      // reload that fails or is under way still shows the cards.
+      final AsyncValue<List<Address>> filtered = AsyncData<List<Address>>(
+        <Address>[
           for (final Address a in list)
             if (!hidden.contains(a.id)) a,
         ],
       );
+      return _withFlagsOf(addresses, filtered);
     });
+
+// riverpod keeps the only way to build a value that carries a loading or error
+// flag next to its data in an internal member.
+AsyncValue<List<Address>> _withFlagsOf(
+  AsyncValue<List<Address>> source,
+  AsyncValue<List<Address>> data,
+) {
+  AsyncValue<List<Address>> shown = data;
+  if (source.hasError) {
+    // ignore: invalid_use_of_internal_member
+    shown = AsyncError<List<Address>>(
+      source.error!,
+      source.stackTrace!,
+    ).copyWithPrevious(shown);
+  }
+  if (source.isLoading) {
+    // ignore: invalid_use_of_internal_member
+    shown = const AsyncLoading<List<Address>>().copyWithPrevious(shown);
+  }
+  return shown;
+}
 
 /// A change to the Customer's addresses, from one of their surfaces; it
 /// reloads the list.

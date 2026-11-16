@@ -544,6 +544,30 @@ void main() {
       expect(spoken(tester), contains('Нет связи, адрес «Работа» не удалён'));
     });
 
+    testWidgets('a reload that fails after an earlier removal keeps the cards '
+        'and the returning one says why', (WidgetTester tester) async {
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester);
+      await removeVia(tester, 'a-work');
+      await folded(tester);
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(addresses.removed, <String>['a-work']);
+
+      await removeVia(tester, 'a-mama');
+      await folded(tester);
+      addresses.removeFailure = const NetworkFailure();
+      addresses.loadFailure = const NetworkFailure();
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(find.text('Не удалось загрузить адреса'), findsNothing);
+      expect(byKey('address-card-a-home'), findsOneWidget);
+      expect(byKey('address-card-a-mama'), findsOneWidget);
+      expect(find.text('Нет связи — адрес не удалён'), findsOneWidget);
+    });
+
     testWidgets('a long swipe removes, a medium one reveals Удалить', (
       WidgetTester tester,
     ) async {

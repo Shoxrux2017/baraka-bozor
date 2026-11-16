@@ -281,4 +281,20 @@ void main() {
 
     expect(await shownIds(), <String>['a-3', 'a-1']);
   });
+
+  test('a failed reload keeps the filtered list while an id is hidden', () async {
+    await hold('a-2');
+    expect(await shownIds(), <String>['a-3', 'a-1']);
+    repository.loadFailure = const NetworkFailure();
+
+    container.invalidate(addressesProvider);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    final AsyncValue<List<Address>> shown = container.read(
+      shownAddressesProvider,
+    );
+    expect(shown.hasError, isTrue);
+    expect(shown.value?.map((Address a) => a.id), <String>['a-3', 'a-1']);
+  });
 }
