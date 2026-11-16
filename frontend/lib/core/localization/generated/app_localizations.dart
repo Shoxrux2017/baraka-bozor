@@ -2576,11 +2576,17 @@ abstract class AppLocalizations {
   /// **'Bu manzil yetkazib berish hududidan tashqarida: {distance} km. Biz {max} km gacha yetkazib beramiz'**
   String addressOutsideArea(String distance, String max);
 
-  /// No description provided for @addressSaved.
+  /// No description provided for @addressAdded.
   ///
   /// In uz, this message translates to:
-  /// **'Manzil saqlandi'**
-  String get addressSaved;
+  /// **'«{name}» manzili qo\'shildi'**
+  String addressAdded(String name);
+
+  /// No description provided for @addressSavedNamed.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili saqlandi'**
+  String addressSavedNamed(String name);
 
   /// No description provided for @addressAddNew.
   ///
@@ -2612,11 +2618,131 @@ abstract class AppLocalizations {
   /// **'O\'chirish'**
   String get addressRemove;
 
-  /// No description provided for @addressRemoveConfirm.
+  /// No description provided for @addressesAdd.
   ///
   /// In uz, this message translates to:
-  /// **'Bu manzil o\'chirilsinmi?'**
-  String get addressRemoveConfirm;
+  /// **'Manzil qo\'shish'**
+  String get addressesAdd;
+
+  /// No description provided for @addressesEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qo\'shing — kuryer buyurtmani o\'sha yerga olib keladi. Nuqtani xaritada belgilaysiz.'**
+  String get addressesEmptyText;
+
+  /// No description provided for @addressesFailedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar yuklanmadi'**
+  String get addressesFailedTitle;
+
+  /// No description provided for @addressesFailedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internetni tekshirib, «Qayta urinish»ni bosing.'**
+  String get addressesFailedOffline;
+
+  /// No description provided for @addressesFailedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana bir bor urinib ko\'ring: «Qayta urinish»ni bosing.'**
+  String get addressesFailedOther;
+
+  /// No description provided for @addressesLoadingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar yuklanmoqda'**
+  String get addressesLoadingSpoken;
+
+  /// No description provided for @addressDeliveryHere.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu yerga yetkaziladi'**
+  String get addressDeliveryHere;
+
+  /// No description provided for @addressDeliveryHereSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'shu yerga yetkaziladi'**
+  String get addressDeliveryHereSpoken;
+
+  /// No description provided for @addressDeliverHere.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu yerga yetkazish'**
+  String get addressDeliverHere;
+
+  /// No description provided for @addressActionsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Amallar: {name}'**
+  String addressActionsSpoken(String name);
+
+  /// No description provided for @addressDeliveryChosenSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish: «{name}»'**
+  String addressDeliveryChosenSpoken(String name);
+
+  /// No description provided for @addressEditHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'o\'zgartirish'**
+  String get addressEditHint;
+
+  /// No description provided for @addressNotRemovedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — manzil o\'chirilmadi'**
+  String get addressNotRemovedOffline;
+
+  /// No description provided for @addressNotRemovedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni o\'chirib bo\'lmadi'**
+  String get addressNotRemovedOther;
+
+  /// No description provided for @addressRemovedBar.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'chirildi.'**
+  String addressRemovedBar(String name);
+
+  /// No description provided for @addressRemovedBarDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'chirildi. Endi yetkazish: «{next}».'**
+  String addressRemovedBarDelivery(String name, String next);
+
+  /// No description provided for @addressRemovedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili o\'chirildi. Qaytarish — pastdagi tugma.'**
+  String addressRemovedSpoken(String name);
+
+  /// No description provided for @addressRemovedSpokenDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili o\'chirildi. Endi yetkazish: «{next}». Qaytarish — pastdagi tugma.'**
+  String addressRemovedSpokenDelivery(String name, String next);
+
+  /// No description provided for @addressRestoredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili qaytarildi'**
+  String addressRestoredSpoken(String name);
+
+  /// No description provided for @addressNotRemovedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q, «{name}» manzili o\'chirilmadi'**
+  String addressNotRemovedSpoken(String name);
+
+  /// No description provided for @addressNotRemovedOtherSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili o\'chirilmadi'**
+  String addressNotRemovedOtherSpoken(String name);
 
   /// No description provided for @errorConfigurationIncomplete.
   ///

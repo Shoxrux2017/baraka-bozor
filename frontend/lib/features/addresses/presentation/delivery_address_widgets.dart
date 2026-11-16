@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,13 +8,17 @@ import '../../../core/formatting/address_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
-import '../../../core/state/mutation_state.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/skeleton_bar.dart';
-import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/undo_bar.dart';
+import '../application/address_removals.dart';
 import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
 import '../domain/addresses.dart';
+import 'address_card.dart';
+import 'address_removal_flow.dart';
 
 /// Where the order goes, at the top of the home (the kit's drawing 10): a
 /// green pin, the address's label — or its street when it has none — with a
@@ -178,7 +184,7 @@ Future<void> showDeliveryAddressSheet(BuildContext context) =>
       ),
     );
 
-class _DeliveryAddressSheet extends ConsumerWidget {
+class _DeliveryAddressSheet extends ConsumerStatefulWidget {
   const _DeliveryAddressSheet({required this.router, required this.container});
 
   /// The home's router and container: the sheet's own context is gone once
@@ -187,14 +193,71 @@ class _DeliveryAddressSheet extends ConsumerWidget {
   final ProviderContainer container;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DeliveryAddressSheet> createState() =>
+      _DeliveryAddressSheetState();
+}
+
+/// The bar the sheet shows for the removal it offers to take back.
+final class _SheetBar {
+  _SheetBar({required this.text, required this.onUndo});
+
+  final String text;
+  final VoidCallback onUndo;
+  final Completer<void> ended = Completer<void>();
+}
+
+class _DeliveryAddressSheetState extends ConsumerState<_DeliveryAddressSheet> {
+  _SheetBar? _bar;
+
+  void _showBar(_SheetBar bar) {
+    setState(() => _bar = bar);
+  }
+
+  /// The bar is over, however it ended; the sheet may be going away.
+  void _barEnded(_SheetBar bar) {
+    if (!bar.ended.isCompleted) {
+      bar.ended.complete();
+    }
+    if (mounted && identical(_bar, bar)) {
+      setState(() => _bar = null);
+    }
+  }
+
+  /// Closing the sheet ends its bar, so the removal it offered is sent.
+  @override
+  void dispose() {
+    final _SheetBar? bar = _bar;
+    if (bar != null && !bar.ended.isCompleted) {
+      bar.ended.complete();
+    }
+    super.dispose();
+  }
+
+  void _remove(Address address) {
+    unawaited(
+      removeAddress(
+        context,
+        container: widget.container,
+        address: address,
+        offer: _SheetUndoOffer(this),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String? account = ref.watch(customerAccountProvider);
     final AsyncValue<Address?> current = ref.watch(deliveryAddressProvider);
     final List<Address> addresses = current.hasValue
-        ? (ref.watch(addressesProvider).value ?? const <Address>[])
+        ? (ref.watch(shownAddressesProvider).value ?? const <Address>[])
         : const <Address>[];
-    final MutationState actions = ref.watch(addressListActionsProvider);
+    final ({String id, ApiFailure failure})? notRemoved = ref.watch(
+      addressRemovalsProvider.select(
+        (AddressRemovalsState removals) => removals.notRemoved,
+      ),
+    );
+    final _SheetBar? bar = _bar;
 
     void choose(String id) {
       if (account == null) {
@@ -204,130 +267,156 @@ class _DeliveryAddressSheet extends ConsumerWidget {
       Navigator.of(context).pop();
     }
 
+    // The title, the bar and the add button stand outside the scroll: only
+    // the cards scroll, so «Вернуть» is always on screen (`DL-137`).
     return SafeArea(
-      child: ListView(
-        key: const ValueKey<String>('delivery-address-sheet'),
-        shrinkWrap: true,
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  l10n.deliveryAddressSheetTitle,
-                  style: const TextStyle(
-                    color: KitColors.ink,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              IconButton(
-                key: const ValueKey<String>('delivery-address-close'),
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                onPressed: () => Navigator.of(context).pop(),
-                // A 44 square takes the tap; the drawn circle stays 28
-                // (`DL-117`).
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 44,
-                ),
-                icon: DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: KitColors.line, width: 1.5),
-                  ),
-                  child: const SizedBox.square(
-                    dimension: 28,
-                    child: Icon(Icons.close, size: 16, color: KitColors.ink),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 15, thickness: 1, color: KitColors.line),
-          FailureMessage(actions.failure),
-          RadioGroup<String>(
-            groupValue: current.value?.id,
-            onChanged: (String? id) {
-              if (id != null) {
-                choose(id);
-              }
-            },
-            child: Column(
+        child: Column(
+          key: const ValueKey<String>('delivery-address-sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
               children: <Widget>[
-                for (final Address address in addresses)
-                  _AddressCard(
-                    address: address,
-                    chosen: address.id == current.value?.id,
-                    onChoose: () => choose(address.id),
-                    onEdit: () {
-                      Navigator.of(context).pop();
-                      router.push<Object?>(
-                        AppPaths.customerAddress(address.id),
-                      );
-                    },
-                    onDelete: () => _remove(context, ref, address),
+                Expanded(
+                  child: Text(
+                    l10n.deliveryAddressSheetTitle,
+                    style: const TextStyle(
+                      color: KitColors.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
+                ),
+                IconButton(
+                  key: const ValueKey<String>('delivery-address-close'),
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onPressed: () => Navigator.of(context).pop(),
+                  // A 44 square takes the tap; the drawn circle stays 28
+                  // (`DL-117`).
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 44,
+                    height: 44,
+                  ),
+                  icon: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: KitColors.line, width: 1.5),
+                    ),
+                    child: const SizedBox.square(
+                      dimension: 28,
+                      child: Icon(Icons.close, size: 16, color: KitColors.ink),
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            key: const ValueKey<String>('delivery-address-new'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
-              backgroundColor: KitColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+            const Divider(height: 15, thickness: 1, color: KitColors.line),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  RadioGroup<String>(
+                    groupValue: current.value?.id,
+                    onChanged: (String? id) {
+                      if (id != null) {
+                        choose(id);
+                      }
+                    },
+                    child: FoldingColumn<Address>(
+                      items: addresses,
+                      keyOf: (Address address) => address.id,
+                      itemBuilder: (BuildContext context, Address address) =>
+                          _AddressCard(
+                            address: address,
+                            chosen: address.id == current.value?.id,
+                            notRemoved: notRemoved?.id == address.id
+                                ? notRemoved!.failure
+                                : null,
+                            onChoose: () => choose(address.id),
+                            onEdit: () {
+                              Navigator.of(context).pop();
+                              widget.router.push<Object?>(
+                                AppPaths.customerAddress(address.id),
+                              );
+                            },
+                            onDelete: () => _remove(address),
+                          ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addressAddNew),
-            onPressed: () {
-              Navigator.of(context).pop();
-              addDeliveryAddress(router: router, container: container);
-            },
-          ),
-        ],
+            if (bar != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: InlineUndoBar(
+                  key: ObjectKey(bar),
+                  text: bar.text,
+                  actionLabel: l10n.undoAction,
+                  duration: addressUndoDuration,
+                  onUndo: bar.onUndo,
+                  onEnded: () => _barEnded(bar),
+                ),
+              ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const ValueKey<String>('delivery-address-new'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(54),
+                backgroundColor: KitColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addressAddNew),
+              onPressed: () {
+                Navigator.of(context).pop();
+                addDeliveryAddress(
+                  router: widget.router,
+                  container: widget.container,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  /// Asks first; the sheet stays open either way, and a failure shows in it.
-  static Future<void> _remove(
-    BuildContext context,
-    WidgetRef ref,
-    Address address,
-  ) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Text(l10n.addressRemoveConfirm),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancelButton),
-              ),
-              FilledButton(
-                key: const ValueKey<String>('address-remove-confirm'),
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(l10n.addressRemove),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (confirmed) {
-      await ref.read(addressListActionsProvider.notifier).remove(address.id);
+/// The sheet's own place for «Вернуть» (`DL-137`): a page's snack bar lies
+/// under the sheet's barrier, so the bar stands between the cards and the add
+/// button. One offer serves one removal.
+final class _SheetUndoOffer implements UndoOffer {
+  _SheetUndoOffer(this._sheet);
+
+  final _DeliveryAddressSheetState _sheet;
+  _SheetBar? _bar;
+
+  @override
+  Future<void> show({required String text, required VoidCallback onUndo}) {
+    final _SheetBar bar = _SheetBar(text: text, onUndo: onUndo);
+    _bar = bar;
+    _sheet._showBar(bar);
+    return bar.ended.future;
+  }
+
+  /// Ends the bar; a sheet that has closed has ended it already.
+  @override
+  void close() {
+    final _SheetBar? bar = _bar;
+    if (bar != null) {
+      _sheet._barEnded(bar);
     }
   }
 }
@@ -342,10 +431,14 @@ class _AddressCard extends StatelessWidget {
     required this.onChoose,
     required this.onEdit,
     required this.onDelete,
+    this.notRemoved,
   });
 
   final Address address;
   final bool chosen;
+
+  /// Why the last removal of this address did not go through, if it did not.
+  final ApiFailure? notRemoved;
   final VoidCallback onChoose;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -363,6 +456,12 @@ class _AddressCard extends StatelessWidget {
             apartment: address.apartment,
           );
     final String? landmark = address.landmark?.trim();
+    final ApiFailure? failure = notRemoved;
+    final String? failureText = failure == null
+        ? null
+        : failure is NetworkFailure
+        ? l10n.addressNotRemovedOffline
+        : l10n.addressNotRemovedOther;
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -431,35 +530,26 @@ class _AddressCard extends StatelessWidget {
                               fontSize: 12,
                             ),
                           ),
+                        if (failureText != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              failureText,
+                              style: const TextStyle(
+                                color: KitColors.danger,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                  PopupMenuButton<VoidCallback>(
-                    key: ValueKey<String>(
-                      'delivery-address-menu-${address.id}',
-                    ),
-                    icon: const Icon(Icons.more_vert, color: KitColors.ink),
-                    onSelected: (VoidCallback action) => action(),
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<VoidCallback>>[
-                          PopupMenuItem<VoidCallback>(
-                            key: ValueKey<String>(
-                              'delivery-address-edit-${address.id}',
-                            ),
-                            value: onEdit,
-                            child: Text(l10n.addressMenuEdit),
-                          ),
-                          PopupMenuItem<VoidCallback>(
-                            key: ValueKey<String>(
-                              'delivery-address-delete-${address.id}',
-                            ),
-                            value: onDelete,
-                            child: Text(
-                              l10n.addressRemove,
-                              style: const TextStyle(color: KitColors.danger),
-                            ),
-                          ),
-                        ],
+                  AddressMenuButton(
+                    address: address,
+                    keyPrefix: 'delivery-address',
+                    onEdit: onEdit,
+                    onDelete: onDelete,
                   ),
                 ],
               ),

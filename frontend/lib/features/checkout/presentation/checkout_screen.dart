@@ -75,6 +75,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// An address was chosen that the loaded list does not hold yet.
   bool _previewWhenListed = false;
 
+  /// The held address left the list while nothing was sent; if it is listed
+  /// again — a removal's «Вернуть» — its figures are asked for again
+  /// (`DL-137`).
+  bool _leftTheList = false;
+
   /// A tap on "Заказать" is being served: the wish is closed meanwhile, so
   /// what is placed is what was previewed (`DL-121`).
   bool _ordering = false;
@@ -149,7 +154,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     _subscriptions.add(
       ref.listenManual<AsyncValue<List<Address>>>(
-        addressesProvider,
+        shownAddressesProvider,
         (AsyncValue<List<Address>>? _, AsyncValue<List<Address>> next) =>
             _addressesChanged(next),
       ),
@@ -233,7 +238,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool get _sent => ref.read(preparedCheckoutProvider)?.sent ?? false;
 
   Address? _heldAddress() => ref
-      .read(addressesProvider)
+      .read(shownAddressesProvider)
       .value
       ?.where((Address a) => a.id == _addressId)
       .firstOrNull;
@@ -287,6 +292,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _adoptAddress(String id) {
     _revision++;
+    _leftTheList = false;
     setState(() {
       _addressId = id;
       _adopted = true;
@@ -316,13 +322,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return;
       }
       _revision++;
+      _leftTheList = true;
       ref.read(preparedCheckoutProvider.notifier).clear();
       setState(() {
         _shown = null;
         _replacedTotal = null;
       });
-    } else if (_previewWhenListed) {
+    } else if (_previewWhenListed || _leftTheList) {
       _previewWhenListed = false;
+      _leftTheList = false;
       _autoPreview();
     }
   }
@@ -553,7 +561,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         .read(deliveryAddressChoiceProvider(account))
         .value;
     final bool listed =
-        ref.read(addressesProvider).value?.any((Address a) => a.id == choice) ??
+        ref
+            .read(shownAddressesProvider)
+            .value
+            ?.any((Address a) => a.id == choice) ??
         false;
     if (choice != null && listed) {
       _pick(choice);
@@ -567,7 +578,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (placed != null) {
       return CheckoutPlacedView(order: placed, opensAt: _placedOpensAt);
     }
-    final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
+    final AsyncValue<List<Address>> addresses = ref.watch(
+      shownAddressesProvider,
+    );
     final bool busyPreview = ref.watch(checkoutPreviewProvider).isBusy;
     final bool busyPlace = ref.watch(placeOrderProvider).isBusy;
     final PreparedCheckout? prepared = ref.watch(preparedCheckoutProvider);
@@ -680,6 +693,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     CheckoutDeliveryCard(
                       address: held,
                       gone: gone,
+                      listFailed: addresses.hasError && !addresses.hasValue,
                       sentAddressLine: sent && held == null
                           ? prepared?.addressLine
                           : null,

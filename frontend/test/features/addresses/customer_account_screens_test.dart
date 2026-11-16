@@ -273,7 +273,10 @@ void main() {
       expect(draft.street, 'Navoiy');
       expect(draft.label, isNull);
       expect(draft.deliveryNote, 'Domofon 12');
-      expect(find.text(l10n(tester).addressSaved), findsOneWidget);
+      expect(
+        find.text(l10n(tester).addressAdded('Navoiy, 5A')),
+        findsOneWidget,
+      );
       expect(
         find.text('Navoiy, 5A'),
         findsOneWidget,
@@ -795,15 +798,23 @@ void main() {
       });
     }
 
-    testWidgets('removing an address asks first', (WidgetTester tester) async {
+    testWidgets('removing an address folds it and tells the server when the '
+        'bar ends', (WidgetTester tester) async {
       await openAddresses(tester);
 
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
-      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
-      expect(addresses.removed, isEmpty);
+      await tester.tap(byKey('address-menu-a-1'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-delete-a-1'));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(addresses.removed, isEmpty, reason: 'the bar is still up');
+      expect(find.text(l10n(tester).addressRemovedBar('Uy')), findsOneWidget);
+      expect(find.text(l10n(tester).addressNone), findsOneWidget);
 
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
-      await tapAndSettle(tester, byKey('address-remove-confirm'));
+      for (int i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
       expect(addresses.removed, <String>['a-1']);
       expect(find.text(l10n(tester).addressNone), findsOneWidget);
     });
@@ -851,7 +862,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(addresses.saved, hasLength(1));
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
-      expect(find.text(l10n(tester).addressSaved), findsOneWidget);
+      expect(
+        find.text(l10n(tester).addressAdded('Navoiy, 5A')),
+        findsOneWidget,
+      );
       expect(
         find.text('Navoiy, 5A'),
         findsOneWidget,
@@ -876,14 +890,25 @@ void main() {
       expect(find.text(l10n(tester).errorNetwork), findsNothing);
 
       addresses.removeFailure = const NetworkFailure();
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
-      await tapAndSettle(tester, byKey('address-remove-confirm'));
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      await tapAndSettle(tester, byKey('address-menu-a-1'));
+      await tester.tap(byKey('address-delete-a-1'));
+      for (int i = 0; i < 50; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(
+        find.text(l10n(tester).addressNotRemovedOffline),
+        findsOneWidget,
+        reason: 'the red line of the card that was not removed',
+      );
 
       await tapAndSettle(tester, byKey('address-new'));
       await confirmPoint(tester);
       expect(byKey('address-save'), findsOneWidget);
       expect(inForm(find.text(l10n(tester).errorNetwork)), findsNothing);
+      expect(
+        inForm(find.text(l10n(tester).addressNotRemovedOffline)),
+        findsNothing,
+      );
     });
 
     testWidgets('signing out while an address saves leaves nothing behind', (
@@ -902,7 +927,7 @@ void main() {
       addresses.hold!.complete();
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).addressSaved), findsNothing);
+      expect(find.text(l10n(tester).addressAdded('Navoiy, 5A')), findsNothing);
       expect(byKey('address-new'), findsNothing);
     });
 
@@ -1088,23 +1113,6 @@ void main() {
       expect(byKey('profile-name'), findsOneWidget);
     });
 
-    testWidgets('addresses that failed to load show progress on their retry', (
-      WidgetTester tester,
-    ) async {
-      addresses.loadFailure = const NetworkFailure();
-      await openAddresses(tester);
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
-
-      addresses.loadHold = Completer<void>();
-      await tester.tap(find.text(l10n(tester).retryButton));
-      await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-      addresses.loadHold!.complete();
-      await tester.pumpAndSettle();
-      expect(find.text('Uy'), findsOneWidget);
-    });
-
     testWidgets("another Customer's profile is not shown", (
       WidgetTester tester,
     ) async {
@@ -1233,10 +1241,16 @@ void main() {
         ApiError(status: 404, code: 'resource_not_found'),
       );
 
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
-      await tapAndSettle(tester, byKey('address-remove-confirm'));
+      await tapAndSettle(tester, byKey('address-menu-a-1'));
+      await tester.tap(byKey('address-delete-a-1'));
+      for (int i = 0; i < 50; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
 
+      expect(addresses.removed, <String>['a-1']);
       expect(find.text(l10n(tester).addressNone), findsOneWidget);
+      expect(find.text(l10n(tester).addressNotRemovedOffline), findsNothing);
+      expect(find.text(l10n(tester).addressNotRemovedOther), findsNothing);
     });
   });
 }

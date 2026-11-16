@@ -682,7 +682,22 @@
       }
     }
   },
-  "addressSaved": "Manzil saqlandi",
+  "addressAdded": "«{name}» manzili qo'shildi",
+  "@addressAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSavedNamed": "«{name}» manzili saqlandi",
+  "@addressSavedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "addressAddNew": "Yangi manzil qo'shish",
   "addressMenuEdit": "O'zgartirish",
   "addressLandmarkLine": "Mo'ljal: {landmark}",
@@ -702,7 +717,96 @@
     }
   },
   "addressRemove": "O'chirish",
-  "addressRemoveConfirm": "Bu manzil o'chirilsinmi?",
+  "addressesAdd": "Manzil qo'shish",
+  "addressesEmptyText": "Manzil qo'shing — kuryer buyurtmani o'sha yerga olib keladi. Nuqtani xaritada belgilaysiz.",
+  "addressesFailedTitle": "Manzillar yuklanmadi",
+  "addressesFailedOffline": "Internetni tekshirib, «Qayta urinish»ni bosing.",
+  "addressesFailedOther": "Yana bir bor urinib ko'ring: «Qayta urinish»ni bosing.",
+  "addressesLoadingSpoken": "Manzillar yuklanmoqda",
+  "addressDeliveryHere": "Shu yerga yetkaziladi",
+  "addressDeliveryHereSpoken": "shu yerga yetkaziladi",
+  "addressDeliverHere": "Shu yerga yetkazish",
+  "addressActionsSpoken": "Amallar: {name}",
+  "@addressActionsSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressDeliveryChosenSpoken": "Yetkazish: «{name}»",
+  "@addressDeliveryChosenSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressEditHint": "o'zgartirish",
+  "addressNotRemovedOffline": "Aloqa yo'q — manzil o'chirilmadi",
+  "addressNotRemovedOther": "Manzilni o'chirib bo'lmadi",
+  "addressRemovedBar": "«{name}» o'chirildi.",
+  "@addressRemovedBar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRemovedBarDelivery": "«{name}» o'chirildi. Endi yetkazish: «{next}».",
+  "@addressRemovedBarDelivery": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRemovedSpoken": "«{name}» manzili o'chirildi. Qaytarish — pastdagi tugma.",
+  "@addressRemovedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRemovedSpokenDelivery": "«{name}» manzili o'chirildi. Endi yetkazish: «{next}». Qaytarish — pastdagi tugma.",
+  "@addressRemovedSpokenDelivery": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRestoredSpoken": "«{name}» manzili qaytarildi",
+  "@addressRestoredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressNotRemovedSpoken": "Aloqa yo'q, «{name}» manzili o'chirilmadi",
+  "@addressNotRemovedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressNotRemovedOtherSpoken": "«{name}» manzili o'chirilmadi",
+  "@addressNotRemovedOtherSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring",
   "orderStatusNew": "Yangi",
   "orderStatusShoppingAssigned": "Yig'uvchi tayinlangan",

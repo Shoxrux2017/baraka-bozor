@@ -33,12 +33,12 @@ Rules for every stage:
 | 14 | Cancellation | 12 | cancel reason | Merged (PR #136) |
 | 15 | Rating | 10 | `reviewed_at` | Merged (PR #137) |
 | 16 | Profile and name | 18 | — | Merged (PR #138) |
-| 17 | Documents | 9 | — | Planned |
+| 17 | Documents | 9 | — | Merged (PR #140) |
 | 18 | Addresses | 9 | — | Planned |
 | 19 | New address | 12 | reverse geocoding, zone | Planned |
 | 20 | Sign-in | 14 | tries left | Planned |
 | 21 | Account deletion | 11 | erasure race | Planned |
-| 22 | System screens | 10 | — | Planned |
+| 22 | System screens | 10 | — | Merged (PR #140) |
 
 Item `fav-3` is split: its tab part in stage 2, its list part in stage 10.
 
@@ -371,7 +371,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 3 review, minor: the cart footer's fit check hard-codes the button's 18 px side padding and the 12 + 1 + 12 divider. Ruling: correct today; whoever changes the button updates the check.
 - Stage 3 review, out of scope: the product screen still saves its quantity through the same cart controllers, so a queue send that meets its save on the same line is refused as busy and the queue's wish is dropped quietly. Ruling: stage 5 (`product-3`) moves the product screen onto the queue. Fixed in stage 5: the card, the cart line and the screen share one queue request per product (`DL-122` (3)).
 - Stage 3 review, for the Owner's look: at 100 % text on a 360 dp phone a six-digit line sum leaves about 92 px beside the stepper, so many lines stand their sum over the stepper rather than beside it as drawn. Ruling: the walk took a 360 dp screenshot (every line stacks there, five-digit sums too); the Owner chose to keep the stacked line (`DL-120` (1)).
-- Stage 4 review, minor: the checkout's address card gets only `address: null` and so cannot tell "no addresses" from "the list failed to load"; in the latter its link reads «Добавить» while it reloads the list (its title was already «Добавить адрес доставки» there before). Ruling: rare and harmless (the tap reloads); the card needs a "list failed" flag, taken with stage 18 or 19 when the address pieces are touched.
+- Stage 4 review, minor: the checkout's address card gets only `address: null` and so cannot tell "no addresses" from "the list failed to load"; in the latter its link reads «Добавить» while it reloads the list (its title was already «Добавить адрес доставки» there before). Ruling: rare and harmless (the tap reloads); the card needs a "list failed" flag, taken with stage 18 or 19 when the address pieces are touched. Fixed in stage 18: `CheckoutDeliveryCard.listFailed` says «Адрес не загрузился — повторить» with the link «Повторить» (`DL-137` (11)).
 - Stage 4 review, minor: `Fold` keeps the drawn height on a reversal but not the opacity (fold and unfold use different opacity curves), so the opacity steps by about 0.05–0.1 at the flip. Ruling: barely visible; derive the opacity the same way as the height when `Fold` is next touched.
 - Stage 4, minor: at text × 3 (iOS accessibility sizes; Android stops at × 2) a section title of the checkout overflows. Ruling: beyond the × 2 the tests pin; check the iOS accessibility sizes in the iOS pass before release.
 - Stage 4 walk, minor: the closed wish field was not dimmed, although the drawing has `.w-in:disabled{opacity:.45}`. Fixed in stage 5: `CheckoutWishField` is drawn at opacity 0.45 while it is not enabled (`DL-122`).
@@ -426,3 +426,5 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 16 re-review, P3: if the editor's form were rebuilt under another profile id while a save runs (an account switch with the editor open), the title would keep the word it held when the save started. Ruling: another account's answer is already dropped (`DL-27` (2)), and the switch cannot happen while the editor covers the screen; kept.
 - Stages 17 + 22 re-review, P3: a quiet check already out when the app goes to the background re-arms the retry screen's series when it ends, so a phone left on «Нет связи» in the background can keep checking every 30 s until the system freezes the app. Ruling: it needs a check in flight at the moment of leaving (a few seconds in every 30), each check is one small `/auth/me`, and the resume check runs anyway; fixed with the next change to that screen.
 - Stages 17 + 22 re-review, P3: a capped check's late answer can still be applied after the session provider was rebuilt. Ruling: nothing in the app rebuilds that provider (only tests invalidate it), and the answer lands only while the state is still «Нет связи»; kept.
+- Stage 18 final review, P3: after a save the list finds the edited card to bring into view by walking its elements for the card's key. Ruling: it works and is tested; a `GlobalKey` on the pending card with `Scrollable.ensureVisible` is plainer, taken when the list is next touched.
+- Stage 18 final review, P3: `clearSnackBars()` elsewhere (the cart's and favourites' failure bars) drops a queued address-removal bar without completing its `closed`, so that removal waits instead of being sent when its bar would have ended. Ruling: it is still sent at the next removal or when the app goes out of sight (`flush`), and stays hidden meanwhile; never lost, never sent twice.

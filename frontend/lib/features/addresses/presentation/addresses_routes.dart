@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import 'addresses_list_screen.dart';
 import 'addresses_screens.dart';
 
 /// The Customer's addresses, opened from the profile.

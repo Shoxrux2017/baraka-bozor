@@ -1401,7 +1401,14 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get addressSaved => 'Адрес сохранён';
+  String addressAdded(String name) {
+    return 'Адрес «$name» добавлен';
+  }
+
+  @override
+  String addressSavedNamed(String name) {
+    return 'Адрес «$name» сохранён';
+  }
 
   @override
   String get addressAddNew => 'Добавить новый адрес';
@@ -1423,7 +1430,87 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressRemove => 'Удалить';
 
   @override
-  String get addressRemoveConfirm => 'Удалить этот адрес?';
+  String get addressesAdd => 'Добавить адрес';
+
+  @override
+  String get addressesEmptyText =>
+      'Добавьте адрес — курьер привезёт заказ туда. Точку отметите на карте.';
+
+  @override
+  String get addressesFailedTitle => 'Не удалось загрузить адреса';
+
+  @override
+  String get addressesFailedOffline =>
+      'Проверьте интернет и нажмите «Повторить».';
+
+  @override
+  String get addressesFailedOther => 'Попробуйте ещё раз: нажмите «Повторить».';
+
+  @override
+  String get addressesLoadingSpoken => 'Загружаем адреса';
+
+  @override
+  String get addressDeliveryHere => 'Доставка сюда';
+
+  @override
+  String get addressDeliveryHereSpoken => 'доставка сюда';
+
+  @override
+  String get addressDeliverHere => 'Доставлять сюда';
+
+  @override
+  String addressActionsSpoken(String name) {
+    return 'Действия: $name';
+  }
+
+  @override
+  String addressDeliveryChosenSpoken(String name) {
+    return 'Доставка: «$name»';
+  }
+
+  @override
+  String get addressEditHint => 'изменить';
+
+  @override
+  String get addressNotRemovedOffline => 'Нет связи — адрес не удалён';
+
+  @override
+  String get addressNotRemovedOther => 'Не удалось удалить адрес';
+
+  @override
+  String addressRemovedBar(String name) {
+    return 'Удалили «$name».';
+  }
+
+  @override
+  String addressRemovedBarDelivery(String name, String next) {
+    return 'Удалили «$name». Доставка теперь: «$next».';
+  }
+
+  @override
+  String addressRemovedSpoken(String name) {
+    return 'Адрес «$name» удалён. Вернуть — кнопка внизу.';
+  }
+
+  @override
+  String addressRemovedSpokenDelivery(String name, String next) {
+    return 'Адрес «$name» удалён. Доставка теперь: «$next». Вернуть — кнопка внизу.';
+  }
+
+  @override
+  String addressRestoredSpoken(String name) {
+    return 'Адрес «$name» возвращён';
+  }
+
+  @override
+  String addressNotRemovedSpoken(String name) {
+    return 'Нет связи, адрес «$name» не удалён';
+  }
+
+  @override
+  String addressNotRemovedOtherSpoken(String name) {
+    return 'Адрес «$name» не удалён';
+  }
 
   @override
   String get errorConfigurationIncomplete =>

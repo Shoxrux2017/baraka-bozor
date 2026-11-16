@@ -1388,7 +1388,14 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get addressSaved => 'Manzil saqlandi';
+  String addressAdded(String name) {
+    return '«$name» manzili qo\'shildi';
+  }
+
+  @override
+  String addressSavedNamed(String name) {
+    return '«$name» manzili saqlandi';
+  }
 
   @override
   String get addressAddNew => 'Yangi manzil qo\'shish';
@@ -1410,7 +1417,88 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressRemove => 'O\'chirish';
 
   @override
-  String get addressRemoveConfirm => 'Bu manzil o\'chirilsinmi?';
+  String get addressesAdd => 'Manzil qo\'shish';
+
+  @override
+  String get addressesEmptyText =>
+      'Manzil qo\'shing — kuryer buyurtmani o\'sha yerga olib keladi. Nuqtani xaritada belgilaysiz.';
+
+  @override
+  String get addressesFailedTitle => 'Manzillar yuklanmadi';
+
+  @override
+  String get addressesFailedOffline =>
+      'Internetni tekshirib, «Qayta urinish»ni bosing.';
+
+  @override
+  String get addressesFailedOther =>
+      'Yana bir bor urinib ko\'ring: «Qayta urinish»ni bosing.';
+
+  @override
+  String get addressesLoadingSpoken => 'Manzillar yuklanmoqda';
+
+  @override
+  String get addressDeliveryHere => 'Shu yerga yetkaziladi';
+
+  @override
+  String get addressDeliveryHereSpoken => 'shu yerga yetkaziladi';
+
+  @override
+  String get addressDeliverHere => 'Shu yerga yetkazish';
+
+  @override
+  String addressActionsSpoken(String name) {
+    return 'Amallar: $name';
+  }
+
+  @override
+  String addressDeliveryChosenSpoken(String name) {
+    return 'Yetkazish: «$name»';
+  }
+
+  @override
+  String get addressEditHint => 'o\'zgartirish';
+
+  @override
+  String get addressNotRemovedOffline => 'Aloqa yo\'q — manzil o\'chirilmadi';
+
+  @override
+  String get addressNotRemovedOther => 'Manzilni o\'chirib bo\'lmadi';
+
+  @override
+  String addressRemovedBar(String name) {
+    return '«$name» o\'chirildi.';
+  }
+
+  @override
+  String addressRemovedBarDelivery(String name, String next) {
+    return '«$name» o\'chirildi. Endi yetkazish: «$next».';
+  }
+
+  @override
+  String addressRemovedSpoken(String name) {
+    return '«$name» manzili o\'chirildi. Qaytarish — pastdagi tugma.';
+  }
+
+  @override
+  String addressRemovedSpokenDelivery(String name, String next) {
+    return '«$name» manzili o\'chirildi. Endi yetkazish: «$next». Qaytarish — pastdagi tugma.';
+  }
+
+  @override
+  String addressRestoredSpoken(String name) {
+    return '«$name» manzili qaytarildi';
+  }
+
+  @override
+  String addressNotRemovedSpoken(String name) {
+    return 'Aloqa yo\'q, «$name» manzili o\'chirilmadi';
+  }
+
+  @override
+  String addressNotRemovedOtherSpoken(String name) {
+    return '«$name» manzili o\'chirilmadi';
+  }
 
   @override
   String get errorConfigurationIncomplete =>

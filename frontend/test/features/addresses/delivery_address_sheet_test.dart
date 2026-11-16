@@ -4,6 +4,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/addresses_screens.dart';
+import 'package:baraka_bozor/core/widgets/undo_bar.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,7 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// The delivery-address sheet in the kit look (drawings 21, 21a), opened
 /// from the home header through the real router.
@@ -64,12 +66,14 @@ void main() {
   Future<void> openSheet(
     WidgetTester tester, {
     Locale device = const Locale('ru'),
+    TextScaler? textScaler,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
         tokens: tokens,
         repository: auth,
         device: device,
+        textScaler: textScaler,
         catalog: FakeCatalogRepository(),
         addresses: addresses,
         preferences: preferences,
@@ -186,57 +190,237 @@ void main() {
     expect(form.addressId, 'a-work');
   });
 
-  testWidgets('delete asks, removes and stays', (WidgetTester tester) async {
-    await openSheet(tester);
-    await openMenu(tester, 'a-home');
-    await tester.tap(byKey('delivery-address-delete-a-home'));
+  Future<void> deleteCard(WidgetTester tester, String id) async {
+    await openMenu(tester, id);
+    await tester.tap(byKey('delivery-address-delete-$id'));
+    await tester.pump();
+    // The menu closes first, then the card folds and the bar comes in.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+  }
+
+  /// Past the bar's end: 5 s from when it has come in, plus its exit.
+  Future<void> pastBar(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
-    expect(find.text('Удалить этот адрес?'), findsOneWidget);
-    expect(addresses.removed, isEmpty);
+  }
 
-    await tester.tap(byKey('address-remove-confirm'));
-    await tester.pumpAndSettle();
+  Finder undoButton(WidgetTester tester) => find.descendant(
+    of: byKey('delivery-address-sheet'),
+    matching: find.text(l10n(tester).undoAction),
+  );
 
-    expect(addresses.removed, <String>['a-home']);
-    expect(byKey('delivery-address-sheet'), findsOneWidget);
-    expect(byKey('delivery-address-a-home'), findsNothing);
-    // The chosen address is gone: the newest one takes its place (DL-75).
-    expect(chosenInSheet(tester), 'a-work');
-  });
-
-  testWidgets('cancelling the question removes nothing', (
+  testWidgets('delete folds the card at once and offers Вернуть in the sheet', (
     WidgetTester tester,
   ) async {
     await openSheet(tester);
-    await openMenu(tester, 'a-work');
-    await tester.tap(byKey('delivery-address-delete-a-work'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n(tester).cancelButton));
-    await tester.pumpAndSettle();
+    await deleteCard(tester, 'a-work');
+
+    // No question; the card is gone and the bar stands inside the sheet.
+    expect(find.text('Удалить этот адрес?'), findsNothing);
+    expect(byKey('delivery-address-a-work'), findsNothing);
+    expect(find.text('Удалили «Работа».'), findsOneWidget);
+    expect(undoButton(tester), findsOneWidget);
+    expect(addresses.removed, isEmpty);
+
+    await tester.pump(const Duration(seconds: 4));
+    expect(addresses.removed, isEmpty);
+    await pastBar(tester);
+
+    expect(addresses.removed, <String>['a-work']);
+    expect(byKey('delivery-address-sheet'), findsOneWidget);
+    expect(undoButton(tester), findsNothing);
+  });
+
+  testWidgets('Вернуть in the sheet brings the card back and sends nothing', (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester);
+    await deleteCard(tester, 'a-work');
+    await tester.tap(undoButton(tester));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await pastBar(tester);
 
     expect(addresses.removed, isEmpty);
     expect(byKey('delivery-address-a-work'), findsOneWidget);
+    expect(undoButton(tester), findsNothing);
   });
 
-  testWidgets('a refused delete shows in the sheet', (
+  testWidgets('closing the sheet ends the bar and sends the removal', (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester);
+    await deleteCard(tester, 'a-work');
+    expect(addresses.removed, isEmpty);
+
+    await tester.tap(byKey('delivery-address-close'));
+    await tester.pumpAndSettle();
+
+    expect(byKey('delivery-address-sheet'), findsNothing);
+    expect(addresses.removed, <String>['a-work']);
+    expect(tester.takeException(), isNull);
+  });
+
+  group('with many addresses on a small phone', () {
+    Future<void> openMany(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      addresses.rows = <Address>[
+        for (int i = 0; i < 12; i++)
+          address(id: 'a-$i', label: 'Метка $i', street: 'Ул $i', house: '$i'),
+      ];
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-0';
+      await openSheet(tester);
+    }
+
+    testWidgets('the bar and the add button stay fully on screen', (
+      WidgetTester tester,
+    ) async {
+      await openMany(tester);
+      await deleteCard(tester, 'a-0');
+
+      final Rect bar = tester.getRect(find.byType(InlineUndoBar));
+      final Rect add = tester.getRect(byKey('delivery-address-new'));
+      expect(bar.top, greaterThanOrEqualTo(0));
+      expect(bar.bottom, lessThanOrEqualTo(640));
+      expect(bar.bottom, lessThanOrEqualTo(add.top));
+      expect(add.bottom, lessThanOrEqualTo(640));
+      expect(undoButton(tester), findsOneWidget);
+    });
+
+    testWidgets('closing the sheet sends the removal once', (
+      WidgetTester tester,
+    ) async {
+      await openMany(tester);
+      await deleteCard(tester, 'a-0');
+      expect(addresses.removed, isEmpty);
+
+      await tester.tap(byKey('delivery-address-close'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delivery-address-sheet'), findsNothing);
+      expect(addresses.removed, <String>['a-0']);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('scrolling the cards never ends the bar', (
+      WidgetTester tester,
+    ) async {
+      await openMany(tester);
+      await deleteCard(tester, 'a-1');
+
+      await tester.drag(byKey('delivery-address-a-2'), const Offset(0, -600));
+      await tester.pump();
+      await tester.drag(byKey('delivery-address-a-9'), const Offset(0, 600));
+      await tester.pump();
+
+      expect(undoButton(tester), findsOneWidget);
+      expect(addresses.removed, isEmpty);
+      expect(tester.takeException(), isNull);
+      await pastBar(tester);
+      expect(addresses.removed, <String>['a-1']);
+    });
+  });
+
+  testWidgets('the red line stands after the landmark', (
+    WidgetTester tester,
+  ) async {
+    addresses.rows = <Address>[
+      address(id: 'a-home', label: 'Дом', landmark: 'у аптеки'),
+      address(id: 'a-work', label: 'Работа', landmark: 'у банка'),
+    ];
+    addresses.removeFailure = const NetworkFailure();
+    await openSheet(tester);
+    await deleteCard(tester, 'a-work');
+    await pastBar(tester);
+
+    expect(
+      tester.getTopLeft(find.text('Нет связи — адрес не удалён')).dy,
+      greaterThan(tester.getTopLeft(find.text('Ориентир: у банка')).dy),
+    );
+  });
+
+  for (final (String scale, TextScaler scaler) in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('x2', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets('the sheet with its bar meets the tap target guideline at '
+        '$scale', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await openSheet(tester, textScaler: scaler);
+      await deleteCard(tester, 'a-work');
+      expect(undoButton(tester), findsOneWidget);
+
+      expect(tester.takeException(), isNull);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      semantics.dispose();
+    });
+  }
+
+  testWidgets('offline the card returns in the sheet with why', (
     WidgetTester tester,
   ) async {
     addresses.removeFailure = const NetworkFailure();
     await openSheet(tester);
-    await openMenu(tester, 'a-work');
-    await tester.tap(byKey('delivery-address-delete-a-work'));
-    await tester.pumpAndSettle();
-    await tester.tap(byKey('address-remove-confirm'));
-    await tester.pumpAndSettle();
+    await deleteCard(tester, 'a-work');
+    await pastBar(tester);
 
     expect(
       find.descendant(
-        of: byKey('delivery-address-sheet'),
-        matching: byKey('failure-message'),
+        of: byKey('delivery-address-a-work'),
+        matching: find.text('Нет связи — адрес не удалён'),
       ),
       findsOneWidget,
     );
-    expect(byKey('delivery-address-a-work'), findsOneWidget);
+    expect(byKey('delivery-address-sheet'), findsOneWidget);
+  });
+
+  testWidgets('deleting the chosen address moves the radio to the newest', (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester);
+    await deleteCard(tester, 'a-home');
+
+    // The newest takes its place (DL-75), and the bar says so.
+    expect(chosenInSheet(tester), 'a-work');
+    expect(find.textContaining('Доставка теперь'), findsOneWidget);
+
+    await tester.tap(undoButton(tester));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(chosenInSheet(tester), 'a-home');
+    await pastBar(tester);
+    expect(addresses.removed, isEmpty);
+  });
+
+  testWidgets("the sheet's menu has icons and no Доставлять сюда", (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester);
+    await openMenu(tester, 'a-work');
+
+    expect(byKey('delivery-address-edit-a-work'), findsOneWidget);
+    expect(byKey('delivery-address-choose-a-work'), findsNothing);
+    expect(find.text('Доставлять сюда'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('delivery-address-edit-a-work'),
+        matching: find.byIcon(Icons.edit_outlined),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('delivery-address-delete-a-work'),
+        matching: find.byIcon(Icons.delete_outline),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('close closes', (WidgetTester tester) async {

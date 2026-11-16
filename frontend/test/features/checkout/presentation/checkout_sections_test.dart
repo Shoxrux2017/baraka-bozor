@@ -159,6 +159,31 @@ void main() {
     },
   );
 
+  testWidgets('a list that failed says so on the address card', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        CheckoutDeliveryCard(
+          address: null,
+          gone: false,
+          listFailed: true,
+          recipient: aziz,
+          onChange: () {},
+        ),
+      ),
+    );
+    expect(find.text(ru.deliveryAddressRetry), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('checkout-address-change'),
+        matching: find.text(ru.retryButton),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(ru.deliveryAddressAdd), findsNothing);
+  });
+
   testWidgets('the recipient row hides without a name', (
     WidgetTester tester,
   ) async {

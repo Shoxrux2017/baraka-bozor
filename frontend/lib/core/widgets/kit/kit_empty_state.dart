@@ -4,7 +4,9 @@ import '../../theme/kit_colors.dart';
 import 'kit_buttons.dart';
 
 /// An empty list: a green circle with an icon, a title, a short text and an
-/// optional filled button. It scrolls when the text is tall.
+/// optional filled button, which may carry an icon before its label. The
+/// [quiet] face is grey, for a failure (`DL-137`). It scrolls when the text is
+/// tall.
 class KitEmptyState extends StatelessWidget {
   const KitEmptyState({
     required this.icon,
@@ -13,6 +15,8 @@ class KitEmptyState extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.actionKey,
+    this.actionIcon,
+    this.quiet = false,
     super.key,
   });
 
@@ -22,6 +26,8 @@ class KitEmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final Key? actionKey;
+  final IconData? actionIcon;
+  final bool quiet;
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +39,15 @@ class KitEmptyState extends StatelessWidget {
           Container(
             width: 96,
             height: 96,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: KitColors.primaryWash,
+              color: quiet ? KitColors.chip : KitColors.primaryWash,
             ),
-            child: Icon(icon, size: 44, color: KitColors.primaryDark),
+            child: Icon(
+              icon,
+              size: 44,
+              color: quiet ? KitColors.muted : KitColors.primaryDark,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -65,7 +75,16 @@ class KitEmptyState extends StatelessWidget {
               key: actionKey,
               style: kitFilled(height: 50),
               onPressed: onAction,
-              child: Text(actionLabel!),
+              child: actionIcon == null
+                  ? Text(actionLabel!)
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(actionIcon, size: 22),
+                        const SizedBox(width: 10),
+                        Flexible(child: Text(actionLabel!)),
+                      ],
+                    ),
             ),
           ],
         ],
