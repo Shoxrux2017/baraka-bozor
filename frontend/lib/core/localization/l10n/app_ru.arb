@@ -3544,6 +3544,8 @@
   "unreachableOfflineBody": "Проверьте мобильный интернет или Wi‑Fi. Приложение откроется само, когда связь появится.",
   "unreachableServerTitle": "BarakaBozor сейчас недоступен",
   "unreachableServerBody": "Интернет на телефоне в порядке. Попробуйте через пару минут — приложение тоже проверит само.",
+  "unreachableOfflineBodyWeb": "Проверьте подключение к интернету. Панель откроется сама, когда связь появится.",
+  "unreachableServerBodyWeb": "Интернет в порядке. Попробуйте через пару минут — панель тоже проверит сама.",
   "unreachableChecking": "Проверяем…",
   "unreachableCheckingSpoken": "Проверяем связь…",
   "unreachableStillOffline": "Связи пока нет",

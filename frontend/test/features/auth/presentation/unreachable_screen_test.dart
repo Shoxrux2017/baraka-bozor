@@ -38,9 +38,11 @@ void main() {
     WidgetTester tester, {
     DateTime Function()? clock,
     TextScaler? textScaler,
+    Surface surface = Surface.mobile,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
+        surface: surface,
         tokens: tokens,
         repository: repository,
         connectivity: connectivity,
@@ -290,6 +292,50 @@ void main() {
     connectivity.regain();
     await tester.pump();
     expect(asked(), first + 2);
+    await leave(tester);
+  });
+
+  testWidgets('the panel says «Нет связи» in panel words', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, surface: Surface.web);
+    expect(
+      find.text(
+        'Проверьте подключение к интернету. Панель откроется сама, когда '
+        'связь появится.',
+      ),
+      findsOneWidget,
+    );
+    await leave(tester);
+
+    repository.identities[SessionSlot.staff] = refusal(500, 'server_error');
+    await open(tester, surface: Surface.web);
+    expect(
+      find.text(
+        'Интернет в порядке. Попробуйте через пару минут — панель тоже '
+        'проверит сама.',
+      ),
+      findsOneWidget,
+    );
+    await leave(tester);
+  });
+
+  testWidgets('the series sleeps in the background and wakes on return', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    final int first = asked();
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump(const Duration(minutes: 2));
+    expect(asked(), first, reason: 'nothing is asked in the background');
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(asked(), first + 1);
     await leave(tester);
   });
 

@@ -4278,6 +4278,8 @@
   "unreachableOfflineBody": "Mobil internet yoki Wi‑Fi'ni tekshiring. Aloqa paydo bo'lganda ilova o'zi ochiladi.",
   "unreachableServerTitle": "BarakaBozor hozir ishlamayapti",
   "unreachableServerBody": "Telefoningizda internet bor. Bir necha daqiqadan so'ng urinib ko'ring — ilova ham o'zi tekshiradi.",
+  "unreachableOfflineBodyWeb": "Internet aloqasini tekshiring. Aloqa paydo bo'lganda panel o'zi ochiladi.",
+  "unreachableServerBodyWeb": "Internet ishlayapti. Bir necha daqiqadan so'ng urinib ko'ring — panel ham o'zi tekshiradi.",
   "unreachableChecking": "Tekshirilmoqda…",
   "unreachableCheckingSpoken": "Aloqa tekshirilmoqda…",
   "unreachableStillOffline": "Hali aloqa yo'q",

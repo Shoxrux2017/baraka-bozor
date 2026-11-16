@@ -5606,6 +5606,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Интернет на телефоне в порядке. Попробуйте через пару минут — приложение тоже проверит само.';
 
   @override
+  String get unreachableOfflineBodyWeb =>
+      'Проверьте подключение к интернету. Панель откроется сама, когда связь появится.';
+
+  @override
+  String get unreachableServerBodyWeb =>
+      'Интернет в порядке. Попробуйте через пару минут — панель тоже проверит сама.';
+
+  @override
   String get unreachableChecking => 'Проверяем…';
 
   @override

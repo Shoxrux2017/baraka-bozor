@@ -8996,6 +8996,18 @@ abstract class AppLocalizations {
   /// **'Telefoningizda internet bor. Bir necha daqiqadan so\'ng urinib ko\'ring — ilova ham o\'zi tekshiradi.'**
   String get unreachableServerBody;
 
+  /// No description provided for @unreachableOfflineBodyWeb.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet aloqasini tekshiring. Aloqa paydo bo\'lganda panel o\'zi ochiladi.'**
+  String get unreachableOfflineBodyWeb;
+
+  /// No description provided for @unreachableServerBodyWeb.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet ishlayapti. Bir necha daqiqadan so\'ng urinib ko\'ring — panel ham o\'zi tekshiradi.'**
+  String get unreachableServerBodyWeb;
+
   /// No description provided for @unreachableChecking.
   ///
   /// In uz, this message translates to:

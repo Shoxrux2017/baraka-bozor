@@ -5510,6 +5510,14 @@ class AppLocalizationsUz extends AppLocalizations {
       'Telefoningizda internet bor. Bir necha daqiqadan so\'ng urinib ko\'ring — ilova ham o\'zi tekshiradi.';
 
   @override
+  String get unreachableOfflineBodyWeb =>
+      'Internet aloqasini tekshiring. Aloqa paydo bo\'lganda panel o\'zi ochiladi.';
+
+  @override
+  String get unreachableServerBodyWeb =>
+      'Internet ishlayapti. Bir necha daqiqadan so\'ng urinib ko\'ring — panel ham o\'zi tekshiradi.';
+
+  @override
   String get unreachableChecking => 'Tekshirilmoqda…';
 
   @override

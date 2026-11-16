@@ -11,6 +11,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/submit_button.dart';
+import '../domain/app_user.dart';
 import 'auth_scaffold.dart';
 
 /// A stored session the server could not confirm: the tokens are kept and
@@ -64,8 +65,21 @@ class _UnreachableScreenState extends ConsumerState<UnreachableScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkQuietly();
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        // Nothing is asked from the background (`DL-136` (15)).
+        _timer?.cancel();
+        _timer = null;
+      case AppLifecycleState.resumed:
+        _checkQuietly();
+        // The check above re-arms only when nothing else has.
+        if (_timer == null) {
+          _arm();
+        }
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        break;
     }
   }
 
@@ -143,15 +157,16 @@ class _UnreachableScreenState extends ConsumerState<UnreachableScreen>
 /// icon, words that tell a dead network from a broken server, the button and,
 /// once a pressed check has failed, when it was. A null [onRetry] draws it
 /// the same, but nothing answers a touch.
-class UnreachableView extends StatelessWidget {
+class UnreachableView extends ConsumerWidget {
   const UnreachableView({required this.state, this.onRetry, super.key});
 
   final SessionUnreachable state;
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool panel = ref.watch(surfaceProvider) == Surface.web;
     final bool offline = state.cause == UnreachableCause.offline;
     final DateTime? checkedAt = state.checkedAt;
     final String result = offline
@@ -167,7 +182,12 @@ class UnreachableView extends StatelessWidget {
       title: offline
           ? l10n.unreachableOfflineTitle
           : l10n.unreachableServerTitle,
-      body: offline ? l10n.unreachableOfflineBody : l10n.unreachableServerBody,
+      body: switch ((offline, panel)) {
+        (true, true) => l10n.unreachableOfflineBodyWeb,
+        (true, false) => l10n.unreachableOfflineBody,
+        (false, true) => l10n.unreachableServerBodyWeb,
+        (false, false) => l10n.unreachableServerBody,
+      },
       button: IgnorePointer(
         ignoring: onRetry == null,
         child: _RetryButton(
