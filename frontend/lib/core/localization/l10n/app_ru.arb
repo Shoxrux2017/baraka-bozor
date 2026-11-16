@@ -49,7 +49,6 @@
     }
   },
   "cancelButton": "Отмена",
-  "wrongSurfaceTitle": "Откройте веб-панель",
   "staffLoginTitle": "Вход для сотрудников",
   "passwordLabel": "Пароль",
   "passwordRequired": "Введите пароль",
@@ -64,7 +63,6 @@
   "savePasswordButton": "Сохранить пароль",
   "passwordChanged": "Пароль изменён",
   "logoutButton": "Выйти",
-  "wrongSurfaceMobile": "Этот аккаунт работает в браузере на компьютере. Войдите через веб-панель BarakaBozor",
   "wrongSurfaceWeb": "Этот аккаунт работает в приложении BarakaBozor на телефоне",
   "languageLabel": "Язык",
   "languageUzbek": "O'zbekcha",
@@ -2435,7 +2433,6 @@
   "showPassword": "Показать пароль",
   "hidePassword": "Скрыть пароль",
   "back": "Назад",
-  "wrongSurfaceWebTitle": "Откройте приложение",
   "catalogApproxPrice": "≈ {price}",
   "catalogPerUnit": "за {unit}",
   "catalogUnavailable": "Нет в продаже",
@@ -3572,5 +3569,48 @@
       }
     }
   },
-  "unreachableOpening": "Связь есть, открываем приложение"
+  "unreachableOpening": "Связь есть, открываем приложение",
+  "wrongSurfacePanelTitle": "Откройте панель на компьютере",
+  "wrongSurfacePanelWho": "Вы вошли как {role, select, operator{оператор} admin{администратор} manager{менеджер} other{сотрудник}} — {name}. {role, select, operator{Оператор} admin{Администратор} manager{Менеджер} other{Сотрудник}} работает в панели управления, в браузере на компьютере.",
+  "@wrongSurfacePanelWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfacePanelWhoNameless": "Вы вошли как {role, select, operator{оператор} admin{администратор} manager{менеджер} other{сотрудник}}. {role, select, operator{Оператор} admin{Администратор} manager{Менеджер} other{Сотрудник}} работает в панели управления, в браузере на компьютере.",
+  "@wrongSurfacePanelWhoNameless": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfacePanelShop": "На этом телефоне можно делать покупки — войдите как покупатель с тем же номером.",
+  "wrongSurfaceSignInCustomer": "Войти как покупатель",
+  "wrongSurfaceAppTitle": "Откройте приложение на телефоне",
+  "wrongSurfaceAppWho": "Вы вошли как {role, select, shopper{сборщик} courier{курьер} customer{покупатель} other{пользователь}} — {name}. {role, select, shopper{Сборщик работает} courier{Курьер работает} customer{Покупатель делает заказы} other{Этот аккаунт работает}} в приложении BarakaBozor на телефоне.",
+  "@wrongSurfaceAppWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfaceAppWhoNameless": "Вы вошли как {role, select, shopper{сборщик} courier{курьер} customer{покупатель} other{пользователь}}. {role, select, shopper{Сборщик работает} courier{Курьер работает} customer{Покупатель делает заказы} other{Этот аккаунт работает}} в приложении BarakaBozor на телефоне.",
+  "@wrongSurfaceAppWhoNameless": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfaceOtherAccount": "Войти другим аккаунтом"
 }

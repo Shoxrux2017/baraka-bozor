@@ -472,11 +472,14 @@ void main() {
       final AppLocalizations t = l10n(tester);
       expect(pageColor(tester), KitColors.page);
       expect(
-        find.descendant(of: card, matching: find.text(t.wrongSurfaceWebTitle)),
+        find.descendant(of: card, matching: find.text(t.wrongSurfaceAppTitle)),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: card, matching: find.text(t.wrongSurfaceWeb)),
+        find.descendant(
+          of: card,
+          matching: find.byKey(key('wrong-surface-text')),
+        ),
         findsOneWidget,
       );
       final Finder icon = find.byWidgetPredicate(
@@ -487,11 +490,13 @@ void main() {
       expect(
         find.descendant(
           of: card,
-          matching: find.byWidgetPredicate(
-            (Widget w) => w is OutlinedButton && w.key == key('logout-button'),
-          ),
+          matching: find.byKey(key('wrong-surface-button')),
         ),
         findsOneWidget,
+      );
+      expect(
+        tester.getSize(find.byKey(key('wrong-surface-button'))).height,
+        greaterThanOrEqualTo(52),
       );
     });
 

@@ -509,7 +509,10 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// A 40 px circle with a hairline border around one icon button.
+/// A 40 px circle with a hairline border around one icon button. On the
+/// panel's page ([filled]) the circle is drawn 44 over the same 40 px slot,
+/// so its tap target meets the iOS guideline and the bar keeps its height
+/// (`DL-136`); the hairline is drawn over the circle, not inside it.
 class _CircleButton extends StatelessWidget {
   const _CircleButton({required this.child, this.filled = false});
 
@@ -518,15 +521,36 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
+    final double side = filled ? 44 : 40;
+    final Widget circle = Container(
+      width: side,
+      height: side,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: filled ? Colors.white : null,
-        border: Border.all(color: KitColors.line),
+        border: filled ? null : Border.all(color: KitColors.line),
       ),
+      foregroundDecoration: filled
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: KitColors.line),
+            )
+          : null,
       child: ClipOval(child: Center(child: child)),
+    );
+    if (!filled) {
+      return circle;
+    }
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: OverflowBox(
+        minWidth: side,
+        maxWidth: side,
+        minHeight: side,
+        maxHeight: side,
+        child: circle,
+      ),
     );
   }
 }

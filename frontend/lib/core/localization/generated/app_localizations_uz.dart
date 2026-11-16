@@ -83,9 +83,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cancelButton => 'Bekor qilish';
 
   @override
-  String get wrongSurfaceTitle => 'Veb-panelni oching';
-
-  @override
   String get staffLoginTitle => 'Xodim kirishi';
 
   @override
@@ -127,10 +124,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get logoutButton => 'Chiqish';
-
-  @override
-  String get wrongSurfaceMobile =>
-      'Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring';
 
   @override
   String get wrongSurfaceWeb =>
@@ -3717,9 +3710,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get back => 'Orqaga';
 
   @override
-  String get wrongSurfaceWebTitle => 'Ilovani oching';
-
-  @override
   String catalogApproxPrice(String price) {
     return '≈ $price';
   }
@@ -5540,4 +5530,88 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get unreachableOpening => 'Aloqa bor, ilova ochilmoqda';
+
+  @override
+  String get wrongSurfacePanelTitle => 'Panelni kompyuterda oching';
+
+  @override
+  String wrongSurfacePanelWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'operator',
+      'admin': 'administrator',
+      'manager': 'menejer',
+      'other': 'xodim',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Operator',
+      'admin': 'Administrator',
+      'manager': 'Menejer',
+      'other': 'Xodim',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz — $name. $_temp1 boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.';
+  }
+
+  @override
+  String wrongSurfacePanelWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'operator',
+      'admin': 'administrator',
+      'manager': 'menejer',
+      'other': 'xodim',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Operator',
+      'admin': 'Administrator',
+      'manager': 'Menejer',
+      'other': 'Xodim',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz. $_temp1 boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.';
+  }
+
+  @override
+  String get wrongSurfacePanelShop =>
+      'Bu telefonda xarid qilish mumkin — shu raqam bilan xaridor sifatida kiring.';
+
+  @override
+  String get wrongSurfaceSignInCustomer => 'Xaridor sifatida kirish';
+
+  @override
+  String get wrongSurfaceAppTitle => 'Ilovani telefonda oching';
+
+  @override
+  String wrongSurfaceAppWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'yig\'uvchi',
+      'courier': 'kuryer',
+      'customer': 'xaridor',
+      'other': 'foydalanuvchi',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi',
+      'courier': 'Kuryer telefondagi BarakaBozor ilovasida ishlaydi',
+      'customer': 'Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi',
+      'other': 'Bu hisob telefondagi BarakaBozor ilovasida ishlaydi',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz — $name. $_temp1.';
+  }
+
+  @override
+  String wrongSurfaceAppWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'yig\'uvchi',
+      'courier': 'kuryer',
+      'customer': 'xaridor',
+      'other': 'foydalanuvchi',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi',
+      'courier': 'Kuryer telefondagi BarakaBozor ilovasida ishlaydi',
+      'customer': 'Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi',
+      'other': 'Bu hisob telefondagi BarakaBozor ilovasida ishlaydi',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz. $_temp1.';
+  }
+
+  @override
+  String get wrongSurfaceOtherAccount => 'Boshqa akkaunt bilan kirish';
 }

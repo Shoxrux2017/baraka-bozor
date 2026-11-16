@@ -83,9 +83,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cancelButton => 'Отмена';
 
   @override
-  String get wrongSurfaceTitle => 'Откройте веб-панель';
-
-  @override
   String get staffLoginTitle => 'Вход для сотрудников';
 
   @override
@@ -127,10 +124,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get logoutButton => 'Выйти';
-
-  @override
-  String get wrongSurfaceMobile =>
-      'Этот аккаунт работает в браузере на компьютере. Войдите через веб-панель BarakaBozor';
 
   @override
   String get wrongSurfaceWeb =>
@@ -3753,9 +3746,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get back => 'Назад';
 
   @override
-  String get wrongSurfaceWebTitle => 'Откройте приложение';
-
-  @override
   String catalogApproxPrice(String price) {
     return '≈ $price';
   }
@@ -5636,4 +5626,88 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get unreachableOpening => 'Связь есть, открываем приложение';
+
+  @override
+  String get wrongSurfacePanelTitle => 'Откройте панель на компьютере';
+
+  @override
+  String wrongSurfacePanelWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'оператор',
+      'admin': 'администратор',
+      'manager': 'менеджер',
+      'other': 'сотрудник',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Оператор',
+      'admin': 'Администратор',
+      'manager': 'Менеджер',
+      'other': 'Сотрудник',
+    });
+    return 'Вы вошли как $_temp0 — $name. $_temp1 работает в панели управления, в браузере на компьютере.';
+  }
+
+  @override
+  String wrongSurfacePanelWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'оператор',
+      'admin': 'администратор',
+      'manager': 'менеджер',
+      'other': 'сотрудник',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Оператор',
+      'admin': 'Администратор',
+      'manager': 'Менеджер',
+      'other': 'Сотрудник',
+    });
+    return 'Вы вошли как $_temp0. $_temp1 работает в панели управления, в браузере на компьютере.';
+  }
+
+  @override
+  String get wrongSurfacePanelShop =>
+      'На этом телефоне можно делать покупки — войдите как покупатель с тем же номером.';
+
+  @override
+  String get wrongSurfaceSignInCustomer => 'Войти как покупатель';
+
+  @override
+  String get wrongSurfaceAppTitle => 'Откройте приложение на телефоне';
+
+  @override
+  String wrongSurfaceAppWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'сборщик',
+      'courier': 'курьер',
+      'customer': 'покупатель',
+      'other': 'пользователь',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Сборщик работает',
+      'courier': 'Курьер работает',
+      'customer': 'Покупатель делает заказы',
+      'other': 'Этот аккаунт работает',
+    });
+    return 'Вы вошли как $_temp0 — $name. $_temp1 в приложении BarakaBozor на телефоне.';
+  }
+
+  @override
+  String wrongSurfaceAppWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'сборщик',
+      'courier': 'курьер',
+      'customer': 'покупатель',
+      'other': 'пользователь',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Сборщик работает',
+      'courier': 'Курьер работает',
+      'customer': 'Покупатель делает заказы',
+      'other': 'Этот аккаунт работает',
+    });
+    return 'Вы вошли как $_temp0. $_temp1 в приложении BarakaBozor на телефоне.';
+  }
+
+  @override
+  String get wrongSurfaceOtherAccount => 'Войти другим аккаунтом';
 }

@@ -224,12 +224,6 @@ abstract class AppLocalizations {
   /// **'Bekor qilish'**
   String get cancelButton;
 
-  /// No description provided for @wrongSurfaceTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Veb-panelni oching'**
-  String get wrongSurfaceTitle;
-
   /// No description provided for @staffLoginTitle.
   ///
   /// In uz, this message translates to:
@@ -313,12 +307,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Chiqish'**
   String get logoutButton;
-
-  /// No description provided for @wrongSurfaceMobile.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring'**
-  String get wrongSurfaceMobile;
 
   /// No description provided for @wrongSurfaceWeb.
   ///
@@ -6338,12 +6326,6 @@ abstract class AppLocalizations {
   /// **'Orqaga'**
   String get back;
 
-  /// No description provided for @wrongSurfaceWebTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Ilovani oching'**
-  String get wrongSurfaceWebTitle;
-
   /// No description provided for @catalogApproxPrice.
   ///
   /// In uz, this message translates to:
@@ -9049,6 +9031,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Aloqa bor, ilova ochilmoqda'**
   String get unreachableOpening;
+
+  /// No description provided for @wrongSurfacePanelTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panelni kompyuterda oching'**
+  String get wrongSurfacePanelTitle;
+
+  /// No description provided for @wrongSurfacePanelWho.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, operator{operator} admin{administrator} manager{menejer} other{xodim}} sifatida kirdingiz — {name}. {role, select, operator{Operator} admin{Administrator} manager{Menejer} other{Xodim}} boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.'**
+  String wrongSurfacePanelWho(String role, String name);
+
+  /// No description provided for @wrongSurfacePanelWhoNameless.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, operator{operator} admin{administrator} manager{menejer} other{xodim}} sifatida kirdingiz. {role, select, operator{Operator} admin{Administrator} manager{Menejer} other{Xodim}} boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.'**
+  String wrongSurfacePanelWhoNameless(String role);
+
+  /// No description provided for @wrongSurfacePanelShop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu telefonda xarid qilish mumkin — shu raqam bilan xaridor sifatida kiring.'**
+  String get wrongSurfacePanelShop;
+
+  /// No description provided for @wrongSurfaceSignInCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridor sifatida kirish'**
+  String get wrongSurfaceSignInCustomer;
+
+  /// No description provided for @wrongSurfaceAppTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovani telefonda oching'**
+  String get wrongSurfaceAppTitle;
+
+  /// No description provided for @wrongSurfaceAppWho.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, shopper{yig\'uvchi} courier{kuryer} customer{xaridor} other{foydalanuvchi}} sifatida kirdingiz — {name}. {role, select, shopper{Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi} courier{Kuryer telefondagi BarakaBozor ilovasida ishlaydi} customer{Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi} other{Bu hisob telefondagi BarakaBozor ilovasida ishlaydi}}.'**
+  String wrongSurfaceAppWho(String role, String name);
+
+  /// No description provided for @wrongSurfaceAppWhoNameless.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, shopper{yig\'uvchi} courier{kuryer} customer{xaridor} other{foydalanuvchi}} sifatida kirdingiz. {role, select, shopper{Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi} courier{Kuryer telefondagi BarakaBozor ilovasida ishlaydi} customer{Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi} other{Bu hisob telefondagi BarakaBozor ilovasida ishlaydi}}.'**
+  String wrongSurfaceAppWhoNameless(String role);
+
+  /// No description provided for @wrongSurfaceOtherAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa akkaunt bilan kirish'**
+  String get wrongSurfaceOtherAccount;
 }
 
 class _AppLocalizationsDelegate

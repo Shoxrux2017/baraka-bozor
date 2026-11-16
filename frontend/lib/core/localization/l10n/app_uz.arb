@@ -49,7 +49,6 @@
     }
   },
   "cancelButton": "Bekor qilish",
-  "wrongSurfaceTitle": "Veb-panelni oching",
   "staffLoginTitle": "Xodim kirishi",
   "passwordLabel": "Parol",
   "passwordRequired": "Parolni kiriting",
@@ -64,7 +63,6 @@
   "savePasswordButton": "Parolni saqlash",
   "passwordChanged": "Parol o'zgartirildi",
   "logoutButton": "Chiqish",
-  "wrongSurfaceMobile": "Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring",
   "wrongSurfaceWeb": "Bu hisob telefondagi BarakaBozor ilovasida ishlaydi",
   "languageLabel": "Til",
   "languageUzbek": "O'zbekcha",
@@ -2600,7 +2598,6 @@
   "showPassword": "Parolni ko'rsatish",
   "hidePassword": "Parolni yashirish",
   "back": "Orqaga",
-  "wrongSurfaceWebTitle": "Ilovani oching",
   "catalogApproxPrice": "≈ {price}",
   "@catalogApproxPrice": {
     "placeholders": {
@@ -4303,5 +4300,48 @@
       }
     }
   },
-  "unreachableOpening": "Aloqa bor, ilova ochilmoqda"
+  "unreachableOpening": "Aloqa bor, ilova ochilmoqda",
+  "wrongSurfacePanelTitle": "Panelni kompyuterda oching",
+  "wrongSurfacePanelWho": "Siz {role, select, operator{operator} admin{administrator} manager{menejer} other{xodim}} sifatida kirdingiz — {name}. {role, select, operator{Operator} admin{Administrator} manager{Menejer} other{Xodim}} boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.",
+  "@wrongSurfacePanelWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfacePanelWhoNameless": "Siz {role, select, operator{operator} admin{administrator} manager{menejer} other{xodim}} sifatida kirdingiz. {role, select, operator{Operator} admin{Administrator} manager{Menejer} other{Xodim}} boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.",
+  "@wrongSurfacePanelWhoNameless": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfacePanelShop": "Bu telefonda xarid qilish mumkin — shu raqam bilan xaridor sifatida kiring.",
+  "wrongSurfaceSignInCustomer": "Xaridor sifatida kirish",
+  "wrongSurfaceAppTitle": "Ilovani telefonda oching",
+  "wrongSurfaceAppWho": "Siz {role, select, shopper{yig'uvchi} courier{kuryer} customer{xaridor} other{foydalanuvchi}} sifatida kirdingiz — {name}. {role, select, shopper{Yig'uvchi telefondagi BarakaBozor ilovasida ishlaydi} courier{Kuryer telefondagi BarakaBozor ilovasida ishlaydi} customer{Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi} other{Bu hisob telefondagi BarakaBozor ilovasida ishlaydi}}.",
+  "@wrongSurfaceAppWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfaceAppWhoNameless": "Siz {role, select, shopper{yig'uvchi} courier{kuryer} customer{xaridor} other{foydalanuvchi}} sifatida kirdingiz. {role, select, shopper{Yig'uvchi telefondagi BarakaBozor ilovasida ishlaydi} courier{Kuryer telefondagi BarakaBozor ilovasida ishlaydi} customer{Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi} other{Bu hisob telefondagi BarakaBozor ilovasida ishlaydi}}.",
+  "@wrongSurfaceAppWhoNameless": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfaceOtherAccount": "Boshqa akkaunt bilan kirish"
 }
