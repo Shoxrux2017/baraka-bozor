@@ -241,7 +241,7 @@ class _AddressListCardState extends State<AddressListCard>
                   onTap: widget.onEdit,
                   borderRadius: radius,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 48, 14),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 60, 14),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
@@ -271,7 +271,7 @@ class _AddressListCardState extends State<AddressListCard>
           ),
           Positioned(
             top: 10,
-            right: 0,
+            right: 4,
             child: AddressMenuButton(
               address: address,
               keyPrefix: 'address',

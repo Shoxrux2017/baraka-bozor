@@ -316,8 +316,13 @@ class _SwipeToRemoveState extends State<SwipeToRemove>
             ),
           Transform.translate(
             offset: Offset(_offset, 0),
+            // In reveal mode the card is the surface and the red shows past its
+            // rounded corners; the cart's row is the white one.
             child: Material(
-              color: Colors.white,
+              type: widget.reveal
+                  ? MaterialType.transparency
+                  : MaterialType.canvas,
+              color: widget.reveal ? null : Colors.white,
               child: widget.reveal
                   ? Stack(
                       fit: StackFit.passthrough,
@@ -327,6 +332,8 @@ class _SwipeToRemoveState extends State<SwipeToRemove>
                           Positioned.fill(
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
+                              // The card's own node carries the actions.
+                              excludeFromSemantics: true,
                               onTap: () => widget.onRevealChanged?.call(false),
                             ),
                           ),

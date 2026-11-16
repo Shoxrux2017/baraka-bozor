@@ -364,6 +364,24 @@ void main() {
     });
   });
 
+  testWidgets('the menu button sits 10 down and 4 in, the text ends 12 '
+      'before it', (WidgetTester tester) async {
+    await show(tester);
+
+    final Rect card = tester.getRect(
+      find.byKey(const ValueKey<String>('address-surface-a1')),
+    );
+    final Rect menu = tester.getRect(
+      find.byKey(const ValueKey<String>('address-menu-a1')),
+    );
+    expect(menu.top - card.top, 10);
+    expect(card.right - menu.right, 4);
+    final Rect title = tester.getRect(find.text('Дом'));
+    final Rect line = tester.getRect(find.textContaining('Navoiy'));
+    expect(card.right - line.right, greaterThanOrEqualTo(60));
+    expect(title.right, lessThanOrEqualTo(line.right));
+  });
+
   testWidgets('a failed removal says why on the card', (
     WidgetTester tester,
   ) async {

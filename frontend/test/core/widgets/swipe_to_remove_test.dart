@@ -317,6 +317,55 @@ void main() {
       expect(reveals, <bool>[false]);
     });
 
+    testWidgets('the row has no white square corners over the red', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, reveal: true, width: 360);
+
+      final Material surface = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byType(SwipeToRemove),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(surface.type, MaterialType.transparency);
+    });
+
+    testWidgets('the cart row keeps its white surface', (
+      WidgetTester tester,
+    ) async {
+      await show(tester);
+
+      final Material surface = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byType(SwipeToRemove),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(surface.color, Colors.white);
+    });
+
+    testWidgets('the tap overlay of a revealed row says nothing to a reader', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, reveal: true, revealed: true, width: 360);
+
+      expect(
+        find.byWidgetPredicate(
+          (Widget w) =>
+              w is GestureDetector &&
+              w.child == null &&
+              w.behavior == HitTestBehavior.opaque &&
+              w.excludeFromSemantics,
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('turning revealed off from outside springs the row back', (
       WidgetTester tester,
     ) async {

@@ -1001,9 +1001,9 @@ void main() {
         address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
       ];
       await openList(tester, size: phone, textScaler: large);
-      await tester.drag(byKey('address-card-a-2'), const Offset(-150, 0));
+      await tester.drag(byKey('address-card-a-1'), const Offset(-150, 0));
       await tester.pumpAndSettle();
-      expect(byKey('address-reveal-a-2'), findsOneWidget);
+      expect(byKey('address-reveal-a-1'), findsOneWidget);
       await check(tester);
     });
 
