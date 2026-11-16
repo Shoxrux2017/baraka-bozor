@@ -75,6 +75,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// An address was chosen that the loaded list does not hold yet.
   bool _previewWhenListed = false;
 
+  /// The held address left the list while nothing was sent; if it is listed
+  /// again — a removal's «Вернуть» — its figures are asked for again
+  /// (`DL-137`).
+  bool _leftTheList = false;
+
   /// A tap on "Заказать" is being served: the wish is closed meanwhile, so
   /// what is placed is what was previewed (`DL-121`).
   bool _ordering = false;
@@ -287,6 +292,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _adoptAddress(String id) {
     _revision++;
+    _leftTheList = false;
     setState(() {
       _addressId = id;
       _adopted = true;
@@ -316,13 +322,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return;
       }
       _revision++;
+      _leftTheList = true;
       ref.read(preparedCheckoutProvider.notifier).clear();
       setState(() {
         _shown = null;
         _replacedTotal = null;
       });
-    } else if (_previewWhenListed) {
+    } else if (_previewWhenListed || _leftTheList) {
       _previewWhenListed = false;
+      _leftTheList = false;
       _autoPreview();
     }
   }

@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/core/widgets/fold.dart';
+import 'package:baraka_bozor/features/addresses/application/address_removals.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
@@ -725,6 +726,28 @@ void main() {
     await pick(tester, 'a-2');
     expect(checkout.previews.last.addressId, 'a-2');
     expect(inCard('Ish'), findsOneWidget);
+    expect(orderActive(tester), isTrue);
+  });
+
+  testWidgets('an address brought back by Вернуть is previewed again', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    final AddressRemovals removals = ProviderScope.containerOf(
+      anywhere(tester),
+    ).read(addressRemovalsProvider.notifier);
+    final AddressRemoval removal = AddressRemoval(addresses.rows.first);
+
+    removals.hold(removal, closeBar: () {});
+    await tester.pumpAndSettle();
+    expect(byKey('checkout-total'), findsNothing, reason: 'the figures go');
+
+    expect(removals.undo(removal), isTrue);
+    await tester.pumpAndSettle();
+
+    expect(byKey('checkout-total'), findsOneWidget);
+    expect(checkout.previews, hasLength(2));
+    expect(checkout.previews.last.addressId, 'a-1');
     expect(orderActive(tester), isTrue);
   });
 
