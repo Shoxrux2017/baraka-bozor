@@ -223,6 +223,16 @@ class _DeliveryAddressSheetState extends ConsumerState<_DeliveryAddressSheet> {
     }
   }
 
+  /// Closing the sheet ends its bar, so the removal it offered is sent.
+  @override
+  void dispose() {
+    final _SheetBar? bar = _bar;
+    if (bar != null && !bar.ended.isCompleted) {
+      bar.ended.complete();
+    }
+    super.dispose();
+  }
+
   void _remove(Address address) {
     unawaited(
       removeAddress(
@@ -257,115 +267,128 @@ class _DeliveryAddressSheetState extends ConsumerState<_DeliveryAddressSheet> {
       Navigator.of(context).pop();
     }
 
+    // The title, the bar and the add button stand outside the scroll: only
+    // the cards scroll, so «Вернуть» is always on screen (`DL-137`).
     return SafeArea(
-      child: ListView(
-        key: const ValueKey<String>('delivery-address-sheet'),
-        shrinkWrap: true,
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  l10n.deliveryAddressSheetTitle,
-                  style: const TextStyle(
-                    color: KitColors.ink,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+        child: Column(
+          key: const ValueKey<String>('delivery-address-sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.deliveryAddressSheetTitle,
+                    style: const TextStyle(
+                      color: KitColors.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                key: const ValueKey<String>('delivery-address-close'),
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                onPressed: () => Navigator.of(context).pop(),
-                // A 44 square takes the tap; the drawn circle stays 28
-                // (`DL-117`).
+                IconButton(
+                  key: const ValueKey<String>('delivery-address-close'),
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onPressed: () => Navigator.of(context).pop(),
+                  // A 44 square takes the tap; the drawn circle stays 28
+                  // (`DL-117`).
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 44,
+                    height: 44,
+                  ),
+                  icon: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: KitColors.line, width: 1.5),
+                    ),
+                    child: const SizedBox.square(
+                      dimension: 28,
+                      child: Icon(Icons.close, size: 16, color: KitColors.ink),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 15, thickness: 1, color: KitColors.line),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 44,
-                ),
-                icon: DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: KitColors.line, width: 1.5),
-                  ),
-                  child: const SizedBox.square(
-                    dimension: 28,
-                    child: Icon(Icons.close, size: 16, color: KitColors.ink),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 15, thickness: 1, color: KitColors.line),
-          RadioGroup<String>(
-            groupValue: current.value?.id,
-            onChanged: (String? id) {
-              if (id != null) {
-                choose(id);
-              }
-            },
-            child: FoldingColumn<Address>(
-              items: addresses,
-              keyOf: (Address address) => address.id,
-              itemBuilder: (BuildContext context, Address address) =>
-                  _AddressCard(
-                    address: address,
-                    chosen: address.id == current.value?.id,
-                    notRemoved: notRemoved?.id == address.id
-                        ? notRemoved!.failure
-                        : null,
-                    onChoose: () => choose(address.id),
-                    onEdit: () {
-                      Navigator.of(context).pop();
-                      widget.router.push<Object?>(
-                        AppPaths.customerAddress(address.id),
-                      );
+                children: <Widget>[
+                  RadioGroup<String>(
+                    groupValue: current.value?.id,
+                    onChanged: (String? id) {
+                      if (id != null) {
+                        choose(id);
+                      }
                     },
-                    onDelete: () => _remove(address),
+                    child: FoldingColumn<Address>(
+                      items: addresses,
+                      keyOf: (Address address) => address.id,
+                      itemBuilder: (BuildContext context, Address address) =>
+                          _AddressCard(
+                            address: address,
+                            chosen: address.id == current.value?.id,
+                            notRemoved: notRemoved?.id == address.id
+                                ? notRemoved!.failure
+                                : null,
+                            onChoose: () => choose(address.id),
+                            onEdit: () {
+                              Navigator.of(context).pop();
+                              widget.router.push<Object?>(
+                                AppPaths.customerAddress(address.id),
+                              );
+                            },
+                            onDelete: () => _remove(address),
+                          ),
+                    ),
                   ),
-            ),
-          ),
-          if (bar != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: InlineUndoBar(
-                key: ObjectKey(bar),
-                text: bar.text,
-                actionLabel: l10n.undoAction,
-                duration: addressUndoDuration,
-                onUndo: bar.onUndo,
-                onEnded: () => _barEnded(bar),
+                ],
               ),
             ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            key: const ValueKey<String>('delivery-address-new'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
-              backgroundColor: KitColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+            if (bar != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: InlineUndoBar(
+                  key: ObjectKey(bar),
+                  text: bar.text,
+                  actionLabel: l10n.undoAction,
+                  duration: addressUndoDuration,
+                  onUndo: bar.onUndo,
+                  onEnded: () => _barEnded(bar),
+                ),
               ),
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const ValueKey<String>('delivery-address-new'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(54),
+                backgroundColor: KitColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addressAddNew),
+              onPressed: () {
+                Navigator.of(context).pop();
+                addDeliveryAddress(
+                  router: widget.router,
+                  container: widget.container,
+                );
+              },
             ),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addressAddNew),
-            onPressed: () {
-              Navigator.of(context).pop();
-              addDeliveryAddress(
-                router: widget.router,
-                container: widget.container,
-              );
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -497,6 +520,16 @@ class _AddressCard extends StatelessWidget {
                               fontSize: 13,
                             ),
                           ),
+                        if (landmark != null && landmark.isNotEmpty)
+                          Text(
+                            l10n.addressLandmarkLine(landmark),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: KitColors.muted,
+                              fontSize: 12,
+                            ),
+                          ),
                         if (failureText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
@@ -507,16 +540,6 @@ class _AddressCard extends StatelessWidget {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
-                            ),
-                          ),
-                        if (landmark != null && landmark.isNotEmpty)
-                          Text(
-                            l10n.addressLandmarkLine(landmark),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: KitColors.muted,
-                              fontSize: 12,
                             ),
                           ),
                       ],
