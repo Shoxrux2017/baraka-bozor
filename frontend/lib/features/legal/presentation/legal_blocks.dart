@@ -76,6 +76,9 @@ class _Block extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The first line grows with the text size; the marker box follows it.
+    final double grow =
+        MediaQuery.textScalerOf(context).scale(16 * scale) / (16 * scale);
     final TextStyle text = TextStyle(
       fontSize: 16 * scale,
       height: 26 / 16,
@@ -124,8 +127,8 @@ class _Block extends StatelessWidget {
           children: <Widget>[
             ExcludeSemantics(
               child: SizedBox(
-                width: 22 * scale,
-                height: 26 * scale,
+                width: 22 * scale * grow,
+                height: 26 * scale * grow,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Padding(

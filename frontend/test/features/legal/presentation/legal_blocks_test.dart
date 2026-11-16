@@ -5,6 +5,8 @@ import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/legal/domain/legal.dart';
 import 'package:baraka_bozor/features/legal/presentation/legal_blocks.dart';
 
+import '../../../support/nonlinear_text_scaler.dart';
+
 const LegalBlock _heading = LegalBlock(
   type: LegalBlockType.heading,
   text: 'Heading',
@@ -56,6 +58,8 @@ double _gap(WidgetTester tester, String above, String below) =>
     tester.getRect(find.text(above)).bottom;
 
 void main() {
+  _largeTextCase();
+
   testWidgets('body is 16/26 and headings are 18 bold ink', (
     WidgetTester tester,
   ) async {
@@ -156,5 +160,37 @@ void main() {
     expect(_styleOf(tester, 'Paragraph one').fontSize, 8);
     expect(_styleOf(tester, 'Heading').fontSize, 9);
     expect(_gap(tester, 'Paragraph one', 'Paragraph two'), 6);
+  });
+}
+
+void _largeTextCase() {
+  testWidgets('at large text the dot stays on the first line', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (BuildContext context, Widget? child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const NonlinearTextScaler(2)),
+          child: child!,
+        ),
+        home: const Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 300,
+              child: LegalBlocks(<LegalBlock>[_item]),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Rect text = tester.getRect(find.text('Item one'));
+    final Rect dot = tester.getRect(
+      find.byKey(const ValueKey<String>('legal-dot')),
+    );
+    expect(dot.size, const Size(6, 6));
+    expect(dot.center.dy - text.top, closeTo(text.height / 2, 0.5));
   });
 }
