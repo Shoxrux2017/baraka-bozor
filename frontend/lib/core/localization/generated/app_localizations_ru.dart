@@ -1478,9 +1478,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressNotRemovedOther => 'Не удалось удалить адрес';
 
   @override
-  String get addressRemoveConfirm => 'Удалить этот адрес?';
-
-  @override
   String addressRemovedBar(String name) {
     return 'Удалили «$name».';
   }

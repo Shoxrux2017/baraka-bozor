@@ -2702,12 +2702,6 @@ abstract class AppLocalizations {
   /// **'Manzilni o\'chirib bo\'lmadi'**
   String get addressNotRemovedOther;
 
-  /// No description provided for @addressRemoveConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bu manzil o\'chirilsinmi?'**
-  String get addressRemoveConfirm;
-
   /// No description provided for @addressRemovedBar.
   ///
   /// In uz, this message translates to:

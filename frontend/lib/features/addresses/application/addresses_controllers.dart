@@ -65,18 +65,6 @@ abstract class AddressMutation extends AccountMutation {
   void reloadList(Object? _) => ref.invalidate(addressesProvider);
 }
 
-/// Removal from the address list.
-class AddressListActions extends AddressMutation {
-  Future<void> remove(String id) =>
-      perform<void>(() => addresses.remove(id), reload: reloadList);
-}
-
-final NotifierProvider<AddressListActions, MutationState>
-addressListActionsProvider =
-    NotifierProvider.autoDispose<AddressListActions, MutationState>(
-      AddressListActions.new,
-    );
-
 /// The address form's save.
 class AddressFormController extends AddressMutation {
   /// Creates an address, or saves what [draft] changed from [address].

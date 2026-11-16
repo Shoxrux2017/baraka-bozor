@@ -665,7 +665,6 @@
   "addressEditHint": "изменить",
   "addressNotRemovedOffline": "Нет связи — адрес не удалён",
   "addressNotRemovedOther": "Не удалось удалить адрес",
-  "addressRemoveConfirm": "Удалить этот адрес?",
   "addressRemovedBar": "Удалили «{name}».",
   "@addressRemovedBar": {
     "placeholders": {

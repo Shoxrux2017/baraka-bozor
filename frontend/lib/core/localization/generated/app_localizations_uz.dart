@@ -1466,9 +1466,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressNotRemovedOther => 'Manzilni o\'chirib bo\'lmadi';
 
   @override
-  String get addressRemoveConfirm => 'Bu manzil o\'chirilsinmi?';
-
-  @override
   String addressRemovedBar(String name) {
     return '«$name» o\'chirildi.';
   }

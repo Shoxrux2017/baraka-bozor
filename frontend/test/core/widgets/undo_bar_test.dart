@@ -134,4 +134,85 @@ void main() {
     expect(action.left, greaterThanOrEqualTo(text.right));
     expect((action.center.dy - text.center.dy).abs(), lessThan(4));
   });
+
+  Future<void> pumpInline(
+    WidgetTester tester, {
+    required VoidCallback onUndo,
+    required VoidCallback onEnded,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InlineUndoBar(
+            text: 'Olma removed',
+            actionLabel: 'Undo',
+            duration: const Duration(seconds: 5),
+            onUndo: onUndo,
+            onEnded: onEnded,
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  testWidgets(
+    'an inline bar ends after its time, on Вернуть and when removed, once each',
+    (tester) async {
+      int undone = 0;
+      int ended = 0;
+
+      // After its time: 5 s from when it has come in, then its exit.
+      await pumpInline(tester, onUndo: () => undone++, onEnded: () => ended++);
+      expect(find.text('Olma removed'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+      expect(ended, 0);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(ended, 1);
+      expect(undone, 0);
+      await tester.pumpWidget(const SizedBox());
+      expect(ended, 1);
+
+      // On Вернуть: onUndo first, then the end.
+      ended = 0;
+      await pumpInline(tester, onUndo: () => undone++, onEnded: () => ended++);
+      await tester.tap(find.text('Undo'));
+      expect(undone, 1);
+      await tester.pumpAndSettle();
+      expect(ended, 1);
+      await tester.pumpWidget(const SizedBox());
+      expect(ended, 1);
+
+      // When removed from the tree.
+      ended = 0;
+      undone = 0;
+      await pumpInline(tester, onUndo: () => undone++, onEnded: () => ended++);
+      await tester.pumpWidget(const SizedBox());
+      expect(ended, 1);
+      expect(undone, 0);
+      await tester.pump(const Duration(seconds: 10));
+      expect(ended, 1);
+    },
+  );
+
+  testWidgets('an inline bar stays while a screen reader is on', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(accessibleNavigation: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    int undone = 0;
+    int ended = 0;
+    await pumpInline(tester, onUndo: () => undone++, onEnded: () => ended++);
+    for (int second = 0; second < 12; second++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(find.text('Undo'), findsOneWidget);
+    expect(ended, 0);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(undone, 1);
+    expect(ended, 1);
+  });
 }
