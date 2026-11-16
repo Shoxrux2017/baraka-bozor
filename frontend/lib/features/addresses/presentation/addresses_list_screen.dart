@@ -235,18 +235,12 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: kitAppBar(title: l10n.addressesTitle),
-      body: SafeArea(
-        bottom: false,
-        child: UnderActiveMode(
-          child: Column(
-            children: <Widget>[
-              Expanded(child: body),
-              if (face != _Face.empty)
-                _Footer(label: l10n.addressesAdd, onPressed: _addNew),
-            ],
-          ),
-        ),
-      ),
+      body: SafeArea(bottom: false, child: UnderActiveMode(child: body)),
+      // The footer is the scaffold's own bottom bar, so a floating snack bar
+      // rises above it instead of lying over «Добавить адрес» (`DL-137`).
+      bottomNavigationBar: face == _Face.empty
+          ? null
+          : _Footer(label: l10n.addressesAdd, onPressed: _addNew),
     );
   }
 

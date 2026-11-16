@@ -7,6 +7,7 @@ import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/addresses/application/address_removals.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
+import 'package:baraka_bozor/features/addresses/presentation/addresses_screens.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
@@ -541,6 +542,22 @@ void main() {
       addresses.loadHold!.complete();
       addresses.loadHold = null;
       await tester.pump();
+    });
+
+    testWidgets('the bar stands above the add button, which still opens the '
+        'form', (WidgetTester tester) async {
+      addresses.rows = <Address>[home(), work()];
+      await openList(tester, size: const Size(360, 640));
+      await removeVia(tester, 'a-work');
+      await folded(tester);
+
+      final Rect bar = tester.getRect(find.byType(SnackBar));
+      final Rect footer = tester.getRect(byKey('addresses-footer'));
+      expect(bar.bottom, lessThanOrEqualTo(footer.top));
+
+      await tester.tap(byKey('address-new'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddressFormScreen), findsOneWidget);
     });
 
     testWidgets('offline the card returns and says it was not removed', (
