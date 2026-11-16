@@ -5,6 +5,8 @@ import '../../../core/localization/language_menu.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/brand_wordmark.dart';
+import '../../../core/widgets/kit/quiet_icon.dart';
+import '../../../core/widgets/wordmark_landing.dart';
 
 /// The frame of every screen outside a role shell (`kit/01-vhod`): a white
 /// page with 24 px sides, the language switch top-right, the wordmark, a
@@ -67,7 +69,7 @@ class AuthScaffold extends StatelessWidget {
         footer: footer,
         above: <Widget>[
           if (wordmark) ...<Widget>[
-            const BrandWordmark(size: 30),
+            const WordmarkLanding(child: BrandWordmark(size: 30)),
             if (tagline != null) ...<Widget>[
               const SizedBox(height: 4),
               Text(
@@ -116,7 +118,11 @@ class AuthScaffold extends StatelessWidget {
                     else ...<Widget>[
                       if (wordmark) ...<Widget>[
                         const SizedBox(height: 8),
-                        const Center(child: BrandWordmark(size: 26)),
+                        const Center(
+                          child: WordmarkLanding(
+                            child: BrandWordmark(size: 26),
+                          ),
+                        ),
                       ],
                       SizedBox(height: wordmark ? 36 : 28),
                       _Header(title: title, subtitle: subtitle, child: child),
@@ -183,14 +189,19 @@ final ButtonStyle authOutlinedButtonStyle = OutlinedButton.styleFrom(
   side: const BorderSide(color: KitColors.primary),
 );
 
-/// A status screen of the kit: a green halo with an icon, a title, a line of
-/// text and one button (`kit/01-vhod` screens 09 and 10).
+/// A status screen: a grey [QuietIcon], a title, a line of text, an optional
+/// [note] under it and one button, with an optional [footnote] below the
+/// button (`DL-136`). On a phone the title is 20 and the text 15; on the
+/// panel's card they keep their 22 and 14.
 class AuthStatusScaffold extends StatelessWidget {
   const AuthStatusScaffold({
     required this.icon,
     required this.title,
     required this.body,
     required this.button,
+    this.note,
+    this.footnote,
+    this.titleKey,
     this.bodyKey,
     this.wideCard = false,
     super.key,
@@ -203,11 +214,20 @@ class AuthStatusScaffold extends StatelessWidget {
   final IconData icon;
   final String title;
   final String body;
+
+  /// A second line in the style of [body], 8 below it.
+  final String? note;
   final Widget button;
+
+  /// Small muted text 12 below the [button], on a phone.
+  final Widget? footnote;
+  final Key? titleKey;
   final Key? bodyKey;
 
   @override
   Widget build(BuildContext context) {
+    final String? note = this.note;
+    final Widget? footnote = this.footnote;
     if (wideCard && AuthScaffold.showsWideCard(context)) {
       return _WideCardPage(
         onBack: null,
@@ -218,12 +238,13 @@ class AuthStatusScaffold extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Center(child: StatusHalo(icon: icon, size: 110)),
+              Center(child: QuietIcon(icon: icon)),
               const SizedBox(height: 24),
               Semantics(
                 header: true,
                 child: Text(
                   title,
+                  key: titleKey,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontFamily: appFontFamily,
@@ -245,13 +266,35 @@ class AuthStatusScaffold extends StatelessWidget {
                   color: KitColors.muted,
                 ),
               ),
+              if (note != null) ...<Widget>[
+                const SizedBox(height: 8),
+                Text(
+                  note,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: KitColors.muted,
+                  ),
+                ),
+              ],
               const SizedBox(height: 28),
               button,
+              if (footnote != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: footnote,
+                ),
             ],
           ),
         ),
       );
     }
+    const TextStyle bodyStyle = TextStyle(
+      fontSize: 15,
+      height: 1.5,
+      color: KitColors.ink2,
+    );
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -262,35 +305,55 @@ class AuthStatusScaffold extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               spread: MainAxisAlignment.center,
               children: <Widget>[
-                Center(child: StatusHalo(icon: icon)),
-                const SizedBox(height: 28),
+                Center(child: QuietIcon(icon: icon)),
+                const SizedBox(height: 24),
                 Semantics(
                   header: true,
                   child: Text(
                     title,
+                    key: titleKey,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: appFontFamily,
                       fontWeight: FontWeight.w700,
-                      fontSize: 22,
+                      fontSize: 20,
                       height: 1.25,
                       color: KitColors.ink,
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  body,
-                  key: bodyKey,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: KitColors.muted,
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: Text(
+                      body,
+                      key: bodyKey,
+                      textAlign: TextAlign.center,
+                      style: bodyStyle,
+                    ),
                   ),
                 ),
+                if (note != null) ...<Widget>[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 320),
+                      child: Text(
+                        note,
+                        textAlign: TextAlign.center,
+                        style: bodyStyle,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
                 button,
+                if (footnote != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: footnote,
+                  ),
               ],
             ),
           ),
@@ -451,7 +514,10 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// A 40 px circle with a hairline border around one icon button.
+/// A 40 px circle with a hairline border around one icon button. On the
+/// panel's page ([filled]) the circle and its slot are 44, a real 44 tap
+/// target (`DL-117`, `DL-136`); the hairline is drawn over the circle, not
+/// inside it.
 class _CircleButton extends StatelessWidget {
   const _CircleButton({required this.child, this.filled = false});
 
@@ -460,16 +526,24 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
+    final double side = filled ? 44 : 40;
+    final Widget circle = Container(
+      width: side,
+      height: side,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: filled ? Colors.white : null,
-        border: Border.all(color: KitColors.line),
+        border: filled ? null : Border.all(color: KitColors.line),
       ),
+      foregroundDecoration: filled
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: KitColors.line),
+            )
+          : null,
       child: ClipOval(child: Center(child: child)),
     );
+    return circle;
   }
 }
 
@@ -505,10 +579,10 @@ class _WideCardPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       _TopBar(onBack: onBack, filled: true),
-                      // 16 + 24 of padding and the 40 px bar stand above.
+                      // 16 + 24 of padding and the 44 px bar stand above.
                       ConstrainedBox(
                         constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - 80).clamp(
+                          minHeight: (constraints.maxHeight - 84).clamp(
                             0,
                             double.infinity,
                           ),

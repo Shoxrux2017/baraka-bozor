@@ -63,6 +63,15 @@ class FakeAuthRepository implements AuthRepository {
   /// pending call.
   Completer<void>? holdAnswers;
 
+  /// While a slot has an uncompleted entry, `me` for that slot waits for it
+  /// before answering, so a test can release one slot's answer alone.
+  final Map<SessionSlot, Completer<void>> holdMe =
+      <SessionSlot, Completer<void>>{};
+
+  /// How many times `me` was asked for [slot].
+  int meCalls(SessionSlot slot) =>
+      calls.where((String c) => c == 'me:${slot.name}').length;
+
   final List<String> calls = <String>[];
   final List<(SessionSlot, AppLanguage)> reportedLanguages =
       <(SessionSlot, AppLanguage)>[];
@@ -120,6 +129,7 @@ class FakeAuthRepository implements AuthRepository {
   Future<AppUser> me(SessionSlot slot) async {
     calls.add('me:${slot.name}');
     await _held();
+    await holdMe[slot]?.future;
     final Object? answer = identities[slot];
     if (answer is AppUser) {
       return answer;

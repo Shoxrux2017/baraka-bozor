@@ -13,7 +13,9 @@ const Cubic _settle = Cubic(0.2, 0.8, 0.2, 1);
 /// button goes under the words at full width. It rises 8 px with a fade in
 /// 260 ms when first built (only a fade, in 200 ms, under reduced motion) and is
 /// one container for a reader, not a live region: the screen announces the
-/// failure itself. [retryKey] sits on the button, [stripKey] on the box.
+/// failure itself. [retryKey] sits on the button, [stripKey] on the box. With a
+/// [busyLabel] the button shows a small spinner in place of «Повторить», takes
+/// no tap and reads the label (`DL-136`).
 class RetryStrip extends StatefulWidget {
   const RetryStrip({
     required this.message,
@@ -21,6 +23,7 @@ class RetryStrip extends StatefulWidget {
     this.icon = Icons.wifi_off,
     this.retryKey,
     this.stripKey,
+    this.busyLabel,
     super.key,
   });
 
@@ -30,6 +33,9 @@ class RetryStrip extends StatefulWidget {
   final IconData icon;
   final Key? retryKey;
   final Key? stripKey;
+
+  /// Non-null while the retry is out.
+  final String? busyLabel;
 
   @override
   State<RetryStrip> createState() => _RetryStripState();
@@ -82,6 +88,7 @@ class _RetryStripState extends State<RetryStrip>
       key: widget.retryKey,
       label: AppLocalizations.of(context).retryButton,
       onTap: widget.onRetry,
+      busyLabel: widget.busyLabel,
     );
     final Widget icon = Icon(widget.icon, size: 20, color: KitColors.danger);
 
@@ -150,38 +157,55 @@ class _RetryStripState extends State<RetryStrip>
 }
 
 class _RetryButton extends StatelessWidget {
-  const _RetryButton({required this.label, required this.onTap, super.key});
+  const _RetryButton({
+    required this.label,
+    required this.onTap,
+    required this.busyLabel,
+    super.key,
+  });
 
   final String label;
   final VoidCallback onTap;
+  final String? busyLabel;
 
   @override
   Widget build(BuildContext context) {
+    final String? busy = busyLabel;
+    final Widget face = busy == null
+        ? Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: KitColors.danger,
+            ),
+          )
+        : const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: KitColors.danger,
+            ),
+          );
+    final Widget content = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 44),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Center(widthFactor: 1, child: face),
+      ),
+    );
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Center(
-              widthFactor: 1,
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.danger,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: busy == null
+          ? InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: onTap,
+              child: content,
+            )
+          : Semantics(label: busy, excludeSemantics: true, child: content),
     );
   }
 }

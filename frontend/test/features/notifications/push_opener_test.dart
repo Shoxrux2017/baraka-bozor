@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
@@ -340,9 +342,10 @@ void main() {
       expect(path(tester), isNot(AppPaths.customerOrder(orderOne)));
 
       auth.identities[SessionSlot.customer] = user(id: 'c');
-      await containerOf(tester)
-          .read(sessionControllerProvider.notifier)
-          .retry();
+      unawaited(
+        containerOf(tester).read(sessionControllerProvider.notifier).retry(),
+      );
+      await tester.pump(SessionController.leastPressedCheck);
       await tester.pumpAndSettle();
 
       expect(path(tester), AppPaths.customerOrder(orderOne));
@@ -360,7 +363,10 @@ void main() {
     await tap(tester, customerTarget);
     signInCustomer();
     signInStaff(UserRole.shopper);
-    await containerOf(tester).read(sessionControllerProvider.notifier).retry();
+    unawaited(
+      containerOf(tester).read(sessionControllerProvider.notifier).retry(),
+    );
+    await tester.pump(SessionController.leastPressedCheck);
     await tester.pumpAndSettle();
 
     final SignedIn session =

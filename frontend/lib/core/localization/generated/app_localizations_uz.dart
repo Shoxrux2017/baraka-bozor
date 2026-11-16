@@ -83,9 +83,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cancelButton => 'Bekor qilish';
 
   @override
-  String get wrongSurfaceTitle => 'Veb-panelni oching';
-
-  @override
   String get staffLoginTitle => 'Xodim kirishi';
 
   @override
@@ -127,10 +124,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get logoutButton => 'Chiqish';
-
-  @override
-  String get wrongSurfaceMobile =>
-      'Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring';
 
   @override
   String get wrongSurfaceWeb =>
@@ -186,13 +179,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get switchToStaff => 'Xodim rejimiga qaytish';
-
-  @override
-  String get sessionUnreachableTitle => 'Server bilan aloqa yo\'q';
-
-  @override
-  String get sessionUnreachableBody =>
-      'Internet aloqasini tekshiring va qayta urinib ko\'ring';
 
   @override
   String get errorAuthenticationRequired => 'Qaytadan kiring';
@@ -1196,9 +1182,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get profileDeleteHint => 'avval so\'raymiz';
-
-  @override
-  String get profilePrivacy => 'Maxfiylik';
 
   @override
   String get profileName => 'Ismingiz';
@@ -3566,7 +3549,80 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get legalNotPublishedYet => 'Hujjat hali e\'lon qilinmagan.';
+  String monthLong(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'yanvar',
+      'm2': 'fevral',
+      'm3': 'mart',
+      'm4': 'aprel',
+      'm5': 'may',
+      'm6': 'iyun',
+      'm7': 'iyul',
+      'm8': 'avgust',
+      'm9': 'sentabr',
+      'm10': 'oktabr',
+      'm11': 'noyabr',
+      'm12': 'dekabr',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String dateLong(String day, String month, String year) {
+    return '$year-yil $day-$month';
+  }
+
+  @override
+  String legalEditionSpoken(String date) {
+    return 'Tahrir: $date';
+  }
+
+  @override
+  String legalOnlyIn(String language) {
+    String _temp0 = intl.Intl.selectLogic(language, {
+      'ru': 'rus',
+      'uz': 'o\'zbek',
+      'other': 'boshqa',
+    });
+    return 'Bu hujjat hozircha faqat $_temp0 tilida.';
+  }
+
+  @override
+  String get legalCopy => 'Nusxa olish';
+
+  @override
+  String get legalSelectAll => 'Hammasini tanlash';
+
+  @override
+  String get legalLoadingSpoken => 'Hujjat yuklanmoqda…';
+
+  @override
+  String get legalLoading => 'Yuklanmoqda…';
+
+  @override
+  String get legalFailedTitle => 'Hujjat yuklanmadi';
+
+  @override
+  String get legalFailedOffline =>
+      'Internet aloqasi yo\'q. Ulanishni tekshirib, «Qayta urinish»ni bosing.';
+
+  @override
+  String get legalFailedOther =>
+      'Hujjatni yuklab bo\'lmadi. «Qayta urinish»ni bosing.';
+
+  @override
+  String get legalUnpublishedTitle => 'Hujjat hali e\'lon qilinmagan';
+
+  @override
+  String get legalUnpublishedBody => 'Keyinroq qayta urinib ko\'ring.';
+
+  @override
+  String get legalStaleOffline => 'Aloqa yo\'q — saqlangan nusxa ko\'rsatildi';
+
+  @override
+  String get legalStaleFailed =>
+      'Yangilab bo\'lmadi — saqlangan nusxa ko\'rsatildi';
 
   @override
   String consentAll(String terms, String privacy) {
@@ -3652,9 +3708,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get back => 'Orqaga';
-
-  @override
-  String get wrongSurfaceWebTitle => 'Ilovani oching';
 
   @override
   String catalogApproxPrice(String price) {
@@ -5438,4 +5491,138 @@ class AppLocalizationsUz extends AppLocalizations {
   String languageChosenSpoken(String language) {
     return 'Til: $language, tanlangan';
   }
+
+  @override
+  String get bootConnecting => 'Ulanmoqda…';
+
+  @override
+  String get unreachableOfflineTitle => 'Aloqa yo\'q';
+
+  @override
+  String get unreachableOfflineBody =>
+      'Mobil internet yoki Wi‑Fi\'ni tekshiring. Aloqa paydo bo\'lganda ilova o\'zi ochiladi.';
+
+  @override
+  String get unreachableServerTitle => 'BarakaBozor hozir ishlamayapti';
+
+  @override
+  String get unreachableServerBody =>
+      'Telefoningizda internet bor. Bir necha daqiqadan so\'ng urinib ko\'ring — ilova ham o\'zi tekshiradi.';
+
+  @override
+  String get unreachableOfflineBodyWeb =>
+      'Internet aloqasini tekshiring. Aloqa paydo bo\'lganda panel o\'zi ochiladi.';
+
+  @override
+  String get unreachableServerBodyWeb =>
+      'Internet ishlayapti. Bir necha daqiqadan so\'ng urinib ko\'ring — panel ham o\'zi tekshiradi.';
+
+  @override
+  String get unreachableChecking => 'Tekshirilmoqda…';
+
+  @override
+  String get unreachableCheckingSpoken => 'Aloqa tekshirilmoqda…';
+
+  @override
+  String get unreachableStillOffline => 'Hali aloqa yo\'q';
+
+  @override
+  String get unreachableStillDown => 'BarakaBozor hali ishlamayapti';
+
+  @override
+  String unreachableCheckedAt(String result, String time) {
+    return '$result · $time da tekshirildi';
+  }
+
+  @override
+  String unreachableCheckedAtSpoken(String result, String time) {
+    return '$result, $time da tekshirildi';
+  }
+
+  @override
+  String get unreachableOpening => 'Aloqa bor, ilova ochilmoqda';
+
+  @override
+  String get wrongSurfacePanelTitle => 'Panelni kompyuterda oching';
+
+  @override
+  String wrongSurfacePanelWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'operator',
+      'admin': 'administrator',
+      'manager': 'menejer',
+      'other': 'xodim',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Operator',
+      'admin': 'Administrator',
+      'manager': 'Menejer',
+      'other': 'Xodim',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz — $name. $_temp1 boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.';
+  }
+
+  @override
+  String wrongSurfacePanelWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'operator',
+      'admin': 'administrator',
+      'manager': 'menejer',
+      'other': 'xodim',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Operator',
+      'admin': 'Administrator',
+      'manager': 'Menejer',
+      'other': 'Xodim',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz. $_temp1 boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.';
+  }
+
+  @override
+  String get wrongSurfacePanelShop =>
+      'Bu telefonda xarid qilish mumkin — shu raqam bilan xaridor sifatida kiring.';
+
+  @override
+  String get wrongSurfaceSignInCustomer => 'Xaridor sifatida kirish';
+
+  @override
+  String get wrongSurfaceAppTitle => 'Ilovani telefonda oching';
+
+  @override
+  String wrongSurfaceAppWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'yig\'uvchi',
+      'courier': 'kuryer',
+      'customer': 'xaridor',
+      'other': 'foydalanuvchi',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi',
+      'courier': 'Kuryer telefondagi BarakaBozor ilovasida ishlaydi',
+      'customer': 'Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi',
+      'other': 'Bu hisob telefondagi BarakaBozor ilovasida ishlaydi',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz — $name. $_temp1.';
+  }
+
+  @override
+  String wrongSurfaceAppWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'yig\'uvchi',
+      'courier': 'kuryer',
+      'customer': 'xaridor',
+      'other': 'foydalanuvchi',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi',
+      'courier': 'Kuryer telefondagi BarakaBozor ilovasida ishlaydi',
+      'customer': 'Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi',
+      'other': 'Bu hisob telefondagi BarakaBozor ilovasida ishlaydi',
+    });
+    return 'Siz $_temp0 sifatida kirdingiz. $_temp1.';
+  }
+
+  @override
+  String get wrongSurfaceOtherAccount => 'Boshqa akkaunt bilan kirish';
 }

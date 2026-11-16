@@ -83,9 +83,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cancelButton => 'Отмена';
 
   @override
-  String get wrongSurfaceTitle => 'Откройте веб-панель';
-
-  @override
   String get staffLoginTitle => 'Вход для сотрудников';
 
   @override
@@ -127,10 +124,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get logoutButton => 'Выйти';
-
-  @override
-  String get wrongSurfaceMobile =>
-      'Этот аккаунт работает в браузере на компьютере. Войдите через веб-панель BarakaBozor';
 
   @override
   String get wrongSurfaceWeb =>
@@ -186,13 +179,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get switchToStaff => 'Вернуться в режим сотрудника';
-
-  @override
-  String get sessionUnreachableTitle => 'Нет связи с сервером';
-
-  @override
-  String get sessionUnreachableBody =>
-      'Проверьте подключение к интернету и попробуйте снова';
 
   @override
   String get errorAuthenticationRequired => 'Войдите заново';
@@ -1212,9 +1198,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileDeleteHint => 'сначала спросим';
-
-  @override
-  String get profilePrivacy => 'Конфиденциальность';
 
   @override
   String get profileName => 'Ваше имя';
@@ -3602,7 +3585,80 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get legalNotPublishedYet => 'Документ пока не опубликован.';
+  String monthLong(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'января',
+      'm2': 'февраля',
+      'm3': 'марта',
+      'm4': 'апреля',
+      'm5': 'мая',
+      'm6': 'июня',
+      'm7': 'июля',
+      'm8': 'августа',
+      'm9': 'сентября',
+      'm10': 'октября',
+      'm11': 'ноября',
+      'm12': 'декабря',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String dateLong(String day, String month, String year) {
+    return '$day $month $year';
+  }
+
+  @override
+  String legalEditionSpoken(String date) {
+    return 'Редакция от $date года';
+  }
+
+  @override
+  String legalOnlyIn(String language) {
+    String _temp0 = intl.Intl.selectLogic(language, {
+      'ru': 'русском',
+      'uz': 'узбекском',
+      'other': 'другом',
+    });
+    return 'Этот документ пока только на $_temp0 языке.';
+  }
+
+  @override
+  String get legalCopy => 'Копировать';
+
+  @override
+  String get legalSelectAll => 'Выделить всё';
+
+  @override
+  String get legalLoadingSpoken => 'Загружаем документ…';
+
+  @override
+  String get legalLoading => 'Загружаем…';
+
+  @override
+  String get legalFailedTitle => 'Документ не загрузился';
+
+  @override
+  String get legalFailedOffline =>
+      'Нет связи с интернетом. Проверьте подключение и нажмите «Повторить».';
+
+  @override
+  String get legalFailedOther =>
+      'Не удалось загрузить документ. Нажмите «Повторить».';
+
+  @override
+  String get legalUnpublishedTitle => 'Документ пока не опубликован';
+
+  @override
+  String get legalUnpublishedBody => 'Загляните позже.';
+
+  @override
+  String get legalStaleOffline => 'Нет связи — показана сохранённая копия';
+
+  @override
+  String get legalStaleFailed =>
+      'Не удалось обновить — показана сохранённая копия';
 
   @override
   String consentAll(String terms, String privacy) {
@@ -3688,9 +3744,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get back => 'Назад';
-
-  @override
-  String get wrongSurfaceWebTitle => 'Откройте приложение';
 
   @override
   String catalogApproxPrice(String price) {
@@ -5534,4 +5587,138 @@ class AppLocalizationsRu extends AppLocalizations {
   String languageChosenSpoken(String language) {
     return 'Язык: $language, выбрано';
   }
+
+  @override
+  String get bootConnecting => 'Подключаемся…';
+
+  @override
+  String get unreachableOfflineTitle => 'Нет связи';
+
+  @override
+  String get unreachableOfflineBody =>
+      'Проверьте мобильный интернет или Wi‑Fi. Приложение откроется само, когда связь появится.';
+
+  @override
+  String get unreachableServerTitle => 'BarakaBozor сейчас недоступен';
+
+  @override
+  String get unreachableServerBody =>
+      'Интернет на телефоне в порядке. Попробуйте через пару минут — приложение тоже проверит само.';
+
+  @override
+  String get unreachableOfflineBodyWeb =>
+      'Проверьте подключение к интернету. Панель откроется сама, когда связь появится.';
+
+  @override
+  String get unreachableServerBodyWeb =>
+      'Интернет в порядке. Попробуйте через пару минут — панель тоже проверит сама.';
+
+  @override
+  String get unreachableChecking => 'Проверяем…';
+
+  @override
+  String get unreachableCheckingSpoken => 'Проверяем связь…';
+
+  @override
+  String get unreachableStillOffline => 'Связи пока нет';
+
+  @override
+  String get unreachableStillDown => 'BarakaBozor пока недоступен';
+
+  @override
+  String unreachableCheckedAt(String result, String time) {
+    return '$result · проверено в $time';
+  }
+
+  @override
+  String unreachableCheckedAtSpoken(String result, String time) {
+    return '$result, проверено в $time';
+  }
+
+  @override
+  String get unreachableOpening => 'Связь есть, открываем приложение';
+
+  @override
+  String get wrongSurfacePanelTitle => 'Откройте панель на компьютере';
+
+  @override
+  String wrongSurfacePanelWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'оператор',
+      'admin': 'администратор',
+      'manager': 'менеджер',
+      'other': 'сотрудник',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Оператор',
+      'admin': 'Администратор',
+      'manager': 'Менеджер',
+      'other': 'Сотрудник',
+    });
+    return 'Вы вошли как $_temp0 — $name. $_temp1 работает в панели управления, в браузере на компьютере.';
+  }
+
+  @override
+  String wrongSurfacePanelWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'operator': 'оператор',
+      'admin': 'администратор',
+      'manager': 'менеджер',
+      'other': 'сотрудник',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'operator': 'Оператор',
+      'admin': 'Администратор',
+      'manager': 'Менеджер',
+      'other': 'Сотрудник',
+    });
+    return 'Вы вошли как $_temp0. $_temp1 работает в панели управления, в браузере на компьютере.';
+  }
+
+  @override
+  String get wrongSurfacePanelShop =>
+      'На этом телефоне можно делать покупки — войдите как покупатель с тем же номером.';
+
+  @override
+  String get wrongSurfaceSignInCustomer => 'Войти как покупатель';
+
+  @override
+  String get wrongSurfaceAppTitle => 'Откройте приложение на телефоне';
+
+  @override
+  String wrongSurfaceAppWho(String role, String name) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'сборщик',
+      'courier': 'курьер',
+      'customer': 'покупатель',
+      'other': 'пользователь',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Сборщик работает',
+      'courier': 'Курьер работает',
+      'customer': 'Покупатель делает заказы',
+      'other': 'Этот аккаунт работает',
+    });
+    return 'Вы вошли как $_temp0 — $name. $_temp1 в приложении BarakaBozor на телефоне.';
+  }
+
+  @override
+  String wrongSurfaceAppWhoNameless(String role) {
+    String _temp0 = intl.Intl.selectLogic(role, {
+      'shopper': 'сборщик',
+      'courier': 'курьер',
+      'customer': 'покупатель',
+      'other': 'пользователь',
+    });
+    String _temp1 = intl.Intl.selectLogic(role, {
+      'shopper': 'Сборщик работает',
+      'courier': 'Курьер работает',
+      'customer': 'Покупатель делает заказы',
+      'other': 'Этот аккаунт работает',
+    });
+    return 'Вы вошли как $_temp0. $_temp1 в приложении BarakaBozor на телефоне.';
+  }
+
+  @override
+  String get wrongSurfaceOtherAccount => 'Войти другим аккаунтом';
 }

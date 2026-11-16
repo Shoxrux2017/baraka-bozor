@@ -225,7 +225,10 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: preview(terms, uz), matching: find.text('•')),
+      find.descendant(
+        of: preview(terms, uz),
+        matching: find.byKey(const ValueKey<String>('legal-dot')),
+      ),
       findsOneWidget,
     );
     expect(

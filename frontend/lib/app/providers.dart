@@ -11,6 +11,7 @@ import '../core/localization/app_language.dart';
 import '../core/localization/language_controller.dart';
 import '../core/network/api_client.dart';
 import '../core/network/auth_interceptor.dart';
+import '../core/network/connectivity_signal.dart';
 import '../core/routing/session_redirect.dart';
 import '../core/session/session_controller.dart';
 import '../core/session/session_end_hook.dart';
@@ -87,6 +88,13 @@ sessionControllerProvider =
 /// the push registrar revoking that session's device (`DL-26` (5)).
 final Provider<SessionEndHooks> sessionEndHooksProvider =
     Provider<SessionEndHooks>((Ref ref) => SessionEndHooks());
+
+/// The phone's network coming back, for the retry screen (`DL-136` (15)).
+/// Overridden in tests with a silent fake.
+final Provider<ConnectivitySignal> connectivitySignalProvider =
+    Provider<ConnectivitySignal>(
+      (Ref ref) => PluginConnectivitySignal.platform(),
+    );
 
 /// The interface language.
 final AsyncNotifierProvider<LanguageController, AppLanguage>

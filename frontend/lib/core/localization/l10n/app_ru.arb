@@ -49,7 +49,6 @@
     }
   },
   "cancelButton": "Отмена",
-  "wrongSurfaceTitle": "Откройте веб-панель",
   "staffLoginTitle": "Вход для сотрудников",
   "passwordLabel": "Пароль",
   "passwordRequired": "Введите пароль",
@@ -64,7 +63,6 @@
   "savePasswordButton": "Сохранить пароль",
   "passwordChanged": "Пароль изменён",
   "logoutButton": "Выйти",
-  "wrongSurfaceMobile": "Этот аккаунт работает в браузере на компьютере. Войдите через веб-панель BarakaBozor",
   "wrongSurfaceWeb": "Этот аккаунт работает в приложении BarakaBozor на телефоне",
   "languageLabel": "Язык",
   "languageUzbek": "O'zbekcha",
@@ -83,8 +81,6 @@
   "staffModeLabel": "Режим сотрудника",
   "switchToCustomer": "Продолжить как клиент",
   "switchToStaff": "Вернуться в режим сотрудника",
-  "sessionUnreachableTitle": "Нет связи с сервером",
-  "sessionUnreachableBody": "Проверьте подключение к интернету и попробуйте снова",
   "errorAuthenticationRequired": "Войдите заново",
   "errorAccountBlocked": "Эта учётная запись заблокирована",
   "errorInvalidCredentials": "Неверный номер телефона или пароль",
@@ -519,7 +515,6 @@
   "profileGroupHelp": "Помощь",
   "profileCallSupport": "Позвонить в поддержку",
   "profileDeleteHint": "сначала спросим",
-  "profilePrivacy": "Конфиденциальность",
   "profileName": "Ваше имя",
   "profileSaved": "Имя сохранено",
   "profileNameLabel": "Имя",
@@ -2391,7 +2386,21 @@
   "getCodeButton": "Получить код",
   "codeComesInTelegram": "Код придёт в Telegram",
   "legalEdition": "Редакция от {date}",
-  "legalNotPublishedYet": "Документ пока не опубликован.",
+  "monthLong": "{month, select, m1{января} m2{февраля} m3{марта} m4{апреля} m5{мая} m6{июня} m7{июля} m8{августа} m9{сентября} m10{октября} m11{ноября} m12{декабря} other{}}",
+  "dateLong": "{day} {month} {year}",
+  "legalEditionSpoken": "Редакция от {date} года",
+  "legalOnlyIn": "Этот документ пока только на {language, select, ru{русском} uz{узбекском} other{другом}} языке.",
+  "legalCopy": "Копировать",
+  "legalSelectAll": "Выделить всё",
+  "legalLoadingSpoken": "Загружаем документ…",
+  "legalLoading": "Загружаем…",
+  "legalFailedTitle": "Документ не загрузился",
+  "legalFailedOffline": "Нет связи с интернетом. Проверьте подключение и нажмите «Повторить».",
+  "legalFailedOther": "Не удалось загрузить документ. Нажмите «Повторить».",
+  "legalUnpublishedTitle": "Документ пока не опубликован",
+  "legalUnpublishedBody": "Загляните позже.",
+  "legalStaleOffline": "Нет связи — показана сохранённая копия",
+  "legalStaleFailed": "Не удалось обновить — показана сохранённая копия",
   "consentAll": "Продолжая, вы принимаете {terms} и {privacy}",
   "consentTermsOnly": "Продолжая, вы принимаете {terms}",
   "consentPrivacyOnly": "Продолжая, вы принимаете {privacy}",
@@ -2424,7 +2433,6 @@
   "showPassword": "Показать пароль",
   "hidePassword": "Скрыть пароль",
   "back": "Назад",
-  "wrongSurfaceWebTitle": "Откройте приложение",
   "catalogApproxPrice": "≈ {price}",
   "catalogPerUnit": "за {unit}",
   "catalogUnavailable": "Нет в продаже",
@@ -3530,5 +3538,82 @@
         "type": "String"
       }
     }
-  }
+  },
+  "bootConnecting": "Подключаемся…",
+  "unreachableOfflineTitle": "Нет связи",
+  "unreachableOfflineBody": "Проверьте мобильный интернет или Wi‑Fi. Приложение откроется само, когда связь появится.",
+  "unreachableServerTitle": "BarakaBozor сейчас недоступен",
+  "unreachableServerBody": "Интернет на телефоне в порядке. Попробуйте через пару минут — приложение тоже проверит само.",
+  "unreachableOfflineBodyWeb": "Проверьте подключение к интернету. Панель откроется сама, когда связь появится.",
+  "unreachableServerBodyWeb": "Интернет в порядке. Попробуйте через пару минут — панель тоже проверит сама.",
+  "unreachableChecking": "Проверяем…",
+  "unreachableCheckingSpoken": "Проверяем связь…",
+  "unreachableStillOffline": "Связи пока нет",
+  "unreachableStillDown": "BarakaBozor пока недоступен",
+  "unreachableCheckedAt": "{result} · проверено в {time}",
+  "@unreachableCheckedAt": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unreachableCheckedAtSpoken": "{result}, проверено в {time}",
+  "@unreachableCheckedAtSpoken": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unreachableOpening": "Связь есть, открываем приложение",
+  "wrongSurfacePanelTitle": "Откройте панель на компьютере",
+  "wrongSurfacePanelWho": "Вы вошли как {role, select, operator{оператор} admin{администратор} manager{менеджер} other{сотрудник}} — {name}. {role, select, operator{Оператор} admin{Администратор} manager{Менеджер} other{Сотрудник}} работает в панели управления, в браузере на компьютере.",
+  "@wrongSurfacePanelWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfacePanelWhoNameless": "Вы вошли как {role, select, operator{оператор} admin{администратор} manager{менеджер} other{сотрудник}}. {role, select, operator{Оператор} admin{Администратор} manager{Менеджер} other{Сотрудник}} работает в панели управления, в браузере на компьютере.",
+  "@wrongSurfacePanelWhoNameless": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfacePanelShop": "На этом телефоне можно делать покупки — войдите как покупатель с тем же номером.",
+  "wrongSurfaceSignInCustomer": "Войти как покупатель",
+  "wrongSurfaceAppTitle": "Откройте приложение на телефоне",
+  "wrongSurfaceAppWho": "Вы вошли как {role, select, shopper{сборщик} courier{курьер} customer{покупатель} other{пользователь}} — {name}. {role, select, shopper{Сборщик работает} courier{Курьер работает} customer{Покупатель делает заказы} other{Этот аккаунт работает}} в приложении BarakaBozor на телефоне.",
+  "@wrongSurfaceAppWho": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfaceAppWhoNameless": "Вы вошли как {role, select, shopper{сборщик} courier{курьер} customer{покупатель} other{пользователь}}. {role, select, shopper{Сборщик работает} courier{Курьер работает} customer{Покупатель делает заказы} other{Этот аккаунт работает}} в приложении BarakaBozor на телефоне.",
+  "@wrongSurfaceAppWhoNameless": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "wrongSurfaceOtherAccount": "Войти другим аккаунтом"
 }

@@ -28,7 +28,7 @@ View and edit `full_name` and `preferred_language` (`uz` or `ru`). Checkout requ
 
 The profile tab (`DL-135`, superseding `DL-96` (6)) has a green header that is the name's button: the avatar, the name (or "Как вас зовут?" over an «Указать имя» pill) and the phone, with a pill for the active mode when two sessions exist. Under it the rows stand in three groups, «Аккаунт» (addresses), «Приложение» (language, chosen in a sheet) and «Помощь» (support with its number, the privacy policy and the terms, each only while it exists), then «Выйти», which asks first in a sheet, and «Удалить аккаунт» (hidden while the phone also holds a staff session). The name editor opens from the header: the button is grey until the name differs, saving shows ✓ «Имя сохранено» and the profile shows the new name, and an uncertain answer is checked against the reloaded profile before ✓. A profile that fails to load keeps the retry, the addresses, the language row and "Выйти".
 
-The terms of use and the privacy policy are server documents in Uzbek and Russian, shown in the profile and at public addresses (`GET /legal`, `GET /legal/{kind}`); the Admin edits them in the panel, and a document with no text is hidden (`DL-93` (1), `DL-94` (1)).
+The terms of use and the privacy policy are server documents in Uzbek and Russian, shown in the profile and at public addresses (`GET /legal`, `GET /legal/{kind}`); the Admin edits them in the panel, and a document with no text is hidden (`DL-93` (1), `DL-94` (1)). A document shown once in a run of the app is kept in memory per kind and language and opens at once while a silent load replaces it; without a copy a failure shows its reason and a retry, and an unpublished one says so (`DL-136` (4), (5)).
 
 ## 4. Delivery Addresses
 

@@ -172,7 +172,7 @@ class ProfileRows extends ConsumerWidget {
               (bool line) => _Row(
                 rowKey: 'profile-privacy',
                 icon: Icons.verified_user,
-                title: l10n.profilePrivacy,
+                title: l10n.legalPrivacy,
                 large: large,
                 line: line,
                 onTap: () =>

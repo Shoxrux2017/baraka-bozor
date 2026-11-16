@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,7 +15,11 @@ import '../theme/kit_colors.dart';
 /// widget replaces the back arrow. With [fadeTitle] a title whose text changes
 /// fades in from 0.25 over 180 ms, at once with reduced motion (`DL-127`). With
 /// [titleFlight] the title is the place a flight page's piece lands on
-/// (`DL-128`).
+/// (`DL-128`). With [titleOpacity] the title is drawn at that opacity and is
+/// always silent to a reader (the page's large title speaks); with
+/// [edgeOpacity] a 1 px hairline is the bar's bottom at that opacity, so a
+/// page whose text scrolls under the bar can hand its large title over to it
+/// (`DL-136`).
 AppBar kitAppBar({
   required String title,
   bool automaticallyImplyLeading = true,
@@ -23,6 +28,8 @@ AppBar kitAppBar({
   bool titleFlight = false,
   List<Widget>? actions,
   Widget? leading,
+  ValueListenable<double>? titleOpacity,
+  ValueListenable<double>? edgeOpacity,
 }) {
   final Text text = Text(
     title,
@@ -32,7 +39,22 @@ AppBar kitAppBar({
       color: KitColors.ink,
     ),
   );
-  final Widget heading = fadeTitle ? _FadingTitle(text) : text;
+  Widget heading = fadeTitle ? _FadingTitle(text) : text;
+  if (titleOpacity != null) {
+    final Widget shown = heading;
+    heading = ValueListenableBuilder<double>(
+      valueListenable: titleOpacity,
+      child: shown,
+      builder: (BuildContext context, double opacity, Widget? child) =>
+          ExcludeSemantics(
+            child: Opacity(
+              key: const ValueKey<String>('kit-bar-title'),
+              opacity: opacity,
+              child: child,
+            ),
+          ),
+    );
+  }
   return AppBar(
     automaticallyImplyLeading: automaticallyImplyLeading,
     leading: leading,
@@ -42,6 +64,26 @@ AppBar kitAppBar({
     centerTitle: true,
     actions: <Widget>[if (search) const _SearchAction(), ...?actions],
     title: titleFlight ? FlightTarget(id: 'title', child: heading) : heading,
+    bottom: edgeOpacity == null
+        ? null
+        : PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: ValueListenableBuilder<double>(
+              valueListenable: edgeOpacity,
+              builder: (BuildContext context, double opacity, Widget? _) =>
+                  ExcludeSemantics(
+                    child: Opacity(
+                      key: const ValueKey<String>('kit-bar-edge'),
+                      opacity: opacity,
+                      child: const SizedBox(
+                        height: 1,
+                        width: double.infinity,
+                        child: ColoredBox(color: KitColors.buttonOff),
+                      ),
+                    ),
+                  ),
+            ),
+          ),
   );
 }
 

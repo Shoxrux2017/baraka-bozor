@@ -224,12 +224,6 @@ abstract class AppLocalizations {
   /// **'Bekor qilish'**
   String get cancelButton;
 
-  /// No description provided for @wrongSurfaceTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Veb-panelni oching'**
-  String get wrongSurfaceTitle;
-
   /// No description provided for @staffLoginTitle.
   ///
   /// In uz, this message translates to:
@@ -313,12 +307,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Chiqish'**
   String get logoutButton;
-
-  /// No description provided for @wrongSurfaceMobile.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring'**
-  String get wrongSurfaceMobile;
 
   /// No description provided for @wrongSurfaceWeb.
   ///
@@ -427,18 +415,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xodim rejimiga qaytish'**
   String get switchToStaff;
-
-  /// No description provided for @sessionUnreachableTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Server bilan aloqa yo\'q'**
-  String get sessionUnreachableTitle;
-
-  /// No description provided for @sessionUnreachableBody.
-  ///
-  /// In uz, this message translates to:
-  /// **'Internet aloqasini tekshiring va qayta urinib ko\'ring'**
-  String get sessionUnreachableBody;
 
   /// No description provided for @errorAuthenticationRequired.
   ///
@@ -2233,12 +2209,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'avval so\'raymiz'**
   String get profileDeleteHint;
-
-  /// No description provided for @profilePrivacy.
-  ///
-  /// In uz, this message translates to:
-  /// **'Maxfiylik'**
-  String get profilePrivacy;
 
   /// No description provided for @profileName.
   ///
@@ -6116,11 +6086,95 @@ abstract class AppLocalizations {
   /// **'Tahrir: {date}'**
   String legalEdition(String date);
 
-  /// No description provided for @legalNotPublishedYet.
+  /// No description provided for @monthLong.
   ///
   /// In uz, this message translates to:
-  /// **'Hujjat hali e\'lon qilinmagan.'**
-  String get legalNotPublishedYet;
+  /// **'{month, select, m1{yanvar} m2{fevral} m3{mart} m4{aprel} m5{may} m6{iyun} m7{iyul} m8{avgust} m9{sentabr} m10{oktabr} m11{noyabr} m12{dekabr} other{}}'**
+  String monthLong(String month);
+
+  /// No description provided for @dateLong.
+  ///
+  /// In uz, this message translates to:
+  /// **'{year}-yil {day}-{month}'**
+  String dateLong(String day, String month, String year);
+
+  /// No description provided for @legalEditionSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tahrir: {date}'**
+  String legalEditionSpoken(String date);
+
+  /// No description provided for @legalOnlyIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu hujjat hozircha faqat {language, select, ru{rus} uz{o\'zbek} other{boshqa}} tilida.'**
+  String legalOnlyIn(String language);
+
+  /// No description provided for @legalCopy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nusxa olish'**
+  String get legalCopy;
+
+  /// No description provided for @legalSelectAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini tanlash'**
+  String get legalSelectAll;
+
+  /// No description provided for @legalLoadingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat yuklanmoqda…'**
+  String get legalLoadingSpoken;
+
+  /// No description provided for @legalLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuklanmoqda…'**
+  String get legalLoading;
+
+  /// No description provided for @legalFailedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat yuklanmadi'**
+  String get legalFailedTitle;
+
+  /// No description provided for @legalFailedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet aloqasi yo\'q. Ulanishni tekshirib, «Qayta urinish»ni bosing.'**
+  String get legalFailedOffline;
+
+  /// No description provided for @legalFailedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjatni yuklab bo\'lmadi. «Qayta urinish»ni bosing.'**
+  String get legalFailedOther;
+
+  /// No description provided for @legalUnpublishedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat hali e\'lon qilinmagan'**
+  String get legalUnpublishedTitle;
+
+  /// No description provided for @legalUnpublishedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyinroq qayta urinib ko\'ring.'**
+  String get legalUnpublishedBody;
+
+  /// No description provided for @legalStaleOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — saqlangan nusxa ko\'rsatildi'**
+  String get legalStaleOffline;
+
+  /// No description provided for @legalStaleFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilab bo\'lmadi — saqlangan nusxa ko\'rsatildi'**
+  String get legalStaleFailed;
 
   /// No description provided for @consentAll.
   ///
@@ -6271,12 +6325,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Orqaga'**
   String get back;
-
-  /// No description provided for @wrongSurfaceWebTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Ilovani oching'**
-  String get wrongSurfaceWebTitle;
 
   /// No description provided for @catalogApproxPrice.
   ///
@@ -8917,6 +8965,144 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Til: {language}, tanlangan'**
   String languageChosenSpoken(String language);
+
+  /// Said under the launch wordmark when confirming the stored sessions takes longer than a moment
+  ///
+  /// In uz, this message translates to:
+  /// **'Ulanmoqda…'**
+  String get bootConnecting;
+
+  /// No description provided for @unreachableOfflineTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q'**
+  String get unreachableOfflineTitle;
+
+  /// No description provided for @unreachableOfflineBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mobil internet yoki Wi‑Fi\'ni tekshiring. Aloqa paydo bo\'lganda ilova o\'zi ochiladi.'**
+  String get unreachableOfflineBody;
+
+  /// No description provided for @unreachableServerTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'BarakaBozor hozir ishlamayapti'**
+  String get unreachableServerTitle;
+
+  /// No description provided for @unreachableServerBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefoningizda internet bor. Bir necha daqiqadan so\'ng urinib ko\'ring — ilova ham o\'zi tekshiradi.'**
+  String get unreachableServerBody;
+
+  /// No description provided for @unreachableOfflineBodyWeb.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet aloqasini tekshiring. Aloqa paydo bo\'lganda panel o\'zi ochiladi.'**
+  String get unreachableOfflineBodyWeb;
+
+  /// No description provided for @unreachableServerBodyWeb.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet ishlayapti. Bir necha daqiqadan so\'ng urinib ko\'ring — panel ham o\'zi tekshiradi.'**
+  String get unreachableServerBodyWeb;
+
+  /// No description provided for @unreachableChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirilmoqda…'**
+  String get unreachableChecking;
+
+  /// No description provided for @unreachableCheckingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa tekshirilmoqda…'**
+  String get unreachableCheckingSpoken;
+
+  /// No description provided for @unreachableStillOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali aloqa yo\'q'**
+  String get unreachableStillOffline;
+
+  /// No description provided for @unreachableStillDown.
+  ///
+  /// In uz, this message translates to:
+  /// **'BarakaBozor hali ishlamayapti'**
+  String get unreachableStillDown;
+
+  /// No description provided for @unreachableCheckedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{result} · {time} da tekshirildi'**
+  String unreachableCheckedAt(String result, String time);
+
+  /// No description provided for @unreachableCheckedAtSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{result}, {time} da tekshirildi'**
+  String unreachableCheckedAtSpoken(String result, String time);
+
+  /// No description provided for @unreachableOpening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa bor, ilova ochilmoqda'**
+  String get unreachableOpening;
+
+  /// No description provided for @wrongSurfacePanelTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panelni kompyuterda oching'**
+  String get wrongSurfacePanelTitle;
+
+  /// No description provided for @wrongSurfacePanelWho.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, operator{operator} admin{administrator} manager{menejer} other{xodim}} sifatida kirdingiz — {name}. {role, select, operator{Operator} admin{Administrator} manager{Menejer} other{Xodim}} boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.'**
+  String wrongSurfacePanelWho(String role, String name);
+
+  /// No description provided for @wrongSurfacePanelWhoNameless.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, operator{operator} admin{administrator} manager{menejer} other{xodim}} sifatida kirdingiz. {role, select, operator{Operator} admin{Administrator} manager{Menejer} other{Xodim}} boshqaruv panelida, kompyuterdagi brauzerda ishlaydi.'**
+  String wrongSurfacePanelWhoNameless(String role);
+
+  /// No description provided for @wrongSurfacePanelShop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu telefonda xarid qilish mumkin — shu raqam bilan xaridor sifatida kiring.'**
+  String get wrongSurfacePanelShop;
+
+  /// No description provided for @wrongSurfaceSignInCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridor sifatida kirish'**
+  String get wrongSurfaceSignInCustomer;
+
+  /// No description provided for @wrongSurfaceAppTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovani telefonda oching'**
+  String get wrongSurfaceAppTitle;
+
+  /// No description provided for @wrongSurfaceAppWho.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, shopper{yig\'uvchi} courier{kuryer} customer{xaridor} other{foydalanuvchi}} sifatida kirdingiz — {name}. {role, select, shopper{Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi} courier{Kuryer telefondagi BarakaBozor ilovasida ishlaydi} customer{Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi} other{Bu hisob telefondagi BarakaBozor ilovasida ishlaydi}}.'**
+  String wrongSurfaceAppWho(String role, String name);
+
+  /// No description provided for @wrongSurfaceAppWhoNameless.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {role, select, shopper{yig\'uvchi} courier{kuryer} customer{xaridor} other{foydalanuvchi}} sifatida kirdingiz. {role, select, shopper{Yig\'uvchi telefondagi BarakaBozor ilovasida ishlaydi} courier{Kuryer telefondagi BarakaBozor ilovasida ishlaydi} customer{Xaridor telefondagi BarakaBozor ilovasida buyurtma beradi} other{Bu hisob telefondagi BarakaBozor ilovasida ishlaydi}}.'**
+  String wrongSurfaceAppWhoNameless(String role);
+
+  /// No description provided for @wrongSurfaceOtherAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa akkaunt bilan kirish'**
+  String get wrongSurfaceOtherAccount;
 }
 
 class _AppLocalizationsDelegate

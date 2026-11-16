@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 
 import 'app/providers.dart';
+import 'app/session_handoff.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
@@ -54,10 +55,12 @@ class BarakaBozorApp extends ConsumerWidget {
       // in code until the kit's dark screens exist.
       themeMode: ThemeMode.light,
       routerConfig: router,
+      builder: (BuildContext context, Widget? child) =>
+          SessionHandoff(child: child!),
       // Until the stored preference is read the device language applies,
       // which is the same value for anyone who never chose one. A person who
-      // chose the other language could see one frame in the device language;
-      // today that frame is the bootstrap screen, which shows no text.
+      // chose the other language could see the launch hint in the device
+      // language once, if the start takes longer than 1.5 s.
       locale: language?.locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

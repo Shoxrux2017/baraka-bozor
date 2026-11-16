@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/retry_strip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,6 +79,51 @@ void main() {
         label: 'Нет связи — имя не сохранено\nПовторить',
         isLiveRegion: false,
       ),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('a busy strip spins, takes no tap and reads its label', (
+    tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    int taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: RetryStrip(
+              message: 'Нет связи',
+              onRetry: () => taps++,
+              retryKey: _retry,
+              busyLabel: 'Загружаем…',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Повторить'), findsNothing);
+    final Finder spinner = find.descendant(
+      of: find.byKey(_retry),
+      matching: find.byType(CircularProgressIndicator),
+    );
+    expect(spinner, findsOneWidget);
+    expect(tester.getSize(spinner), const Size(16, 16));
+    expect(
+      tester.widget<CircularProgressIndicator>(spinner).color,
+      KitColors.danger,
+    );
+    await tester.tap(find.byKey(_retry));
+    expect(taps, 0);
+    expect(
+      tester.getSemantics(find.text('Нет связи')).label,
+      'Нет связи\nЗагружаем…',
     );
     handle.dispose();
   });

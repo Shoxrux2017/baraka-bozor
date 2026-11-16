@@ -3,7 +3,9 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/brand_wordmark.dart';
+import 'package:baraka_bozor/core/widgets/kit/quiet_icon.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/auth/presentation/auth_scaffold.dart';
 import 'package:baraka_bozor/features/auth/presentation/phone_field.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
@@ -359,9 +361,9 @@ void main() {
       expect(style.fontWeight, FontWeight.w600);
 
       // Above the wordmark (and its 24 px) and below the card the same room
-      // stands between the top bar (56) and the page's end (24 padding).
+      // stands between the top bar (60) and the page's end (24 padding).
       final double above =
-          tester.getTopLeft(find.byType(BrandWordmark)).dy - 24 - 56;
+          tester.getTopLeft(find.byType(BrandWordmark)).dy - 24 - 60;
       final double below = 900 - 24 - tester.getBottomLeft(card).dy;
       expect(above, closeTo(below, 1));
     });
@@ -470,33 +472,31 @@ void main() {
       final AppLocalizations t = l10n(tester);
       expect(pageColor(tester), KitColors.page);
       expect(
-        find.descendant(of: card, matching: find.text(t.wrongSurfaceWebTitle)),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: card, matching: find.text(t.wrongSurfaceWeb)),
-        findsOneWidget,
-      );
-      final Finder halo = find.byWidgetPredicate(
-        (Widget w) =>
-            w is Container &&
-            w.constraints?.maxWidth == 110 &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).color == KitColors.primaryWash,
-      );
-      expect(halo, findsOneWidget);
-      expect(
-        find.descendant(of: halo, matching: find.byIcon(Icons.smartphone)),
+        find.descendant(of: card, matching: find.text(t.wrongSurfaceAppTitle)),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: card,
-          matching: find.byWidgetPredicate(
-            (Widget w) => w is OutlinedButton && w.key == key('logout-button'),
-          ),
+          matching: find.byKey(key('wrong-surface-text')),
         ),
         findsOneWidget,
+      );
+      final Finder icon = find.byWidgetPredicate(
+        (Widget w) => w is QuietIcon && w.icon == Icons.smartphone,
+      );
+      expect(find.descendant(of: card, matching: icon), findsOneWidget);
+      expect(find.byType(StatusHalo), findsNothing);
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byKey(key('wrong-surface-button')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSize(find.byKey(key('wrong-surface-button'))).height,
+        greaterThanOrEqualTo(52),
       );
     });
 
