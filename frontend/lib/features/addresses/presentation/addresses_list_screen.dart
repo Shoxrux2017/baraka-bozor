@@ -133,6 +133,14 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
     );
   }
 
+  /// A card has begun to glow: the request is spent, so a card built anew
+  /// later stays quiet.
+  void _glowStarted(String id) {
+    if (mounted && _glows.containsKey(id)) {
+      setState(() => _glows = <String, int>{..._glows}..remove(id));
+    }
+  }
+
   void _reveal(String id, {required bool open}) {
     final String? next = open ? id : (_revealed == id ? null : _revealed);
     if (next != _revealed) {
@@ -229,6 +237,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
         scroll: _scroll,
         onReveal: _reveal,
         onCloseRevealed: _closeRevealed,
+        onGlowStarted: _glowStarted,
       ),
     };
 
@@ -379,6 +388,7 @@ class _Cards extends ConsumerWidget {
     required this.scroll,
     required this.onReveal,
     required this.onCloseRevealed,
+    required this.onGlowStarted,
   });
 
   final List<Address> addresses;
@@ -392,6 +402,7 @@ class _Cards extends ConsumerWidget {
   final ScrollController scroll;
   final void Function(String id, {required bool open}) onReveal;
   final VoidCallback onCloseRevealed;
+  final void Function(String id) onGlowStarted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -444,6 +455,7 @@ class _Cards extends ConsumerWidget {
                       onDelete: () => onDelete(address),
                       onMenuOpened: onCloseRevealed,
                       glow: glows[address.id] ?? 0,
+                      onGlowStarted: () => onGlowStarted(address.id),
                       notRemoved: notRemoved?.id == address.id
                           ? notRemoved!.failure
                           : null,

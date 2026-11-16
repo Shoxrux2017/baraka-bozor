@@ -79,6 +79,7 @@ class AddressListCard extends StatefulWidget {
     this.notRemoved,
     this.glow = 0,
     this.onMenuOpened,
+    this.onGlowStarted,
     this.spaceAbove = 12,
     super.key,
   });
@@ -101,6 +102,10 @@ class AddressListCard extends StatefulWidget {
 
   /// The «⋯» menu was opened.
   final VoidCallback? onMenuOpened;
+
+  /// The glow has started: the owner may forget the request, so a card built
+  /// anew later does not glow again.
+  final VoidCallback? onGlowStarted;
 
   /// The gap above the card; a swipe that wraps the card draws it itself.
   final double spaceAbove;
@@ -156,6 +161,11 @@ class _AddressListCardState extends State<AddressListCard>
     _glow
       ..duration = Duration(milliseconds: _glowDelay + _glowMs)
       ..forward(from: 0);
+    if (widget.onGlowStarted != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => widget.onGlowStarted?.call(),
+      );
+    }
   }
 
   @override

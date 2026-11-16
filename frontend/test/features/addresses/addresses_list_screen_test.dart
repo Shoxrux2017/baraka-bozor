@@ -560,6 +560,37 @@ void main() {
       expect(find.byType(AddressFormScreen), findsOneWidget);
     });
 
+    testWidgets('a card that glowed once does not glow again when the cards '
+        'are rebuilt', (WidgetTester tester) async {
+      addresses.rows = <Address>[home()];
+      await openList(tester);
+      await removeVia(tester, 'a-home');
+      await folded(tester);
+      await tester.tap(find.text('Вернуть'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(
+        tester.widget<Opacity>(byKey('address-glow-a-home')).opacity,
+        greaterThan(0),
+      );
+      await tester.pump(const Duration(seconds: 3));
+
+      addresses.removeFailure = const NetworkFailure();
+      await removeVia(tester, 'a-home');
+      await folded(tester);
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      expect(byKey('address-card-a-home'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(
+        tester.widget<Opacity>(byKey('address-glow-a-home')).opacity,
+        0,
+      );
+    });
+
     testWidgets('offline the card returns and says it was not removed', (
       WidgetTester tester,
     ) async {
