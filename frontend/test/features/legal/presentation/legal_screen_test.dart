@@ -91,7 +91,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('•'), findsNWidgets(2));
+    expect(find.byKey(const ValueKey<String>('legal-dot')), findsNWidgets(2));
   });
 
   testWidgets('the privacy policy has its own title', (
