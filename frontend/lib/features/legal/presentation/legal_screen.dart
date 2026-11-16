@@ -53,7 +53,7 @@ class _LegalScreenState extends ConsumerState<LegalScreen>
     value: 1,
     animationBehavior: AnimationBehavior.preserve,
   );
-  late final Animation<double> _textOpacity = CurvedAnimation(
+  late final CurvedAnimation _textOpacity = CurvedAnimation(
     parent: _fade,
     curve: Curves.easeOut,
   );
@@ -82,6 +82,7 @@ class _LegalScreenState extends ConsumerState<LegalScreen>
 
   @override
   void dispose() {
+    _textOpacity.dispose();
     _fade.dispose();
     _scroll
       ..removeListener(_follow)
@@ -334,7 +335,8 @@ class _Column extends StatelessWidget {
                   const SizedBox(height: 12),
                   strip!,
                 ],
-                const SizedBox(height: 8),
+                // The strip keeps its own 12 below it: 16 to the date.
+                SizedBox(height: strip != null ? 4 : 8),
                 child,
               ],
             ),

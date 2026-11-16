@@ -196,6 +196,47 @@ void main() {
     expect(find.byType(SearchScreen), findsOneWidget);
   });
 
+  testWidgets('taps reach the sign-in while the wordmark glides', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await untilLeaving(tester);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(ghost, findsOneWidget);
+
+    final Finder field = find.byKey(const ValueKey<String>('phone-field'));
+    await tester.tap(field);
+    await tester.pump();
+    final EditableText editable = tester.widget<EditableText>(
+      find.descendant(of: field, matching: find.byType(EditableText)),
+    );
+    expect(editable.focusNode.hasFocus, isTrue);
+    await tester.pump(const Duration(milliseconds: 600));
+    await leave(tester);
+  });
+
+  testWidgets('taps reach the app while Нет связи fades away', (
+    WidgetTester tester,
+  ) async {
+    tokens.tokens[SessionSlot.customer] = 'c';
+    auth.identities[SessionSlot.customer] = const NetworkFailure();
+    await open(tester);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    auth.identities[SessionSlot.customer] = user();
+    await tester.tap(find.byKey(const ValueKey<String>('retry-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+    await untilLeaving(tester);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Нет связи'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('catalog-search')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SearchScreen), findsOneWidget);
+    await leave(tester);
+  });
+
   testWidgets('reduced motion fades instead of gliding', (
     WidgetTester tester,
   ) async {

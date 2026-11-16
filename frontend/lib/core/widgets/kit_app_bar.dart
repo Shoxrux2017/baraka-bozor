@@ -16,9 +16,10 @@ import '../theme/kit_colors.dart';
 /// fades in from 0.25 over 180 ms, at once with reduced motion (`DL-127`). With
 /// [titleFlight] the title is the place a flight page's piece lands on
 /// (`DL-128`). With [titleOpacity] the title is drawn at that opacity and is
-/// silent to a reader while it is 0; with [edgeOpacity] a 1 px hairline is
-/// the bar's bottom at that opacity, so a page whose text scrolls under the bar
-/// can hand its large title over to it (`DL-136`).
+/// always silent to a reader (the page's large title speaks); with
+/// [edgeOpacity] a 1 px hairline is the bar's bottom at that opacity, so a
+/// page whose text scrolls under the bar can hand its large title over to it
+/// (`DL-136`).
 AppBar kitAppBar({
   required String title,
   bool automaticallyImplyLeading = true,

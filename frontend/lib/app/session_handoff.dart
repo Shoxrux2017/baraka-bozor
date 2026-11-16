@@ -236,12 +236,13 @@ class _SessionHandoffState extends ConsumerState<SessionHandoff>
                 child: FadeTransition(
                   key: const ValueKey<String>('launch-curtain'),
                   opacity: leaving
-                      ? Tween<double>(begin: 1, end: 0).animate(
-                          CurvedAnimation(
-                            parent: _leave,
-                            curve: _glide ? _whiteFade : Curves.easeOut,
-                          ),
-                        )
+                      ? Tween<double>(begin: 1, end: 0)
+                            .chain(
+                              CurveTween(
+                                curve: _glide ? _whiteFade : Curves.easeOut,
+                              ),
+                            )
+                            .animate(_leave)
                       : const AlwaysStoppedAnimation<double>(1),
                   child: _picture != null
                       ? UnreachableView(state: _picture!)

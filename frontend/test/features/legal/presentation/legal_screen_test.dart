@@ -344,6 +344,12 @@ void main() {
       tester.getTopLeft(byKey('legal-date')).dy,
       greaterThan(tester.getBottomLeft(byKey('legal-stale')).dy),
     );
+    expect(
+      tester.getTopLeft(byKey('legal-date')).dy -
+          tester.getBottomLeft(byKey('legal-stale')).dy,
+      16,
+      reason: 'the strip keeps its 12 below it: 16 to the date',
+    );
 
     final Completer<void> hold = Completer<void>();
     legal.documentHold = hold;
