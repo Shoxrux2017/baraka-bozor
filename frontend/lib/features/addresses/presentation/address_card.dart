@@ -78,6 +78,8 @@ class AddressListCard extends StatefulWidget {
     required this.onDelete,
     this.notRemoved,
     this.glow = 0,
+    this.onMenuOpened,
+    this.spaceAbove = 12,
     super.key,
   });
 
@@ -96,6 +98,12 @@ class AddressListCard extends StatefulWidget {
 
   /// Grows by one each time the card should glow.
   final int glow;
+
+  /// The «⋯» menu was opened.
+  final VoidCallback? onMenuOpened;
+
+  /// The gap above the card; a swipe that wraps the card draws it itself.
+  final double spaceAbove;
 
   @override
   State<AddressListCard> createState() => _AddressListCardState();
@@ -193,7 +201,7 @@ class _AddressListCardState extends State<AddressListCard>
 
     final BorderRadius radius = BorderRadius.circular(16);
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: EdgeInsets.only(top: widget.spaceAbove),
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
@@ -270,6 +278,7 @@ class _AddressListCardState extends State<AddressListCard>
               onEdit: widget.onEdit,
               onChoose: onChoose,
               onDelete: widget.onDelete,
+              onOpened: widget.onMenuOpened,
             ),
           ),
           Positioned.fill(
@@ -493,6 +502,7 @@ class AddressMenuButton extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     this.onChoose,
+    this.onOpened,
     super.key,
   });
 
@@ -501,6 +511,9 @@ class AddressMenuButton extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback? onChoose;
+
+  /// The menu was opened.
+  final VoidCallback? onOpened;
 
   PopupMenuItem<_MenuAction> _item(
     _MenuAction action,
@@ -546,6 +559,7 @@ class AddressMenuButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         menuPadding: const EdgeInsets.symmetric(vertical: 6),
         constraints: const BoxConstraints(minWidth: 208),
+        onOpened: onOpened,
         onSelected: (_MenuAction action) {
           switch (action) {
             case _MenuAction.edit:

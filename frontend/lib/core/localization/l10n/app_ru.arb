@@ -651,6 +651,68 @@
   "addressNotRemovedOffline": "Нет связи — адрес не удалён",
   "addressNotRemovedOther": "Не удалось удалить адрес",
   "addressRemoveConfirm": "Удалить этот адрес?",
+  "addressRemovedBar": "Удалили «{name}».",
+  "@addressRemovedBar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRemovedBarDelivery": "Удалили «{name}». Доставка теперь: «{next}».",
+  "@addressRemovedBarDelivery": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRemovedSpoken": "Адрес «{name}» удалён. Вернуть — кнопка внизу.",
+  "@addressRemovedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRemovedSpokenDelivery": "Адрес «{name}» удалён. Доставка теперь: «{next}». Вернуть — кнопка внизу.",
+  "@addressRemovedSpokenDelivery": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "addressRestoredSpoken": "Адрес «{name}» возвращён",
+  "@addressRestoredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressNotRemovedSpoken": "Нет связи, адрес «{name}» не удалён",
+  "@addressNotRemovedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressNotRemovedOtherSpoken": "Адрес «{name}» не удалён",
+  "@addressNotRemovedOtherSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "errorConfigurationIncomplete": "Сервис ещё не настроен до конца. Попробуйте позже",
   "orderStatusNew": "Новый",
   "orderStatusShoppingAssigned": "Назначен сборщик",

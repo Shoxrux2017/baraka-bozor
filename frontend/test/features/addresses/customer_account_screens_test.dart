@@ -795,17 +795,23 @@ void main() {
       });
     }
 
-    testWidgets('removing an address asks first', (WidgetTester tester) async {
+    testWidgets('removing an address folds it and tells the server when the '
+        'bar ends', (WidgetTester tester) async {
       await openAddresses(tester);
 
-      await tapAndSettle(tester, byKey('address-menu-a-1'));
-      await tapAndSettle(tester, byKey('address-delete-a-1'));
-      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
-      expect(addresses.removed, isEmpty);
+      await tester.tap(byKey('address-menu-a-1'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-delete-a-1'));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(addresses.removed, isEmpty, reason: 'the bar is still up');
+      expect(find.text(l10n(tester).addressRemovedBar('Uy')), findsOneWidget);
+      expect(find.text(l10n(tester).addressNone), findsOneWidget);
 
-      await tapAndSettle(tester, byKey('address-menu-a-1'));
-      await tapAndSettle(tester, byKey('address-delete-a-1'));
-      await tapAndSettle(tester, byKey('address-remove-confirm'));
+      for (int i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
       expect(addresses.removed, <String>['a-1']);
       expect(find.text(l10n(tester).addressNone), findsOneWidget);
     });
@@ -879,14 +885,24 @@ void main() {
 
       addresses.removeFailure = const NetworkFailure();
       await tapAndSettle(tester, byKey('address-menu-a-1'));
-      await tapAndSettle(tester, byKey('address-delete-a-1'));
-      await tapAndSettle(tester, byKey('address-remove-confirm'));
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      await tester.tap(byKey('address-delete-a-1'));
+      for (int i = 0; i < 50; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(
+        find.text(l10n(tester).addressNotRemovedOffline),
+        findsOneWidget,
+        reason: 'the red line of the card that was not removed',
+      );
 
       await tapAndSettle(tester, byKey('address-new'));
       await confirmPoint(tester);
       expect(byKey('address-save'), findsOneWidget);
       expect(inForm(find.text(l10n(tester).errorNetwork)), findsNothing);
+      expect(
+        inForm(find.text(l10n(tester).addressNotRemovedOffline)),
+        findsNothing,
+      );
     });
 
     testWidgets('signing out while an address saves leaves nothing behind', (
@@ -1220,10 +1236,15 @@ void main() {
       );
 
       await tapAndSettle(tester, byKey('address-menu-a-1'));
-      await tapAndSettle(tester, byKey('address-delete-a-1'));
-      await tapAndSettle(tester, byKey('address-remove-confirm'));
+      await tester.tap(byKey('address-delete-a-1'));
+      for (int i = 0; i < 50; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
 
+      expect(addresses.removed, <String>['a-1']);
       expect(find.text(l10n(tester).addressNone), findsOneWidget);
+      expect(find.text(l10n(tester).addressNotRemovedOffline), findsNothing);
+      expect(find.text(l10n(tester).addressNotRemovedOther), findsNothing);
     });
   });
 }

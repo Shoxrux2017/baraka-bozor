@@ -10,19 +10,19 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
-import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
-import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_empty_state.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/skeleton_bar.dart';
+import '../../../core/widgets/swipe_to_remove.dart';
 import '../application/address_removals.dart';
 import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
 import '../domain/addresses.dart';
 import 'address_card.dart';
+import 'address_removal_flow.dart';
 
 /// What the list is showing.
 enum _Face { loading, failed, empty, cards }
@@ -52,7 +52,19 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
     curve: Curves.easeOut,
   );
 
+  /// The face being drawn.
   _Face? _face;
+
+  /// The card whose «Удалить» is showing, at most one.
+  String? _revealed;
+
+  /// How often each card was asked to glow.
+  Map<String, int> _glows = const <String, int>{};
+
+  /// A list emptied by a removal is drawn as cards until the last of them has
+  /// folded; then the empty state takes over (`DL-137`).
+  Timer? _emptyTimer;
+  bool _emptyDue = false;
 
   /// The delivery address last known, so a reload does not take the mark off
   /// the card and pop it back on.
@@ -60,6 +72,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
 
   @override
   void dispose() {
+    _emptyTimer?.cancel();
     _fade.dispose();
     super.dispose();
   }
@@ -88,30 +101,65 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
     );
   }
 
-  Future<void> _remove(Address address) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Text(l10n.addressRemoveConfirm),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancelButton),
-              ),
-              FilledButton(
-                key: const ValueKey<String>('address-remove-confirm'),
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(l10n.addressRemove),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (confirmed) {
-      await ref.read(addressListActionsProvider.notifier).remove(address.id);
+  /// The removal runs on the container, so it outlives this screen.
+  void _remove(Address address) {
+    if (_revealed != null) {
+      setState(() => _revealed = null);
     }
+    unawaited(
+      removeAddress(
+        context,
+        container: ProviderScope.containerOf(context),
+        address: address,
+        offer: ScreenUndoOffer(ScaffoldMessenger.of(context)),
+        onRestored: (String id) {
+          if (mounted) {
+            setState(
+              () =>
+                  _glows = <String, int>{..._glows, id: (_glows[id] ?? 0) + 1},
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  void _reveal(String id, {required bool open}) {
+    final String? next = open ? id : (_revealed == id ? null : _revealed);
+    if (next != _revealed) {
+      setState(() => _revealed = next);
+    }
+  }
+
+  void _closeRevealed() {
+    if (_revealed != null) {
+      setState(() => _revealed = null);
+    }
+  }
+
+  /// The empty state waits for the last card's fold.
+  _Face _heldFace(_Face face) {
+    if (face != _Face.empty) {
+      _emptyTimer?.cancel();
+      _emptyTimer = null;
+      _emptyDue = false;
+      return face;
+    }
+    if (_face != _Face.cards || _emptyDue) {
+      return face;
+    }
+    _emptyTimer ??= Timer(
+      MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
+      () {
+        _emptyTimer = null;
+        if (mounted) {
+          setState(() => _emptyDue = true);
+        }
+      },
+    );
+    return _Face.cards;
   }
 
   @override
@@ -123,7 +171,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
       _deliveryId = delivery.requireValue?.id;
     }
 
-    final _Face face = _faceOf(shown);
+    final _Face face = _heldFace(_faceOf(shown));
     if (_face == _Face.loading &&
         face == _Face.cards &&
         !MediaQuery.disableAnimationsOf(context)) {
@@ -163,6 +211,10 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
         onEdit: _edit,
         onChoose: _choose,
         onDelete: _remove,
+        revealed: _revealed,
+        glows: _glows,
+        onReveal: _reveal,
+        onCloseRevealed: _closeRevealed,
       ),
     };
 
@@ -199,6 +251,10 @@ class _Cards extends ConsumerWidget {
     required this.onEdit,
     required this.onChoose,
     required this.onDelete,
+    required this.revealed,
+    required this.glows,
+    required this.onReveal,
+    required this.onCloseRevealed,
   });
 
   final List<Address> addresses;
@@ -207,38 +263,72 @@ class _Cards extends ConsumerWidget {
   final void Function(Address) onEdit;
   final void Function(Address) onChoose;
   final void Function(Address) onDelete;
+  final String? revealed;
+  final Map<String, int> glows;
+  final void Function(String id, {required bool open}) onReveal;
+  final VoidCallback onCloseRevealed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MutationState actions = ref.watch(addressListActionsProvider);
     final AddressRemovalsState removals = ref.watch(addressRemovalsProvider);
     final ({String id, ApiFailure failure})? notRemoved = removals.notRemoved;
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return ListView(
-      key: const ValueKey<String>('addresses-list'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      children: <Widget>[
-        FailureMessage(actions.failure),
-        FadeTransition(
-          key: const ValueKey<String>('addresses-fade'),
-          opacity: fade,
-          child: FoldingColumn<Address>(
-            items: addresses,
-            keyOf: (Address a) => a.id,
-            itemBuilder: (BuildContext context, Address address) =>
-                AddressListCard(
-                  address: address,
-                  delivery: address.id == deliveryId,
-                  onEdit: () => onEdit(address),
-                  onChoose: () => onChoose(address),
-                  onDelete: () => onDelete(address),
-                  notRemoved: notRemoved?.id == address.id
-                      ? notRemoved!.failure
-                      : null,
+    // A scroll that starts closes the open card; one that is not vertical is
+    // a card's own swipe.
+    return NotificationListener<ScrollStartNotification>(
+      onNotification: (ScrollStartNotification start) {
+        if (revealed != null && start.metrics.axis == Axis.vertical) {
+          onCloseRevealed();
+        }
+        return false;
+      },
+      child: ListView(
+        key: const ValueKey<String>('addresses-list'),
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        children: <Widget>[
+          FadeTransition(
+            key: const ValueKey<String>('addresses-fade'),
+            opacity: fade,
+            child: FoldingColumn<Address>(
+              items: addresses,
+              keyOf: (Address a) => a.id,
+              itemBuilder: (BuildContext context, Address address) => Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: TapRegion(
+                  enabled: revealed == address.id,
+                  onTapOutside: (_) => onCloseRevealed(),
+                  child: SwipeToRemove(
+                    label: l10n.addressRemove,
+                    radius: 16,
+                    reveal: true,
+                    semanticsAction: false,
+                    buttonKey: ValueKey<String>('address-reveal-${address.id}'),
+                    removing: removals.hidden.contains(address.id),
+                    revealed: revealed == address.id,
+                    onRevealChanged: (bool open) =>
+                        onReveal(address.id, open: open),
+                    onRemove: () => onDelete(address),
+                    child: AddressListCard(
+                      address: address,
+                      spaceAbove: 0,
+                      delivery: address.id == deliveryId,
+                      onEdit: () => onEdit(address),
+                      onChoose: () => onChoose(address),
+                      onDelete: () => onDelete(address),
+                      onMenuOpened: onCloseRevealed,
+                      glow: glows[address.id] ?? 0,
+                      notRemoved: notRemoved?.id == address.id
+                          ? notRemoved!.failure
+                          : null,
+                    ),
+                  ),
                 ),
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

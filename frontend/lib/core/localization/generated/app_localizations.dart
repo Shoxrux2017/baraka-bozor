@@ -2702,6 +2702,48 @@ abstract class AppLocalizations {
   /// **'Bu manzil o\'chirilsinmi?'**
   String get addressRemoveConfirm;
 
+  /// No description provided for @addressRemovedBar.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'chirildi.'**
+  String addressRemovedBar(String name);
+
+  /// No description provided for @addressRemovedBarDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'chirildi. Endi yetkazish: «{next}».'**
+  String addressRemovedBarDelivery(String name, String next);
+
+  /// No description provided for @addressRemovedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili o\'chirildi. Qaytarish — pastdagi tugma.'**
+  String addressRemovedSpoken(String name);
+
+  /// No description provided for @addressRemovedSpokenDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili o\'chirildi. Endi yetkazish: «{next}». Qaytarish — pastdagi tugma.'**
+  String addressRemovedSpokenDelivery(String name, String next);
+
+  /// No description provided for @addressRestoredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili qaytarildi'**
+  String addressRestoredSpoken(String name);
+
+  /// No description provided for @addressNotRemovedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q, «{name}» manzili o\'chirilmadi'**
+  String addressNotRemovedSpoken(String name);
+
+  /// No description provided for @addressNotRemovedOtherSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili o\'chirilmadi'**
+  String addressNotRemovedOtherSpoken(String name);
+
   /// No description provided for @errorConfigurationIncomplete.
   ///
   /// In uz, this message translates to:

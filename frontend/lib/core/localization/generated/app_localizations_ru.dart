@@ -1474,6 +1474,41 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressRemoveConfirm => 'Удалить этот адрес?';
 
   @override
+  String addressRemovedBar(String name) {
+    return 'Удалили «$name».';
+  }
+
+  @override
+  String addressRemovedBarDelivery(String name, String next) {
+    return 'Удалили «$name». Доставка теперь: «$next».';
+  }
+
+  @override
+  String addressRemovedSpoken(String name) {
+    return 'Адрес «$name» удалён. Вернуть — кнопка внизу.';
+  }
+
+  @override
+  String addressRemovedSpokenDelivery(String name, String next) {
+    return 'Адрес «$name» удалён. Доставка теперь: «$next». Вернуть — кнопка внизу.';
+  }
+
+  @override
+  String addressRestoredSpoken(String name) {
+    return 'Адрес «$name» возвращён';
+  }
+
+  @override
+  String addressNotRemovedSpoken(String name) {
+    return 'Нет связи, адрес «$name» не удалён';
+  }
+
+  @override
+  String addressNotRemovedOtherSpoken(String name) {
+    return 'Адрес «$name» не удалён';
+  }
+
+  @override
   String get errorConfigurationIncomplete =>
       'Сервис ещё не настроен до конца. Попробуйте позже';
 

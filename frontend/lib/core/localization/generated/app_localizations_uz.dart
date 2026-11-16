@@ -1462,6 +1462,41 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressRemoveConfirm => 'Bu manzil o\'chirilsinmi?';
 
   @override
+  String addressRemovedBar(String name) {
+    return '«$name» o\'chirildi.';
+  }
+
+  @override
+  String addressRemovedBarDelivery(String name, String next) {
+    return '«$name» o\'chirildi. Endi yetkazish: «$next».';
+  }
+
+  @override
+  String addressRemovedSpoken(String name) {
+    return '«$name» manzili o\'chirildi. Qaytarish — pastdagi tugma.';
+  }
+
+  @override
+  String addressRemovedSpokenDelivery(String name, String next) {
+    return '«$name» manzili o\'chirildi. Endi yetkazish: «$next». Qaytarish — pastdagi tugma.';
+  }
+
+  @override
+  String addressRestoredSpoken(String name) {
+    return '«$name» manzili qaytarildi';
+  }
+
+  @override
+  String addressNotRemovedSpoken(String name) {
+    return 'Aloqa yo\'q, «$name» manzili o\'chirilmadi';
+  }
+
+  @override
+  String addressNotRemovedOtherSpoken(String name) {
+    return '«$name» manzili o\'chirilmadi';
+  }
+
+  @override
   String get errorConfigurationIncomplete =>
       'Xizmat hali to\'liq sozlanmagan. Keyinroq urinib ko\'ring';
 

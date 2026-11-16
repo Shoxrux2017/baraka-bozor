@@ -10,6 +10,7 @@ import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dar
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -385,6 +386,314 @@ void main() {
     expect(byKey('address-save'), findsOneWidget);
   });
 
+  group('removal', () {
+    Address home() => address(id: 'a-home', label: 'Дом');
+    Address mama() => address(id: 'a-mama', label: 'Мама', street: 'Bobur');
+    Address work() => address(id: 'a-work', label: 'Работа', street: 'Navoiy');
+
+    /// The menu's «Удалить» of [id], tapped; the first frame of its effect is
+    /// pumped.
+    Future<void> removeVia(WidgetTester tester, String id) async {
+      await tester.tap(byKey('address-menu-$id'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-delete-$id'));
+      await tester.pump();
+    }
+
+    /// Past the fold (its clock starts at the first frame after the tap) and
+    /// the bar's coming in.
+    Future<void> folded(WidgetTester tester) async {
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> drag(WidgetTester tester, String id, double dx) async {
+      await tester.drag(byKey('address-card-$id'), Offset(dx, 0));
+      await tester.pumpAndSettle();
+    }
+
+    double surfaceLeft(WidgetTester tester, String id) =>
+        tester.getTopLeft(byKey('address-surface-$id')).dx;
+
+    /// Frames of 200 ms, so that animations that start on a frame run through.
+    Future<void> frames(WidgetTester tester, int count) async {
+      for (int i = 0; i < count; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+    }
+
+    List<String> spoken(WidgetTester tester) =>
+        tester.takeAnnouncements().map((a) => a.message).toList();
+
+    testWidgets('removing folds the card and offers Вернуть for 5 s', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), work()];
+      await openList(tester);
+
+      await removeVia(tester, 'a-work');
+      expect(addresses.removed, isEmpty);
+      await folded(tester);
+
+      expect(byKey('address-card-a-work'), findsNothing);
+      expect(find.text('Удалили «Работа».'), findsOneWidget);
+      expect(find.text('Вернуть'), findsOneWidget);
+      expect(find.text('Удалить этот адрес?'), findsNothing);
+      await tester.pump(const Duration(seconds: 4));
+      expect(addresses.removed, isEmpty, reason: 'the bar is still up');
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(addresses.removed, <String>['a-work']);
+    });
+
+    testWidgets('removing the last address folds it, then shows the empty '
+        'state', (WidgetTester tester) async {
+      addresses.rows = <Address>[work()];
+      await openList(tester);
+
+      await removeVia(tester, 'a-work');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Адресов пока нет'), findsNothing, reason: 'folding');
+      expect(byKey('address-card-a-work'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(byKey('address-card-a-work'), findsNothing);
+      expect(find.text('Адресов пока нет'), findsOneWidget);
+      expect(find.text('Удалили «Работа».'), findsOneWidget);
+    });
+
+    testWidgets('Вернуть brings the card back, glowing, and sends nothing', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), work()];
+      await openList(tester);
+      await removeVia(tester, 'a-work');
+      await folded(tester);
+      tester.takeAnnouncements();
+
+      await tester.tap(find.text('Вернуть'));
+      await tester.pump();
+      expect(spoken(tester), contains('Адрес «Работа» возвращён'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(byKey('address-card-a-work'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(
+        tester.widget<Opacity>(byKey('address-glow-a-work')).opacity,
+        greaterThan(0),
+      );
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 3));
+      expect(addresses.removed, isEmpty);
+    });
+
+    testWidgets('removing the delivery address says where delivery goes now', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), mama()];
+      await openList(tester);
+      tester.takeAnnouncements();
+
+      await removeVia(tester, 'a-home');
+      await folded(tester);
+
+      expect(
+        find.text('Удалили «Дом». Доставка теперь: «Мама».'),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('address-surface-a-mama'),
+          matching: find.text('Доставка сюда'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        spoken(tester),
+        contains(
+          'Адрес «Дом» удалён. Доставка теперь: «Мама». '
+          'Вернуть — кнопка внизу.',
+        ),
+      );
+    });
+
+    testWidgets('offline the card returns and says it was not removed', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), work()];
+      addresses.removeFailure = const NetworkFailure();
+      await openList(tester);
+      await removeVia(tester, 'a-work');
+      await folded(tester);
+      tester.takeAnnouncements();
+
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(addresses.removed, <String>['a-work']);
+      expect(byKey('address-card-a-work'), findsOneWidget);
+      expect(find.text('Нет связи — адрес не удалён'), findsOneWidget);
+      expect(
+        tester.getTopLeft(byKey('address-card-a-work')).dy,
+        greaterThan(tester.getTopLeft(byKey('address-card-a-home')).dy),
+        reason: 'at its place',
+      );
+      expect(spoken(tester), contains('Нет связи, адрес «Работа» не удалён'));
+    });
+
+    testWidgets('a long swipe removes, a medium one reveals Удалить', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester);
+
+      await drag(tester, 'a-work', -150);
+      expect(surfaceLeft(tester, 'a-work'), closeTo(20 - 88, 1));
+      expect(byKey('address-reveal-a-work'), findsOneWidget);
+      expect(addresses.removed, isEmpty);
+
+      await tester.tap(byKey('address-reveal-a-work'));
+      await tester.pump();
+      await folded(tester);
+      expect(byKey('address-card-a-work'), findsNothing);
+      expect(find.text('Удалили «Работа».'), findsOneWidget);
+
+      await tester.drag(byKey('address-card-a-mama'), const Offset(-300, 0));
+      await frames(tester, 8);
+      expect(byKey('address-card-a-mama'), findsNothing);
+      expect(find.text('Удалили «Мама».'), findsOneWidget);
+      expect(addresses.removed, <String>['a-work'], reason: 'sent at once');
+
+      await frames(tester, 40);
+      expect(addresses.removed, <String>['a-work', 'a-mama']);
+    });
+
+    testWidgets('revealing a card closes the one open', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester);
+
+      await drag(tester, 'a-home', -150);
+      expect(surfaceLeft(tester, 'a-home'), closeTo(20 - 88, 1));
+      await drag(tester, 'a-mama', -150);
+      expect(surfaceLeft(tester, 'a-home'), closeTo(20, 1));
+      expect(surfaceLeft(tester, 'a-mama'), closeTo(20 - 88, 1));
+
+      await tester.tap(byKey('address-menu-a-work'));
+      await tester.pumpAndSettle();
+      expect(surfaceLeft(tester, 'a-mama'), closeTo(20, 1), reason: 'menu');
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      await drag(tester, 'a-work', -150);
+      expect(surfaceLeft(tester, 'a-work'), closeTo(20 - 88, 1));
+      await tester.tapAt(const Offset(200, 700));
+      await tester.pumpAndSettle();
+      expect(surfaceLeft(tester, 'a-work'), closeTo(20, 1), reason: 'tap');
+    });
+
+    testWidgets('scrolling closes the open card', (WidgetTester tester) async {
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester, size: const Size(400, 360));
+
+      await drag(tester, 'a-home', -150);
+      expect(surfaceLeft(tester, 'a-home'), closeTo(20 - 88, 1));
+      await tester.drag(byKey('address-card-a-mama'), const Offset(0, -60));
+      await tester.pumpAndSettle();
+      expect(surfaceLeft(tester, 'a-home'), closeTo(20, 1));
+    });
+
+    testWidgets('a second removal sends the first at once', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester);
+
+      await removeVia(tester, 'a-home');
+      await folded(tester);
+      await removeVia(tester, 'a-mama');
+      await frames(tester, 6);
+
+      expect(addresses.removed, <String>['a-home']);
+      expect(
+        find.text('Удалили «Мама». Доставка теперь: «Работа».'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Вернуть'));
+      await tester.pump();
+      await frames(tester, 40);
+
+      expect(addresses.removed, <String>['a-home']);
+      expect(byKey('address-card-a-mama'), findsOneWidget);
+      expect(byKey('address-card-a-home'), findsNothing);
+    });
+
+    testWidgets("the reader's Удалить removes and is announced", (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      addresses.rows = <Address>[home(), work()];
+      await openList(tester);
+      tester.takeAnnouncements();
+
+      expect(find.bySemanticsLabel(RegExp(r'^Удалить$')), findsNothing);
+      expect(find.byTooltip('Удалить'), findsNothing);
+      final SemanticsNode node = tester.getSemantics(
+        byKey('address-card-a-work'),
+      );
+      final SemanticsData data = node.getSemanticsData();
+      node.owner!.performAction(
+        node.id,
+        SemanticsAction.customAction,
+        data.customSemanticsActionIds!.firstWhere(
+          (int id) => CustomSemanticsAction.getAction(id)!.label == 'Удалить',
+        ),
+      );
+      await tester.pump();
+      await folded(tester);
+
+      expect(
+        spoken(tester),
+        contains('Адрес «Работа» удалён. Вернуть — кнопка внизу.'),
+      );
+      expect(byKey('address-card-a-work'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('leaving the screen keeps the bar and the removal', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[work(), mama()];
+      await openList(tester);
+      Finder profileValue(String text) => find.descendant(
+        of: byKey('profile-addresses'),
+        matching: find.text(text),
+      );
+      await removeVia(tester, 'a-work');
+      await folded(tester);
+
+      GoRouter.of(tester.element(find.byType(Scaffold).last)).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Удалили «Работа». Доставка теперь: «Мама».'), findsOne);
+      expect(profileValue('Мама'), findsOneWidget);
+      expect(profileValue('Работа'), findsNothing);
+      expect(addresses.removed, isEmpty);
+
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      expect(addresses.removed, <String>['a-work']);
+      expect(profileValue('Работа'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('every face fits at large text and meets the tap target guideline', () {
     const Size phone = Size(360, 640);
     const TextScaler large = NonlinearTextScaler(2);
@@ -407,6 +716,18 @@ void main() {
       ];
       await openList(tester, size: phone, textScaler: large);
       expect(byKey('address-card-a-1'), findsOneWidget);
+      await check(tester);
+    });
+
+    testWidgets('loaded, with a revealed card', (WidgetTester tester) async {
+      addresses.rows = <Address>[
+        address(label: 'Ota-onamning uyi, Chilonzor tumani'),
+        address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+      ];
+      await openList(tester, size: phone, textScaler: large);
+      await tester.drag(byKey('address-card-a-2'), const Offset(-150, 0));
+      await tester.pumpAndSettle();
+      expect(byKey('address-reveal-a-2'), findsOneWidget);
       await check(tester);
     });
 
