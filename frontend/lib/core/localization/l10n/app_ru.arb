@@ -3539,6 +3539,7 @@
       }
     }
   },
+  "bootConnecting": "Подключаемся…",
   "unreachableOfflineTitle": "Нет связи",
   "unreachableOfflineBody": "Проверьте мобильный интернет или Wi‑Fi. Приложение откроется само, когда связь появится.",
   "unreachableServerTitle": "BarakaBozor сейчас недоступен",

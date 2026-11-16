@@ -8966,6 +8966,12 @@ abstract class AppLocalizations {
   /// **'Til: {language}, tanlangan'**
   String languageChosenSpoken(String language);
 
+  /// Said under the launch wordmark when confirming the stored sessions takes longer than a moment
+  ///
+  /// In uz, this message translates to:
+  /// **'Ulanmoqda…'**
+  String get bootConnecting;
+
   /// No description provided for @unreachableOfflineTitle.
   ///
   /// In uz, this message translates to:

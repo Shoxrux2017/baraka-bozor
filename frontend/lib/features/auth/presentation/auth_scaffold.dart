@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/brand_wordmark.dart';
 import '../../../core/widgets/kit/quiet_icon.dart';
+import '../../../core/widgets/wordmark_landing.dart';
 
 /// The frame of every screen outside a role shell (`kit/01-vhod`): a white
 /// page with 24 px sides, the language switch top-right, the wordmark, a
@@ -68,7 +69,7 @@ class AuthScaffold extends StatelessWidget {
         footer: footer,
         above: <Widget>[
           if (wordmark) ...<Widget>[
-            const BrandWordmark(size: 30),
+            const WordmarkLanding(child: BrandWordmark(size: 30)),
             if (tagline != null) ...<Widget>[
               const SizedBox(height: 4),
               Text(
@@ -117,7 +118,11 @@ class AuthScaffold extends StatelessWidget {
                     else ...<Widget>[
                       if (wordmark) ...<Widget>[
                         const SizedBox(height: 8),
-                        const Center(child: BrandWordmark(size: 26)),
+                        const Center(
+                          child: WordmarkLanding(
+                            child: BrandWordmark(size: 26),
+                          ),
+                        ),
                       ],
                       SizedBox(height: wordmark ? 36 : 28),
                       _Header(title: title, subtitle: subtitle, child: child),

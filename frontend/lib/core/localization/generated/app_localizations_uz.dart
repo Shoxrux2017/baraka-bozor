@@ -5493,6 +5493,9 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String get bootConnecting => 'Ulanmoqda…';
+
+  @override
   String get unreachableOfflineTitle => 'Aloqa yo\'q';
 
   @override

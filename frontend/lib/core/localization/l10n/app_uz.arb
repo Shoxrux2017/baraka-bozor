@@ -4270,6 +4270,10 @@
       }
     }
   },
+  "bootConnecting": "Ulanmoqda…",
+  "@bootConnecting": {
+    "description": "Said under the launch wordmark when confirming the stored sessions takes longer than a moment"
+  },
   "unreachableOfflineTitle": "Aloqa yo'q",
   "unreachableOfflineBody": "Mobil internet yoki Wi‑Fi'ni tekshiring. Aloqa paydo bo'lganda ilova o'zi ochiladi.",
   "unreachableServerTitle": "BarakaBozor hozir ishlamayapti",

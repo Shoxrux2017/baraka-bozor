@@ -5589,6 +5589,9 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get bootConnecting => 'Подключаемся…';
+
+  @override
   String get unreachableOfflineTitle => 'Нет связи';
 
   @override
