@@ -585,10 +585,7 @@ void main() {
       expect(byKey('address-card-a-home'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 600));
 
-      expect(
-        tester.widget<Opacity>(byKey('address-glow-a-home')).opacity,
-        0,
-      );
+      expect(tester.widget<Opacity>(byKey('address-glow-a-home')).opacity, 0);
     });
 
     testWidgets('offline the card returns and says it was not removed', (

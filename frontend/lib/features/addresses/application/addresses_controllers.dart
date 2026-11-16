@@ -69,15 +69,17 @@ AsyncValue<List<Address>> _withFlagsOf(
 ) {
   AsyncValue<List<Address>> shown = data;
   if (source.hasError) {
-    // ignore: invalid_use_of_internal_member
-    shown = AsyncError<List<Address>>(
+    final AsyncValue<List<Address>> failed = AsyncError<List<Address>>(
       source.error!,
       source.stackTrace!,
-    ).copyWithPrevious(shown);
+    );
+    // ignore: invalid_use_of_internal_member
+    shown = failed.copyWithPrevious(shown);
   }
   if (source.isLoading) {
+    const AsyncValue<List<Address>> loading = AsyncLoading<List<Address>>();
     // ignore: invalid_use_of_internal_member
-    shown = const AsyncLoading<List<Address>>().copyWithPrevious(shown);
+    shown = loading.copyWithPrevious(shown);
   }
   return shown;
 }

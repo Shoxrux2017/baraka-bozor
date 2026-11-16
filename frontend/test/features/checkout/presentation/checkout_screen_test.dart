@@ -733,9 +733,8 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester);
-    final AddressRemovals removals = ProviderScope.containerOf(
-      anywhere(tester),
-    ).read(addressRemovalsProvider.notifier);
+    final AddressRemovals removals = ProviderScope.containerOf(anywhere(tester))
+        .read(addressRemovalsProvider.notifier);
     final AddressRemoval removal = AddressRemoval(addresses.rows.first);
 
     removals.hold(removal, closeBar: () {});
