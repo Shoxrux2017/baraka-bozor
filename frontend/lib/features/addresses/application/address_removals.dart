@@ -172,6 +172,11 @@ class AddressRemovals extends Notifier<AddressRemovalsState> {
       failure = null;
     }
     if (failure != null) {
+      // The delete may have reached the server: the list is read again,
+      // unless the connection was never made.
+      if (failure is! NetworkFailure || failure.mayHaveArrived) {
+        ref.invalidate(addressesProvider);
+      }
       state = AddressRemovalsState(
         held: state.held,
         hidden: <String>{...state.hidden}..remove(removal.address.id),

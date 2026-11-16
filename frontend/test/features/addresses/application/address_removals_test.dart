@@ -245,4 +245,40 @@ void main() {
       repository.loadHold!.complete();
     },
   );
+
+  test('a delete that may have arrived reloads the list', () async {
+    final AddressRemoval removal = await hold('a-2');
+    final int before = repository.loads;
+    repository.removeFailure = const NetworkFailure();
+
+    await removals().commit(removal);
+    await shownIds();
+
+    expect(repository.loads, before + 1);
+    expect(state().notRemoved?.id, 'a-2');
+  });
+
+  test('a delete that never left reloads nothing', () async {
+    final AddressRemoval removal = await hold('a-2');
+    final int before = repository.loads;
+    repository.removeFailure = const NetworkFailure(mayHaveArrived: false);
+
+    await removals().commit(removal);
+    await shownIds();
+
+    expect(repository.loads, before);
+    expect(state().notRemoved?.id, 'a-2');
+  });
+
+  test('a reloaded list without the address keeps it gone', () async {
+    final AddressRemoval removal = await hold('a-2');
+    repository.rows = repository.rows
+        .where((Address a) => a.id != 'a-2')
+        .toList();
+    repository.removeFailure = const NetworkFailure();
+
+    await removals().commit(removal);
+
+    expect(await shownIds(), <String>['a-3', 'a-1']);
+  });
 }

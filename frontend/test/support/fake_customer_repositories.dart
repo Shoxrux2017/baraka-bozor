@@ -111,8 +111,12 @@ class FakeAddressesRepository implements AddressesRepository {
   Completer<void>? loadHold;
   int _next = 1;
 
+  /// How many times the list was asked for.
+  int loads = 0;
+
   @override
   Future<List<Address>> addresses() async {
+    loads++;
     await loadHold?.future;
     final ApiFailure? failure = loadFailure;
     if (failure != null) {
