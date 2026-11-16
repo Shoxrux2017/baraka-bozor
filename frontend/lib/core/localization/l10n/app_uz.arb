@@ -2537,7 +2537,15 @@
   },
   "legalCopy": "Nusxa olish",
   "legalSelectAll": "Hammasini tanlash",
-  "legalNotPublishedYet": "Hujjat hali e'lon qilinmagan.",
+  "legalLoadingSpoken": "Hujjat yuklanmoqda…",
+  "legalLoading": "Yuklanmoqda…",
+  "legalFailedTitle": "Hujjat yuklanmadi",
+  "legalFailedOffline": "Internet aloqasi yo'q. Ulanishni tekshirib, «Qayta urinish»ni bosing.",
+  "legalFailedOther": "Hujjatni yuklab bo'lmadi. «Qayta urinish»ni bosing.",
+  "legalUnpublishedTitle": "Hujjat hali e'lon qilinmagan",
+  "legalUnpublishedBody": "Keyinroq qayta urinib ko'ring.",
+  "legalStaleOffline": "Aloqa yo'q — saqlangan nusxa ko'rsatildi",
+  "legalStaleFailed": "Yangilab bo'lmadi — saqlangan nusxa ko'rsatildi",
   "consentAll": "Davom etib, siz {terms} va {privacy}ni qabul qilasiz",
   "@consentAll": {
     "placeholders": {

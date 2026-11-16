@@ -3609,7 +3609,34 @@ class AppLocalizationsUz extends AppLocalizations {
   String get legalSelectAll => 'Hammasini tanlash';
 
   @override
-  String get legalNotPublishedYet => 'Hujjat hali e\'lon qilinmagan.';
+  String get legalLoadingSpoken => 'Hujjat yuklanmoqda…';
+
+  @override
+  String get legalLoading => 'Yuklanmoqda…';
+
+  @override
+  String get legalFailedTitle => 'Hujjat yuklanmadi';
+
+  @override
+  String get legalFailedOffline =>
+      'Internet aloqasi yo\'q. Ulanishni tekshirib, «Qayta urinish»ni bosing.';
+
+  @override
+  String get legalFailedOther =>
+      'Hujjatni yuklab bo\'lmadi. «Qayta urinish»ni bosing.';
+
+  @override
+  String get legalUnpublishedTitle => 'Hujjat hali e\'lon qilinmagan';
+
+  @override
+  String get legalUnpublishedBody => 'Keyinroq qayta urinib ko\'ring.';
+
+  @override
+  String get legalStaleOffline => 'Aloqa yo\'q — saqlangan nusxa ko\'rsatildi';
+
+  @override
+  String get legalStaleFailed =>
+      'Yangilab bo\'lmadi — saqlangan nusxa ko\'rsatildi';
 
   @override
   String consentAll(String terms, String privacy) {

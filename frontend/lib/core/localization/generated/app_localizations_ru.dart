@@ -3645,7 +3645,34 @@ class AppLocalizationsRu extends AppLocalizations {
   String get legalSelectAll => 'Выделить всё';
 
   @override
-  String get legalNotPublishedYet => 'Документ пока не опубликован.';
+  String get legalLoadingSpoken => 'Загружаем документ…';
+
+  @override
+  String get legalLoading => 'Загружаем…';
+
+  @override
+  String get legalFailedTitle => 'Документ не загрузился';
+
+  @override
+  String get legalFailedOffline =>
+      'Нет связи с интернетом. Проверьте подключение и нажмите «Повторить».';
+
+  @override
+  String get legalFailedOther =>
+      'Не удалось загрузить документ. Нажмите «Повторить».';
+
+  @override
+  String get legalUnpublishedTitle => 'Документ пока не опубликован';
+
+  @override
+  String get legalUnpublishedBody => 'Загляните позже.';
+
+  @override
+  String get legalStaleOffline => 'Нет связи — показана сохранённая копия';
+
+  @override
+  String get legalStaleFailed =>
+      'Не удалось обновить — показана сохранённая копия';
 
   @override
   String consentAll(String terms, String privacy) {

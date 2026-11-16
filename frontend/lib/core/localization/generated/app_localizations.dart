@@ -6146,11 +6146,59 @@ abstract class AppLocalizations {
   /// **'Hammasini tanlash'**
   String get legalSelectAll;
 
-  /// No description provided for @legalNotPublishedYet.
+  /// No description provided for @legalLoadingSpoken.
   ///
   /// In uz, this message translates to:
-  /// **'Hujjat hali e\'lon qilinmagan.'**
-  String get legalNotPublishedYet;
+  /// **'Hujjat yuklanmoqda…'**
+  String get legalLoadingSpoken;
+
+  /// No description provided for @legalLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuklanmoqda…'**
+  String get legalLoading;
+
+  /// No description provided for @legalFailedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat yuklanmadi'**
+  String get legalFailedTitle;
+
+  /// No description provided for @legalFailedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet aloqasi yo\'q. Ulanishni tekshirib, «Qayta urinish»ni bosing.'**
+  String get legalFailedOffline;
+
+  /// No description provided for @legalFailedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjatni yuklab bo\'lmadi. «Qayta urinish»ni bosing.'**
+  String get legalFailedOther;
+
+  /// No description provided for @legalUnpublishedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat hali e\'lon qilinmagan'**
+  String get legalUnpublishedTitle;
+
+  /// No description provided for @legalUnpublishedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyinroq qayta urinib ko\'ring.'**
+  String get legalUnpublishedBody;
+
+  /// No description provided for @legalStaleOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — saqlangan nusxa ko\'rsatildi'**
+  String get legalStaleOffline;
+
+  /// No description provided for @legalStaleFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilab bo\'lmadi — saqlangan nusxa ko\'rsatildi'**
+  String get legalStaleFailed;
 
   /// No description provided for @consentAll.
   ///

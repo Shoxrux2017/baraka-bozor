@@ -46,7 +46,6 @@ AppBar kitAppBar({
       child: shown,
       builder: (BuildContext context, double opacity, Widget? child) =>
           ExcludeSemantics(
-            excluding: opacity == 0,
             child: Opacity(
               key: const ValueKey<String>('kit-bar-title'),
               opacity: opacity,

@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/kit/quiet_icon.dart';
 import 'package:baraka_bozor/features/legal/domain/legal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -115,35 +119,383 @@ void main() {
     );
   });
 
-  testWidgets('a document that is not published says so', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
+  Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
-    expect(find.text('Документ пока не опубликован.'), findsOneWidget);
-  });
+  double barTitleOpacity(WidgetTester tester) =>
+      tester.widget<Opacity>(byKey('kit-bar-title')).opacity;
 
-  testWidgets('a failure offers a retry that loads again', (
-    WidgetTester tester,
-  ) async {
-    legal.documentFailure = const NetworkFailure();
+  List<String> announced(WidgetTester tester) => tester
+      .takeAnnouncements()
+      .map((CapturedAccessibilityAnnouncement a) => a.message)
+      .toList();
 
-    await open(tester);
+  GoRouter router(WidgetTester tester) =>
+      GoRouter.of(tester.element(find.byType(Scaffold).first));
 
-    expect(find.byKey(const ValueKey<String>('retry-load')), findsOneWidget);
-    expect(legal.documentCalls, hasLength(1));
+  /// Opens the document without settling, so a skeleton that pulses or a held
+  /// answer can be looked at.
+  Future<void> openWithoutSettling(
+    WidgetTester tester, {
+    TextScaler? textScaler,
+  }) async {
+    await tester.pumpWidget(
+      appUnderTest(
+        legal: legal,
+        device: const Locale('ru'),
+        textScaler: textScaler,
+      ),
+    );
+    await tester.pumpAndSettle();
+    router(tester).push(AppPaths.legal(LegalDocumentKind.terms));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+  }
 
-    legal.documentFailure = null;
+  double textOpacity(WidgetTester tester) =>
+      tester.widget<FadeTransition>(byKey('legal-text-fade')).opacity.value;
+
+  void publish() {
     legal.documents[(LegalDocumentKind.terms, AppLanguage.ru)] = document(
       LegalDocumentKind.terms,
       AppLanguage.ru,
     );
-    await tester.tap(find.byKey(const ValueKey<String>('retry-load')));
+  }
+
+  testWidgets(
+    'a first open shows the title and a skeleton, then fades the text in',
+    (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      publish();
+      final Completer<void> hold = Completer<void>();
+      legal.documentHold = hold;
+
+      await openWithoutSettling(tester);
+
+      expect(byKey('legal-title'), findsOneWidget);
+      expect(byKey('legal-skeleton'), findsOneWidget);
+      expect(
+        tester.getSemantics(byKey('legal-skeleton')).label,
+        'Загружаем документ…',
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(announced(tester), contains('Загружаем документ…'));
+      expect(barTitleOpacity(tester), 0);
+      expect(find.text('Первый абзац.'), findsNothing);
+
+      hold.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(byKey('legal-skeleton'), findsNothing);
+      expect(find.text('Первый абзац.'), findsOneWidget);
+      expect(textOpacity(tester), lessThan(0.3));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(textOpacity(tester), inInclusiveRange(0.3, 0.8));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(textOpacity(tester), 1);
+      expect(announced(tester), isEmpty);
+      handle.dispose();
+    },
+  );
+
+  testWidgets('with reduced motion the text is there at once', (
+    WidgetTester tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    publish();
+    final Completer<void> hold = Completer<void>();
+    legal.documentHold = hold;
+
+    await openWithoutSettling(tester);
+    expect(byKey('legal-skeleton'), findsOneWidget);
+    hold.complete();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Первый абзац.'), findsOneWidget);
+    expect(textOpacity(tester), 1);
+  });
+
+  testWidgets('a second open is instant from the copy', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    publish();
+    await open(tester);
+    router(tester).pop();
+    await tester.pumpAndSettle();
+    announced(tester);
+    final Completer<void> hold = Completer<void>();
+    legal.documentHold = hold;
+
+    router(tester).push(AppPaths.legal(LegalDocumentKind.terms));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Первый абзац.'), findsOneWidget);
+    expect(byKey('legal-skeleton'), findsNothing);
+    expect(textOpacity(tester), 1);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(announced(tester), isEmpty);
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Первый абзац.'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('offline without a copy shows the centred state', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    legal.documentFailure = const NetworkFailure();
+
+    await open(tester);
+
+    expect(byKey('legal-failed'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('legal-failed'),
+        matching: find.byType(QuietIcon),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.wifi_off), findsOneWidget);
+    expect(find.text('Документ не загрузился'), findsOneWidget);
+    const String reason =
+        'Нет связи с интернетом. Проверьте подключение и нажмите «Повторить».';
+    expect(find.text(reason), findsOneWidget);
+    expect(announced(tester), contains('Документ не загрузился. $reason'));
+    expect(
+      find.text('Условия использования'),
+      findsOneWidget,
+      reason: 'the bar title is whole when there is no large title',
+    );
+    expect(byKey('kit-bar-title'), findsNothing);
+
+    final Completer<void> hold = Completer<void>();
+    legal.documentHold = hold;
+    legal.documentFailure = null;
+    publish();
+    await tester.tap(byKey('legal-retry'));
+    await tester.pump();
+
+    expect(find.text('Повторить'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('legal-retry'),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Загружаем…'), findsOneWidget);
+    expect(announced(tester), <String>['Загружаем…']);
+    await tester.tap(byKey('legal-retry'));
+    await tester.pump();
+    expect(legal.documentCalls, hasLength(2), reason: 'busy takes no tap');
+
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('legal-failed'), findsNothing);
+    expect(find.text('Первый абзац.'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('a failure that is not the network says so', (
+    WidgetTester tester,
+  ) async {
+    legal.documentFailure = const UnexpectedFailure();
+
+    await open(tester);
+
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(Icons.wifi_off), findsNothing);
+    expect(
+      find.text('Не удалось загрузить документ. Нажмите «Повторить».'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('offline with a copy keeps it under a strip', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    publish();
+    await open(tester);
+    router(tester).pop();
+    await tester.pumpAndSettle();
+    announced(tester);
+    legal.documentFailure = const NetworkFailure();
+
+    router(tester).push(AppPaths.legal(LegalDocumentKind.terms));
     await tester.pumpAndSettle();
 
-    expect(legal.documentCalls, hasLength(2));
-    expect(find.text('Общие положения'), findsOneWidget);
+    expect(find.text('Первый абзац.'), findsOneWidget);
+    expect(byKey('legal-stale'), findsOneWidget);
+    expect(find.text('Нет связи — показана сохранённая копия'), findsOneWidget);
+    expect(announced(tester), <String>[
+      'Нет связи — показана сохранённая копия',
+    ]);
+    expect(
+      tester.getTopLeft(byKey('legal-stale')).dy,
+      greaterThan(tester.getBottomLeft(byKey('legal-title')).dy),
+    );
+    expect(
+      tester.getTopLeft(byKey('legal-date')).dy,
+      greaterThan(tester.getBottomLeft(byKey('legal-stale')).dy),
+    );
+
+    final Completer<void> hold = Completer<void>();
+    legal.documentHold = hold;
+    legal.documentFailure = null;
+    await tester.tap(byKey('legal-stale-retry'));
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: byKey('legal-stale-retry'),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(announced(tester), <String>['Загружаем…']);
+    expect(find.text('Первый абзац.'), findsOneWidget);
+
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('legal-stale'), findsNothing);
+    expect(find.text('Первый абзац.'), findsOneWidget);
+    handle.dispose();
   });
+
+  testWidgets('a refresh that fails for another reason says so in the strip', (
+    WidgetTester tester,
+  ) async {
+    publish();
+    await open(tester);
+    router(tester).pop();
+    await tester.pumpAndSettle();
+    legal.documentFailure = const UnexpectedFailure();
+
+    router(tester).push(AppPaths.legal(LegalDocumentKind.terms));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Не удалось обновить — показана сохранённая копия'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+  });
+
+  testWidgets('an unpublished document says to come back later', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+
+    await open(tester);
+
+    expect(byKey('legal-unpublished'), findsOneWidget);
+    expect(find.byIcon(Icons.description_outlined), findsOneWidget);
+    expect(find.text('Документ пока не опубликован'), findsOneWidget);
+    expect(find.text('Загляните позже.'), findsOneWidget);
+    expect(announced(tester), contains('Документ пока не опубликован'));
+    final Material back = tester.widget<Material>(
+      find
+          .descendant(of: byKey('legal-back'), matching: find.byType(Material))
+          .first,
+    );
+    expect(back.color, Colors.white);
+    expect(
+      (back.shape! as RoundedRectangleBorder).side.color,
+      KitColors.outline,
+    );
+
+    await tester.tap(byKey('legal-back'));
+    await tester.pumpAndSettle();
+    expect(screen, findsNothing);
+    handle.dispose();
+  });
+
+  testWidgets('back with nothing under the page goes to the start', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      appUnderTest(legal: legal, device: const Locale('ru')),
+    );
+    await tester.pumpAndSettle();
+    router(tester).go(AppPaths.legal(LegalDocumentKind.terms));
+    await tester.pumpAndSettle();
+    expect(byKey('legal-back'), findsOneWidget);
+
+    await tester.tap(byKey('legal-back'));
+    await tester.pumpAndSettle();
+
+    expect(screen, findsNothing);
+  });
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100%', TextScaler.noScaling),
+    ('x2', const NonlinearTextScaler(2)),
+  ]) {
+    group('every other face keeps its tap targets (${scale.$1})', () {
+      void small(WidgetTester tester) {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+      }
+
+      testWidgets('the skeleton', (WidgetTester tester) async {
+        small(tester);
+        final SemanticsHandle handle = tester.ensureSemantics();
+        legal.documentHold = Completer<void>();
+        await openWithoutSettling(tester, textScaler: scale.$2);
+        expect(byKey('legal-skeleton'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('failed and busy', (WidgetTester tester) async {
+        small(tester);
+        final SemanticsHandle handle = tester.ensureSemantics();
+        legal.documentFailure = const NetworkFailure();
+        await open(tester, textScaler: scale.$2);
+        expect(byKey('legal-failed'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        legal.documentHold = Completer<void>();
+        await tester.tap(byKey('legal-retry'));
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('unpublished', (WidgetTester tester) async {
+        small(tester);
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(tester, textScaler: scale.$2);
+        expect(byKey('legal-unpublished'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('a copy under the strip', (WidgetTester tester) async {
+        small(tester);
+        final SemanticsHandle handle = tester.ensureSemantics();
+        publish();
+        await open(tester, textScaler: scale.$2);
+        router(tester).pop();
+        await tester.pumpAndSettle();
+        legal.documentFailure = const NetworkFailure();
+        router(tester).push(AppPaths.legal(LegalDocumentKind.terms));
+        await tester.pumpAndSettle();
+        expect(byKey('legal-stale'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        legal.documentHold = Completer<void>();
+        await tester.tap(byKey('legal-stale-retry'));
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    });
+  }
 
   testWidgets('switching the interface to Uzbek loads the uz document', (
     WidgetTester tester,
@@ -176,8 +528,6 @@ void main() {
     expect(find.text('Tahrir: 2026-yil 19-oktabr'), findsOneWidget);
   });
 
-  Finder byKey(String key) => find.byKey(ValueKey<String>(key));
-
   LegalDocument longDocument({AppLanguage language = AppLanguage.ru}) =>
       document(
         LegalDocumentKind.terms,
@@ -201,9 +551,6 @@ void main() {
         ),
       )
       .position;
-
-  double barTitleOpacity(WidgetTester tester) =>
-      tester.widget<Opacity>(byKey('kit-bar-title')).opacity;
 
   double barEdgeOpacity(WidgetTester tester) =>
       tester.widget<Opacity>(byKey('kit-bar-edge')).opacity;
@@ -254,11 +601,12 @@ void main() {
       position(tester).jumpTo(bottom - 15);
       await tester.pump();
       expect(barTitleOpacity(tester), closeTo(0.5, 0.01));
-      expect(barTitleHidden, findsNothing);
+      expect(barTitleHidden, findsOneWidget, reason: 'silent at any opacity');
 
       position(tester).jumpTo(bottom + 10);
       await tester.pump();
       expect(barTitleOpacity(tester), 1);
+      expect(barTitleHidden, findsOneWidget, reason: 'silent at full opacity');
       expect(barEdgeOpacity(tester), 1);
 
       position(tester).jumpTo(4);
