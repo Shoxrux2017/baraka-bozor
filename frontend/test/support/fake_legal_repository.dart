@@ -21,6 +21,11 @@ class FakeLegalRepository implements LegalRepository {
   Completer<void>? indexHold;
   ApiFailure? documentFailure;
 
+  /// While set when a document read starts, that read answers only once it
+  /// completes; a read that started before it was set or cleared keeps the
+  /// hold it saw.
+  Completer<void>? documentHold;
+
   int indexCalls = 0;
 
   /// Every document read, as kind and language.
@@ -70,6 +75,7 @@ class FakeLegalRepository implements LegalRepository {
     AppLanguage language,
   ) async {
     documentCalls.add((kind, language));
+    await documentHold?.future;
     final ApiFailure? failure = documentFailure;
     if (failure != null) {
       throw failure;
