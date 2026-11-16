@@ -273,7 +273,10 @@ void main() {
       expect(draft.street, 'Navoiy');
       expect(draft.label, isNull);
       expect(draft.deliveryNote, 'Domofon 12');
-      expect(find.text(l10n(tester).addressSaved), findsOneWidget);
+      expect(
+        find.text(l10n(tester).addressAdded('Navoiy, 5A')),
+        findsOneWidget,
+      );
       expect(
         find.text('Navoiy, 5A'),
         findsOneWidget,
@@ -859,7 +862,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(addresses.saved, hasLength(1));
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
-      expect(find.text(l10n(tester).addressSaved), findsOneWidget);
+      expect(
+        find.text(l10n(tester).addressAdded('Navoiy, 5A')),
+        findsOneWidget,
+      );
       expect(
         find.text('Navoiy, 5A'),
         findsOneWidget,
@@ -921,7 +927,7 @@ void main() {
       addresses.hold!.complete();
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).addressSaved), findsNothing);
+      expect(find.text(l10n(tester).addressAdded('Navoiy, 5A')), findsNothing);
       expect(byKey('address-new'), findsNothing);
     });
 

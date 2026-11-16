@@ -228,7 +228,6 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
           .showSnackBar(SnackBar(content: Text(l10n.noChanges)));
       return;
     }
-    final String savedText = l10n.addressSaved;
     setState(() => _sentPoint = _point);
 
     final Address? saved = await ref
@@ -239,11 +238,24 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     if (!mounted || saved == null) {
       return;
     }
+    // The bar names the address and takes the place of any bar showing, so
+    // the name is seen at once (`DL-137`).
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(savedText)));
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            address == null
+                ? l10n.addressAdded(saved.name)
+                : l10n.addressSavedNamed(saved.name),
+          ),
+        ),
+      );
     if (context.canPop()) {
-      // A new address goes back to whoever asked for it (`DL-75`).
-      context.pop<Address>(address == null ? saved : null);
+      // Whoever asked for the form gets the saved address back: a new one
+      // becomes the delivery address (`DL-75`), a saved one glows in the
+      // list (`DL-137`).
+      context.pop<Address>(saved);
     } else {
       context.go(AppPaths.customerAddresses);
     }

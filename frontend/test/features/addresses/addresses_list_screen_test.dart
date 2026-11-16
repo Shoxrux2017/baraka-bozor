@@ -694,6 +694,154 @@ void main() {
     });
   });
 
+  group('a saved address', () {
+    List<Address> ten() => <Address>[
+      for (int i = 0; i < 10; i++)
+        address(id: 'a-$i', label: 'Метка $i', street: 'Ул $i', house: '$i'),
+    ];
+
+    ScrollPosition position(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: byKey('addresses-list'),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    /// Frames of 50 ms until the form is gone.
+    Future<void> leaveForm(WidgetTester tester) async {
+      for (
+        int i = 0;
+        i < 60 && byKey('address-save').evaluate().isNotEmpty;
+        i++
+      ) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(byKey('address-save'), findsNothing);
+    }
+
+    Future<void> saveForm(WidgetTester tester) async {
+      await tester.scrollUntilVisible(
+        byKey('address-save'),
+        200,
+        scrollable: find
+            .descendant(
+              of: byKey('address-form'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pump();
+      await tester.tap(byKey('address-save'));
+      await tester.pump();
+    }
+
+    /// A new address «Сестра» typed and sent; the form is left.
+    Future<void> addSister(WidgetTester tester) async {
+      await tester.tap(byKey('address-new'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-point-confirm'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('field-street'), 'Bobur');
+      await tester.enterText(byKey('field-house'), '3');
+      await tester.ensureVisible(byKey('label-custom'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('label-custom'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(byKey('field-label'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('field-label'), 'Сестра');
+      await saveForm(tester);
+      await leaveForm(tester);
+    }
+
+    /// The last card, cut by the bottom of the list, opened and its house
+    /// changed.
+    Future<void> editLastCut(WidgetTester tester) async {
+      await tester.drag(byKey('addresses-list'), const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      await tester.drag(byKey('addresses-list'), const Offset(0, 90));
+      await tester.pumpAndSettle();
+      final Offset top = tester.getTopLeft(byKey('address-card-a-9'));
+      await tester.tapAt(top + const Offset(60, 20));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('field-house'), '99');
+      await saveForm(tester);
+      await leaveForm(tester);
+    }
+
+    double glowOf(WidgetTester tester, String id) =>
+        tester.widget<Opacity>(byKey('address-glow-$id')).opacity;
+
+    testWidgets(
+      'a new address unfolds at the top and glows; the bar names it',
+      (WidgetTester tester) async {
+        addresses.rows = ten();
+        await openList(tester);
+        await tester.drag(byKey('addresses-list'), const Offset(0, -500));
+        await tester.pumpAndSettle();
+        expect(position(tester).pixels, greaterThan(100));
+
+        await addSister(tester);
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(position(tester).pixels, 0);
+        await tester.pump(const Duration(milliseconds: 700));
+        expect(find.text('Сестра'), findsOneWidget);
+        expect(
+          tester.getTopLeft(byKey('address-card-a-new-1')).dy,
+          lessThan(tester.getTopLeft(byKey('address-card-a-0')).dy),
+          reason: 'the new card is the first',
+        );
+        expect(glowOf(tester, 'a-new-1'), greaterThan(0));
+        expect(find.text('Адрес «Сестра» добавлен'), findsOneWidget);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('an edited address glows and the bar names it', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[
+        ...ten().take(9),
+        address(id: 'a-9', label: 'Работа', street: 'Ул 9', house: '9'),
+      ];
+      await openList(tester);
+      await editLastCut(tester);
+      await tester.pump(const Duration(milliseconds: 350));
+
+      final double bottom = tester.getBottomLeft(byKey('address-card-a-9')).dy;
+      expect(
+        bottom,
+        lessThanOrEqualTo(tester.getBottomLeft(byKey('addresses-list')).dy),
+        reason: 'brought into view',
+      );
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(glowOf(tester, 'a-9'), greaterThan(0));
+      expect(find.text('Адрес «Работа» сохранён'), findsOneWidget);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the glow waits for a list that reloads late', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[
+        ...ten().take(9),
+        address(id: 'a-9', label: 'Работа', street: 'Ул 9', house: '9'),
+      ];
+      await openList(tester);
+      addresses.loadHold = Completer<void>();
+      await editLastCut(tester);
+      await tester.pump(const Duration(milliseconds: 1000));
+      expect(glowOf(tester, 'a-9'), 0, reason: 'the list has not answered');
+
+      await release(tester);
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(glowOf(tester, 'a-9'), greaterThan(0));
+      await tester.pumpAndSettle();
+    });
+  });
+
   group('every face fits at large text and meets the tap target guideline', () {
     const Size phone = Size(360, 640);
     const TextScaler large = NonlinearTextScaler(2);

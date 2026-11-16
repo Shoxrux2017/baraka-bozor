@@ -616,7 +616,22 @@
       }
     }
   },
-  "addressSaved": "Адрес сохранён",
+  "addressAdded": "Адрес «{name}» добавлен",
+  "@addressAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSavedNamed": "Адрес «{name}» сохранён",
+  "@addressSavedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "addressAddNew": "Добавить новый адрес",
   "addressMenuEdit": "Изменить",
   "addressLandmarkLine": "Ориентир: {landmark}",

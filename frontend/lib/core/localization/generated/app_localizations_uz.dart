@@ -1388,7 +1388,14 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get addressSaved => 'Manzil saqlandi';
+  String addressAdded(String name) {
+    return '«$name» manzili qo\'shildi';
+  }
+
+  @override
+  String addressSavedNamed(String name) {
+    return '«$name» manzili saqlandi';
+  }
 
   @override
   String get addressAddNew => 'Yangi manzil qo\'shish';

@@ -1401,7 +1401,14 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get addressSaved => 'Адрес сохранён';
+  String addressAdded(String name) {
+    return 'Адрес «$name» добавлен';
+  }
+
+  @override
+  String addressSavedNamed(String name) {
+    return 'Адрес «$name» сохранён';
+  }
 
   @override
   String get addressAddNew => 'Добавить новый адрес';

@@ -163,11 +163,10 @@ class FakeAddressesRepository implements AddressesRepository {
       landmark: draft.landmark,
       deliveryNote: draft.deliveryNote,
     );
-    rows = <Address>[
-      for (final Address a in rows)
-        if (a.id != stored.id) a,
-      stored,
-    ];
+    // The server lists the newest first; an edit keeps its place.
+    rows = id == null
+        ? <Address>[stored, ...rows]
+        : <Address>[for (final Address a in rows) a.id == id ? stored : a];
     return stored;
   }
 }

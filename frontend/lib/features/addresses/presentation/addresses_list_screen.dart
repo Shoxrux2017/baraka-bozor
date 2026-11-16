@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +62,13 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
   /// How often each card was asked to glow.
   Map<String, int> _glows = const <String, int>{};
 
+  /// The list's scroll, so a saved address can be brought into view.
+  final ScrollController _scroll = ScrollController();
+
+  /// The address a form just saved, until the list shows it: its card glows
+  /// once the shown list has stopped loading and holds it (`DL-137`).
+  ({String id, bool isNew})? _pending;
+
   /// A list emptied by a removal is drawn as cards until the last of them has
   /// folded; then the empty state takes over (`DL-137`).
   Timer? _emptyTimer;
@@ -74,6 +82,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
   void dispose() {
     _emptyTimer?.cancel();
     _fade.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -166,6 +175,10 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<Address>> shown = ref.watch(shownAddressesProvider);
+    ref.listen<AsyncValue<List<Address>>>(
+      shownAddressesProvider,
+      (_, AsyncValue<List<Address>> next) => _showPending(next),
+    );
     final AsyncValue<Address?> delivery = ref.watch(deliveryAddressProvider);
     if (delivery.hasValue) {
       _deliveryId = delivery.requireValue?.id;
@@ -213,6 +226,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
         onDelete: _remove,
         revealed: _revealed,
         glows: _glows,
+        scroll: _scroll,
         onReveal: _reveal,
         onCloseRevealed: _closeRevealed,
       ),
@@ -236,10 +250,125 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
     );
   }
 
-  void _addNew() => context.push(AppPaths.customerNewAddress);
+  Future<void> _addNew() => _openForm(AppPaths.customerNewAddress, isNew: true);
 
-  void _edit(Address address) =>
-      context.push(AppPaths.customerAddress(address.id));
+  Future<void> _edit(Address address) =>
+      _openForm(AppPaths.customerAddress(address.id), isNew: false);
+
+  /// Opens the form; the address it saves comes back to be shown (`DL-137`).
+  Future<void> _openForm(String path, {required bool isNew}) async {
+    final String? account = ref.read(customerAccountProvider);
+    final Address? saved = await context.push<Address>(path);
+    if (!mounted ||
+        saved == null ||
+        ref.read(customerAccountProvider) != account) {
+      return;
+    }
+    _pending = (id: saved.id, isNew: isNew);
+    if (isNew) {
+      _scrollToTop();
+    }
+    _showPending(ref.read(shownAddressesProvider));
+  }
+
+  void _scrollToTop() {
+    if (!_scroll.hasClients || _scroll.offset == 0) {
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(0);
+    } else {
+      unawaited(
+        _scroll.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: const Cubic(0.2, 0.8, 0.2, 1),
+        ),
+      );
+    }
+  }
+
+  /// The saved address glows once the shown list is no longer loading and
+  /// holds it, so it glows on what the server answered; a reload that failed
+  /// drops the wish.
+  void _showPending(AsyncValue<List<Address>> shown) {
+    final ({String id, bool isNew})? pending = _pending;
+    if (pending == null || shown.isLoading) {
+      return;
+    }
+    if (!shown.hasValue) {
+      _pending = null;
+      return;
+    }
+    if (!shown.requireValue.any((Address a) => a.id == pending.id)) {
+      return;
+    }
+    _pending = null;
+    setState(
+      () => _glows = <String, int>{
+        ..._glows,
+        pending.id: (_glows[pending.id] ?? 0) + 1,
+      },
+    );
+    if (!pending.isNew) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _bringIntoView(pending.id),
+      );
+    }
+  }
+
+  /// An edited card is brought into view the nearest way: not at all when it
+  /// is whole in view already.
+  void _bringIntoView(String id) {
+    if (!mounted || !_scroll.hasClients) {
+      return;
+    }
+    final ValueKey<String> key = ValueKey<String>('address-card-$id');
+    RenderObject? card;
+    void visit(Element element) {
+      if (card != null) {
+        return;
+      }
+      if (element.widget.key == key) {
+        card = element.renderObject;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    context.visitChildElements(visit);
+    final RenderObject? found = card;
+    if (found == null || !found.attached) {
+      return;
+    }
+    final RenderAbstractViewport viewport = RenderAbstractViewport.of(found);
+    final ScrollPosition position = _scroll.position;
+    final double top = viewport.getOffsetToReveal(found, 0).offset;
+    final double bottom = viewport.getOffsetToReveal(found, 1).offset;
+    final double? target = position.pixels > top
+        ? top
+        : position.pixels < bottom
+        ? bottom
+        : null;
+    if (target == null) {
+      return;
+    }
+    final double clamped = target.clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if (MediaQuery.disableAnimationsOf(context)) {
+      position.jumpTo(clamped);
+    } else {
+      unawaited(
+        position.animateTo(
+          clamped,
+          duration: const Duration(milliseconds: 300),
+          curve: const Cubic(0.2, 0.8, 0.2, 1),
+        ),
+      );
+    }
+  }
 }
 
 /// The cards, in a column that folds them in and out.
@@ -253,6 +382,7 @@ class _Cards extends ConsumerWidget {
     required this.onDelete,
     required this.revealed,
     required this.glows,
+    required this.scroll,
     required this.onReveal,
     required this.onCloseRevealed,
   });
@@ -265,6 +395,7 @@ class _Cards extends ConsumerWidget {
   final void Function(Address) onDelete;
   final String? revealed;
   final Map<String, int> glows;
+  final ScrollController scroll;
   final void Function(String id, {required bool open}) onReveal;
   final VoidCallback onCloseRevealed;
 
@@ -285,6 +416,7 @@ class _Cards extends ConsumerWidget {
       },
       child: ListView(
         key: const ValueKey<String>('addresses-list'),
+        controller: scroll,
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: <Widget>[
           FadeTransition(

@@ -707,6 +707,23 @@ void main() {
     );
   });
 
+  testWidgets('a new address from the home still becomes the delivery '
+      'address', (WidgetTester tester) async {
+    addresses.rows = <Address>[address(id: 'a-1')];
+    await open(tester);
+    await tester.tap(byKey('delivery-address'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('delivery-address-new'));
+    await tester.pumpAndSettle();
+    await saveNewAddress(tester);
+
+    expect(
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+      'a-new-1',
+    );
+    expect(find.text("«Dacha, 9» manzili qo'shildi"), findsOneWidget);
+  });
+
   testWidgets('the first address added from the header becomes the choice', (
     WidgetTester tester,
   ) async {

@@ -2576,11 +2576,17 @@ abstract class AppLocalizations {
   /// **'Bu manzil yetkazib berish hududidan tashqarida: {distance} km. Biz {max} km gacha yetkazib beramiz'**
   String addressOutsideArea(String distance, String max);
 
-  /// No description provided for @addressSaved.
+  /// No description provided for @addressAdded.
   ///
   /// In uz, this message translates to:
-  /// **'Manzil saqlandi'**
-  String get addressSaved;
+  /// **'«{name}» manzili qo\'shildi'**
+  String addressAdded(String name);
+
+  /// No description provided for @addressSavedNamed.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili saqlandi'**
+  String addressSavedNamed(String name);
 
   /// No description provided for @addressAddNew.
   ///

@@ -682,7 +682,22 @@
       }
     }
   },
-  "addressSaved": "Manzil saqlandi",
+  "addressAdded": "«{name}» manzili qo'shildi",
+  "@addressAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSavedNamed": "«{name}» manzili saqlandi",
+  "@addressSavedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "addressAddNew": "Yangi manzil qo'shish",
   "addressMenuEdit": "O'zgartirish",
   "addressLandmarkLine": "Mo'ljal: {landmark}",
