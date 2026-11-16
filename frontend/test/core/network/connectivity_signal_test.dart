@@ -15,7 +15,7 @@ void main() {
 
     changes.add(<ConnectivityResult>[ConnectivityResult.none]);
     await pumpEventQueue();
-    expect(regained, 0, reason: 'the first report only says where we stand');
+    expect(regained, 0, reason: 'offline is not a return');
 
     changes.add(<ConnectivityResult>[ConnectivityResult.wifi]);
     await pumpEventQueue();
@@ -36,7 +36,7 @@ void main() {
     await sub.cancel();
   });
 
-  test('a first report of being online is not a return', () async {
+  test('a first report of being online is a return', () async {
     final StreamController<List<ConnectivityResult>> changes =
         StreamController<List<ConnectivityResult>>();
     int regained = 0;
@@ -47,7 +47,11 @@ void main() {
     changes.add(<ConnectivityResult>[ConnectivityResult.wifi]);
     await pumpEventQueue();
 
-    expect(regained, 0);
+    expect(
+      regained,
+      1,
+      reason: 'the plugin may have said nothing while offline',
+    );
     await sub.cancel();
   });
 }

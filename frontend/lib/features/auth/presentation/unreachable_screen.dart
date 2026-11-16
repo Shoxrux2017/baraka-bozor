@@ -112,7 +112,7 @@ class _UnreachableScreenState extends ConsumerState<UnreachableScreen>
     if (before is! SessionUnreachable) {
       return;
     }
-    if (now is SignedIn) {
+    if (now is SignedIn || now is SignedOut) {
       announce(context, l10n.unreachableOpening);
     } else if (now is SessionUnreachable && before.retrying && !now.retrying) {
       // A pressed check ended without a connection: the series starts over.
@@ -157,7 +157,9 @@ class UnreachableView extends StatelessWidget {
     final String result = offline
         ? l10n.unreachableStillOffline
         : l10n.unreachableStillDown;
-    final String? time = checkedAt == null ? null : _hourWithoutZero(checkedAt);
+    final String? time = checkedAt == null
+        ? null
+        : TashkentTime.time(checkedAt);
 
     return AuthStatusScaffold(
       icon: offline ? Icons.wifi_off : Icons.cloud_off,
@@ -245,11 +247,4 @@ class _CheckedLine extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The Tashkent time of day as the design reads it, «9:41», where
-/// [TashkentTime.time] pads the hour («09:41»).
-String _hourWithoutZero(DateTime instant) {
-  final String time = TashkentTime.time(instant);
-  return time.startsWith('0') ? time.substring(1) : time;
 }

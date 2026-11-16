@@ -162,7 +162,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Повторить'), findsOneWidget);
-    expect(find.text('Связи пока нет · проверено в 9:41'), findsOneWidget);
+    expect(find.text('Связи пока нет · проверено в 09:41'), findsOneWidget);
     expect(haptics, <String>[
       'HapticFeedbackType.mediumImpact',
     ], reason: 'one medium impact when a pressed check finds nothing');
@@ -213,7 +213,7 @@ void main() {
     await tester.pump();
     expect(announced(tester), <String>['Связи пока нет']);
     expect(
-      find.bySemanticsLabel('Связи пока нет, проверено в 9:41'),
+      find.bySemanticsLabel('Связи пока нет, проверено в 09:41'),
       findsOneWidget,
     );
 
@@ -225,6 +225,27 @@ void main() {
     await tester.pump();
 
     expect(announced(tester), <String>['Связь есть, открываем приложение']);
+    handle.dispose();
+    await leave(tester);
+  });
+
+  testWidgets('a refused token ends the wait and is announced too', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+    announced(tester);
+    repository.identities[SessionSlot.staff] = refusal(
+      401,
+      'authentication_required',
+    );
+
+    await tester.tap(retryButton);
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+
+    expect(announced(tester), contains('Связь есть, открываем приложение'));
+    expect(retryButton, findsNothing);
     handle.dispose();
     await leave(tester);
   });
@@ -340,7 +361,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 800));
       await tester.pump(const Duration(milliseconds: 200));
       expect(
-        find.text('BarakaBozor пока недоступен · проверено в 9:41'),
+        find.text('BarakaBozor пока недоступен · проверено в 09:41'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
