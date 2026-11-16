@@ -337,6 +337,133 @@ void main() {
       },
     );
 
+    checking('a refusal that comes late keeps a newer token of its slot', (
+      tester,
+      c,
+      session,
+    ) async {
+      bothTokens();
+      repository.holdMe[SessionSlot.customer] = Completer<void>();
+      repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+      repository.identities[SessionSlot.customer] = refusal(
+        401,
+        'authentication_required',
+      );
+      await begin(tester, c);
+      await tester.pump(SessionController.checkCap);
+
+      tokens.tokens[SessionSlot.customer] = 'c2';
+      repository.holdMe[SessionSlot.customer]!.complete();
+      await tester.pump();
+
+      expect(tokens.tokens[SessionSlot.customer], 'c2');
+    });
+
+    checking('an answer after the cap opens the app by itself', (
+      tester,
+      c,
+      session,
+    ) async {
+      bothTokens();
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      repository.holdMe[SessionSlot.customer] = Completer<void>();
+      repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+      await begin(tester, c);
+
+      await tester.pump(SessionController.checkCap);
+      expect(current(c), isA<SessionUnreachable>());
+
+      await tester.pump(const Duration(seconds: 2));
+      for (final Completer<void> hold in repository.holdMe.values) {
+        hold.complete();
+      }
+      await tester.pump();
+
+      expect(current(c), isA<SignedIn>());
+    });
+
+    checking('a late failure after the cap changes nothing', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      repository.identities[SessionSlot.staff] = refusal(500, 'server_error');
+      await begin(tester, c);
+      await tester.pump(SessionController.checkCap);
+      final SessionUnreachable before = unreachable(c);
+
+      repository.holdMe[SessionSlot.staff]!.complete();
+      await tester.pump();
+
+      expect(unreachable(c), same(before));
+      expect(tokens.tokens[SessionSlot.staff], 's');
+    });
+
+    checking('a late answer while a pressed check is held opens the app once', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+      await begin(tester, c);
+      await tester.pump(SessionController.checkCap);
+
+      final List<SessionState> seen = <SessionState>[];
+      c.listen<AsyncValue<SessionState>>(sessionControllerProvider, (_, next) {
+        final SessionState? value = next.value;
+        if (value != null) {
+          seen.add(value);
+        }
+      });
+      unawaited(session().retry());
+      await tester.pump(const Duration(milliseconds: 100));
+      repository.holdMe[SessionSlot.staff]!.complete();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(current(c), isA<SignedIn>());
+      expect(seen.whereType<SignedIn>(), hasLength(1));
+      repository.calls.clear();
+      unawaited(session().retry());
+      await tester.pump(const Duration(seconds: 1));
+      expect(repository.calls, isEmpty, reason: 'no check is left held');
+    });
+
+    group('a start that threw', () {
+      checking('is retried by a press', (tester, c, session) async {
+        final ThrowingFirstReadStore store = ThrowingFirstReadStore()
+          ..tokens[SessionSlot.staff] = 's';
+        tokens = store;
+        repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+        final ProviderContainer own = container();
+        await begin(tester, own);
+        expect(own.read(sessionControllerProvider).hasError, isTrue);
+
+        unawaited(controller(own).retry());
+        await tester.pump(SessionController.leastPressedCheck);
+
+        expect(own.read(sessionControllerProvider).value, isA<SignedIn>());
+      });
+
+      checking('is retried by a quiet check', (tester, c, session) async {
+        final ThrowingFirstReadStore store = ThrowingFirstReadStore()
+          ..tokens[SessionSlot.staff] = 's';
+        tokens = store;
+        repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+        final ProviderContainer own = container();
+        await begin(tester, own);
+
+        unawaited(controller(own).retry(quiet: true));
+        await tester.pump();
+
+        expect(own.read(sessionControllerProvider).value, isA<SignedIn>());
+      });
+    });
+
     group('an answer that is not a user', () {
       final Map<String, (Object, UnreachableCause)> cases =
           <String, (Object, UnreachableCause)>{
@@ -998,4 +1125,19 @@ void main() {
       expect(state.customerUser?.preferredLanguage, AppLanguage.ru);
     });
   });
+}
+
+/// A token store whose very first read fails, like a platform channel that
+/// is not ready.
+class ThrowingFirstReadStore extends InMemoryTokenStore {
+  bool _failed = false;
+
+  @override
+  Future<String?> read(SessionSlot slot) async {
+    if (!_failed) {
+      _failed = true;
+      throw StateError('storage not ready');
+    }
+    return super.read(slot);
+  }
 }

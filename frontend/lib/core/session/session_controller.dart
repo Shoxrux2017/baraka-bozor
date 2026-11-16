@@ -102,7 +102,8 @@ class SessionController extends AsyncNotifier<SessionState> {
     final Map<SessionSlot, Future<_Answer>> asked =
         <SessionSlot, Future<_Answer>>{
           for (final SessionSlot slot in SessionSlot.values)
-            if (tokens[slot] != null) slot: _ask(slot, store, repository),
+            if (tokens[slot] != null)
+              slot: _ask(slot, tokens[slot]!, store, repository),
         };
 
     final Completer<void> capped = Completer<void>();
@@ -118,9 +119,42 @@ class SessionController extends AsyncNotifier<SessionState> {
       _timers.remove(capTimer);
     }
     if (overdue) {
+      unawaited(_applyLateAnswers(asked, prefer));
       return const SessionUnreachable();
     }
+    return _assemble(asked, prefer);
+  }
 
+  /// A check that hit the cap keeps listening: when every slot has answered
+  /// later, a `SignedIn` or `SignedOut` result opens the app if the state is
+  /// still unreachable. A late failure changes nothing (`DL-136` (10)).
+  Future<void> _applyLateAnswers(
+    Map<SessionSlot, Future<_Answer>> asked,
+    SessionMode? prefer,
+  ) async {
+    try {
+      await Future.wait(asked.values);
+      final SessionState result = await _assemble(asked, prefer);
+      if (_disposed || result is SessionUnreachable) {
+        return;
+      }
+      if (_unreachableShown() != null) {
+        state = AsyncData<SessionState>(result);
+      }
+    } catch (error, stackTrace) {
+      reportUnexpectedError(
+        error,
+        stackTrace,
+        'while confirming the stored sessions late',
+      );
+    }
+  }
+
+  /// What the answers say, as one state.
+  Future<SessionState> _assemble(
+    Map<SessionSlot, Future<_Answer>> asked,
+    SessionMode? prefer,
+  ) async {
     final Map<SessionSlot, AppUser> confirmed = <SessionSlot, AppUser>{};
     ApiFailure? failure;
     for (final MapEntry<SessionSlot, Future<_Answer>> entry in asked.entries) {
@@ -161,10 +195,12 @@ class SessionController extends AsyncNotifier<SessionState> {
     );
   }
 
-  /// One `/auth/me` for [slot]. A `401` clears the slot here, so it clears it
-  /// even when the check has already given up.
+  /// One `/auth/me` for [slot] made with [token]. A `401` clears the slot
+  /// here, so it clears it even when the check has already given up, but only
+  /// while the store still holds [token] (`DL-136` (10)).
   Future<_Answer> _ask(
     SessionSlot slot,
+    String token,
     TokenStore store,
     AuthRepository repository,
   ) async {
@@ -176,7 +212,9 @@ class SessionController extends AsyncNotifier<SessionState> {
       }
       // The interceptor has already cleared the slot; clearing again is
       // harmless and keeps this correct without it.
-      await store.clear(slot);
+      if (await store.read(slot) == token) {
+        await store.clear(slot);
+      }
       return const _Answer();
     } on ApiFailure catch (failure) {
       return _Answer(failure: failure);
@@ -191,14 +229,27 @@ class SessionController extends AsyncNotifier<SessionState> {
   /// into a pressed one. A check that throws is reported and leaves the retry
   /// offered, never a wait with no way out.
   Future<void> retry({bool quiet = false}) {
-    final SessionState? current = state.value;
-    if (current is! SessionUnreachable) {
+    final SessionUnreachable? current = _unreachableShown();
+    if (current == null) {
       return Future<void>.value();
     }
     if (!quiet) {
       _press(current);
     }
     return _check ??= _runCheck();
+  }
+
+  /// The unreachable state shown, or a plain one when the start itself threw
+  /// and nothing is loading (`DL-136` (10)); null in any other state.
+  SessionUnreachable? _unreachableShown() {
+    final SessionState? value = state.value;
+    if (value is SessionUnreachable) {
+      return value;
+    }
+    if (value == null && state.hasError && !state.isLoading) {
+      return const SessionUnreachable();
+    }
+    return null;
   }
 
   void _press(SessionUnreachable current) {
@@ -245,8 +296,8 @@ class SessionController extends AsyncNotifier<SessionState> {
         'while confirming the stored sessions',
       );
     }
-    final SessionState? shown = state.value;
-    if (shown is! SessionUnreachable) {
+    final SessionUnreachable? shown = _unreachableShown();
+    if (shown == null) {
       return;
     }
     if (result != null && result is! SessionUnreachable) {
