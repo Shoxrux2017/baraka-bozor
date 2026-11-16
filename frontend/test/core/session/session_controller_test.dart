@@ -4,6 +4,7 @@ import 'dart:ui' show Locale;
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -24,9 +25,10 @@ void main() {
     expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
   );
 
-  ProviderContainer container() {
+  ProviderContainer container({DateTime Function()? clock}) {
     final ProviderContainer container = ProviderContainer(
       overrides: [
+        if (clock != null) clockProvider.overrideWithValue(clock),
         tokenStoreProvider.overrideWithValue(tokens),
         authRepositoryProvider.overrideWithValue(repository),
         preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
@@ -143,12 +145,16 @@ void main() {
       },
     );
 
-    test('an unreachable server keeps the token and can be retried', () async {
+    testWidgets('an unreachable server keeps the token and can be retried', (
+      WidgetTester tester,
+    ) async {
       tokens.tokens[SessionSlot.staff] = 's';
       repository.identities[SessionSlot.staff] = const NetworkFailure();
       final ProviderContainer c = container();
+      c.read(sessionControllerProvider);
+      await tester.pump();
 
-      expect(await bootstrap(c), isA<SessionUnreachable>());
+      expect(current(c), isA<SessionUnreachable>());
       expect(
         tokens.tokens[SessionSlot.staff],
         's',
@@ -156,63 +162,78 @@ void main() {
       );
 
       repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
-      await controller(c).retry();
+      unawaited(controller(c).retry());
+      await tester.pump(SessionController.leastPressedCheck);
 
       expect(current(c), isA<SignedIn>());
     });
 
-    test('a retry keeps the previous answer while it runs, and a retry that throws leaves a way to retry again', () async {
-      tokens.tokens[SessionSlot.staff] = 's';
-      repository.identities[SessionSlot.staff] = const NetworkFailure();
-      final ProviderContainer c = container();
-      expect(await bootstrap(c), isA<SessionUnreachable>());
+    testWidgets(
+      'a retry keeps the previous answer while it runs, a second tap joins it, and a retry that throws leaves a way to retry again',
+      (WidgetTester tester) async {
+        tokens.tokens[SessionSlot.staff] = 's';
+        repository.identities[SessionSlot.staff] = const NetworkFailure();
+        final ProviderContainer c = container();
+        c.read(sessionControllerProvider);
+        await tester.pump();
+        expect(current(c), isA<SessionUnreachable>());
 
-      repository.holdAnswers = Completer<void>();
-      final Future<void> retrying = controller(c).retry();
-      await settle();
-      expect(
-        c.read(sessionControllerProvider).value,
-        isA<SessionUnreachable>().having(
-          (SessionUnreachable s) => s.retrying,
-          'retrying',
-          isTrue,
-        ),
-        reason: 'the retry screen stays, marked as retrying',
-      );
-      expect(
-        c.read(sessionControllerProvider).isLoading,
-        isFalse,
-        reason: 'never a loading state that would bounce the interface',
-      );
-      repository.calls.clear();
-      await controller(c).retry();
-      expect(repository.calls, isEmpty, reason: 'a second tap waits');
-
-      // No identity configured: the fake throws a plain StateError.
-      final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
-      final FlutterExceptionHandler? previous = FlutterError.onError;
-      FlutterError.onError = reported.add;
-      addTearDown(() => FlutterError.onError = previous);
-      repository.identities.remove(SessionSlot.staff);
-      repository.holdAnswers!.complete();
-      await retrying;
-      expect(reported.single.exception, isA<StateError>());
-      expect(
-        current(c),
-        isA<SessionUnreachable>().having(
-          (SessionUnreachable s) => s.retrying,
-          'retrying',
+        repository.holdAnswers = Completer<void>();
+        final Future<void> retrying = controller(c).retry();
+        await tester.pump();
+        expect(
+          c.read(sessionControllerProvider).value,
+          isA<SessionUnreachable>().having(
+            (SessionUnreachable s) => s.retrying,
+            'retrying',
+            isTrue,
+          ),
+          reason: 'the retry screen stays, marked as retrying',
+        );
+        expect(
+          c.read(sessionControllerProvider).isLoading,
           isFalse,
-        ),
-        reason: 'the retry screen is offered again',
-      );
-      expect(tokens.tokens[SessionSlot.staff], 's', reason: 'the token stays');
+          reason: 'never a loading state that would bounce the interface',
+        );
+        repository.calls.clear();
+        unawaited(controller(c).retry());
+        await tester.pump();
+        expect(repository.calls, isEmpty, reason: 'a second tap joins');
 
-      repository.holdAnswers = null;
-      repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
-      await controller(c).retry();
-      expect(current(c), isA<SignedIn>());
-    });
+        // No identity configured: the fake throws a plain StateError.
+        final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
+        final FlutterExceptionHandler? previous = FlutterError.onError;
+        FlutterError.onError = reported.add;
+        addTearDown(() => FlutterError.onError = previous);
+        repository.identities.remove(SessionSlot.staff);
+        repository.holdAnswers!.complete();
+        unawaited(retrying);
+        await tester.pump(SessionController.leastPressedCheck);
+        expect(reported.single.exception, isA<StateError>());
+        expect(
+          current(c),
+          isA<SessionUnreachable>()
+              .having((SessionUnreachable s) => s.retrying, 'retrying', isFalse)
+              .having(
+                (SessionUnreachable s) => s.cause,
+                'cause',
+                UnreachableCause.offline,
+              ),
+          reason: 'the retry screen is offered again',
+        );
+        expect(
+          tokens.tokens[SessionSlot.staff],
+          's',
+          reason: 'the token stays',
+        );
+
+        repository.holdAnswers = null;
+        repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+        unawaited(controller(c).retry());
+        await tester.pump(SessionController.leastPressedCheck);
+        expect(current(c), isA<SignedIn>());
+      },
+    );
 
     test('a session the server cannot confirm keeps its token and the whole bootstrap waits, so no stored session is ever shown as absent', () async {
       tokens.tokens[SessionSlot.staff] = 's';
@@ -227,8 +248,308 @@ void main() {
       );
       final ProviderContainer c = container();
 
-      expect(await bootstrap(c), isA<SessionUnreachable>());
+      final SessionState state = await bootstrap(c);
+      expect(state, isA<SessionUnreachable>());
+      expect((state as SessionUnreachable).cause, UnreachableCause.server);
       expect(tokens.tokens.keys, containsAll(SessionSlot.values));
+    });
+  });
+
+  group('confirming the stored sessions (DL-136)', () {
+    final DateTime start = DateTime.utc(2026, 11, 16, 10);
+
+    /// Runs [body] in fake time with a clock that follows it; the widget
+    /// test also fails when a timer is still pending at the end.
+    void checking(
+      String name,
+      Future<void> Function(
+        WidgetTester tester,
+        ProviderContainer c,
+        SessionController Function() session,
+      )
+      body,
+    ) {
+      testWidgets(name, (WidgetTester tester) async {
+        final DateTime began = tester.binding.clock.now();
+        final ProviderContainer c = container(
+          clock: () => start.add(tester.binding.clock.now().difference(began)),
+        );
+        await body(tester, c, () => controller(c));
+      });
+    }
+
+    SessionUnreachable unreachable(ProviderContainer c) =>
+        current(c) as SessionUnreachable;
+
+    Future<void> begin(WidgetTester tester, ProviderContainer c) async {
+      c.read(sessionControllerProvider);
+      await tester.pump();
+    }
+
+    void bothTokens() {
+      tokens.tokens[SessionSlot.staff] = 's';
+      tokens.tokens[SessionSlot.customer] = 'c';
+    }
+
+    checking('both slots are asked at once', (tester, c, session) async {
+      bothTokens();
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      repository.holdMe[SessionSlot.customer] = Completer<void>();
+      repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+
+      await begin(tester, c);
+
+      expect(repository.calls, <String>['me:staff', 'me:customer']);
+      for (final Completer<void> hold in repository.holdMe.values) {
+        hold.complete();
+      }
+      await tester.pump();
+      expect(current(c), isA<SignedIn>());
+    });
+
+    checking(
+      'the cap keeps every token and a late refusal clears only its slot',
+      (tester, c, session) async {
+        bothTokens();
+        repository.holdMe[SessionSlot.staff] = Completer<void>();
+        repository.holdMe[SessionSlot.customer] = Completer<void>();
+        repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+        repository.identities[SessionSlot.customer] = refusal(
+          401,
+          'authentication_required',
+        );
+        await begin(tester, c);
+
+        await tester.pump(const Duration(seconds: 7, milliseconds: 999));
+        expect(c.read(sessionControllerProvider).isLoading, isTrue);
+        await tester.pump(const Duration(milliseconds: 1));
+
+        expect(unreachable(c).cause, UnreachableCause.offline);
+        expect(tokens.tokens.keys, containsAll(SessionSlot.values));
+
+        await tester.pump(const Duration(seconds: 1));
+        repository.holdMe[SessionSlot.customer]!.complete();
+        await tester.pump();
+
+        expect(tokens.tokens.keys, <SessionSlot>[SessionSlot.staff]);
+        expect(current(c), isA<SessionUnreachable>());
+      },
+    );
+
+    group('an answer that is not a user', () {
+      final Map<String, (Object, UnreachableCause)> cases =
+          <String, (Object, UnreachableCause)>{
+            'an error answer': (
+              refusal(500, 'server_error'),
+              UnreachableCause.server,
+            ),
+            'an unreadable answer': (
+              const MalformedResponseFailure(),
+              UnreachableCause.server,
+            ),
+            'no answer': (const NetworkFailure(), UnreachableCause.offline),
+          };
+      for (final MapEntry<String, (Object, UnreachableCause)> entry
+          in cases.entries) {
+        checking('${entry.key} is ${entry.value.$2.name}', (
+          tester,
+          c,
+          session,
+        ) async {
+          tokens.tokens[SessionSlot.staff] = 's';
+          repository.identities[SessionSlot.staff] = entry.value.$1;
+
+          await begin(tester, c);
+
+          expect(unreachable(c).cause, entry.value.$2);
+          expect(tokens.tokens[SessionSlot.staff], 's');
+        });
+      }
+    });
+
+    checking(
+      'a refusal on one slot and a user on the other signs in with that one',
+      (tester, c, session) async {
+        bothTokens();
+        repository.identities[SessionSlot.staff] = refusal(
+          401,
+          'authentication_required',
+        );
+        repository.identities[SessionSlot.customer] = user(id: 'c');
+
+        await begin(tester, c);
+
+        final SignedIn state = current(c) as SignedIn;
+        expect(state.activeMode, SessionMode.customer);
+        expect(state.staffUser, isNull);
+        expect(tokens.tokens.keys, <SessionSlot>[SessionSlot.customer]);
+      },
+    );
+
+    checking('a pressed retry holds 0.8 s and stamps the time when it fails', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      await begin(tester, c);
+      expect(unreachable(c).checkedAt, isNull);
+
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      unawaited(session().retry());
+      await tester.pump();
+      expect(unreachable(c).retrying, isTrue);
+
+      await tester.pump(const Duration(milliseconds: 50));
+      repository.holdMe[SessionSlot.staff]!.complete();
+      await tester.pump(const Duration(milliseconds: 749));
+      expect(unreachable(c).retrying, isTrue, reason: 'held until 0.8 s');
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(unreachable(c).retrying, isFalse);
+      expect(unreachable(c).cause, UnreachableCause.offline);
+      expect(
+        unreachable(c).checkedAt,
+        start.add(const Duration(milliseconds: 800)),
+      );
+    });
+
+    checking('a pressed retry that succeeds still holds 0.8 s', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      await begin(tester, c);
+
+      repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+      unawaited(session().retry());
+      await tester.pump(const Duration(milliseconds: 799));
+      expect(unreachable(c).retrying, isTrue);
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(current(c), isA<SignedIn>());
+    });
+
+    checking('a quiet retry shows nothing and refreshes only a shown time', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      await begin(tester, c);
+
+      final List<bool> retrying = <bool>[];
+      c.listen<AsyncValue<SessionState>>(sessionControllerProvider, (_, next) {
+        final SessionState? value = next.value;
+        if (value is SessionUnreachable) {
+          retrying.add(value.retrying);
+        }
+      });
+
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      unawaited(session().retry(quiet: true));
+      await tester.pump();
+      expect(retrying, isEmpty, reason: 'nothing changes while it runs');
+
+      repository.holdMe[SessionSlot.staff]!.complete();
+      await tester.pump();
+      expect(unreachable(c).checkedAt, isNull, reason: 'none was shown');
+      expect(retrying, everyElement(isFalse));
+
+      unawaited(session().retry());
+      await tester.pump(SessionController.leastPressedCheck);
+      final DateTime shown = unreachable(c).checkedAt!;
+
+      await tester.pump(const Duration(seconds: 5));
+      unawaited(session().retry(quiet: true));
+      await tester.pump();
+      expect(
+        unreachable(c).checkedAt,
+        start.add(const Duration(milliseconds: 5800)),
+      );
+      expect(unreachable(c).checkedAt, isNot(shown));
+      expect(unreachable(c).retrying, isFalse);
+    });
+
+    checking('a pressed retry joins a quiet check and holds 0.8 s', (
+      tester,
+      c,
+      session,
+    ) async {
+      bothTokens();
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      repository.identities[SessionSlot.customer] = const NetworkFailure();
+      await begin(tester, c);
+      repository.calls.clear();
+
+      repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      unawaited(session().retry(quiet: true));
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 100));
+      unawaited(session().retry());
+      await tester.pump();
+      expect(unreachable(c).retrying, isTrue);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      repository.holdMe[SessionSlot.staff]!.complete();
+      await tester.pump(const Duration(milliseconds: 699));
+      expect(unreachable(c).retrying, isTrue, reason: '0.8 s from the press');
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(current(c), isA<SignedIn>());
+      expect(repository.meCalls(SessionSlot.staff), 1);
+      expect(repository.meCalls(SessionSlot.customer), 1);
+    });
+
+    checking('a retry does nothing unless the state is unreachable', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+      await begin(tester, c);
+      repository.calls.clear();
+
+      unawaited(session().retry());
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(repository.calls, isEmpty);
+      expect(current(c), isA<SignedIn>());
+    });
+
+    checking('disposing mid-check leaves no timer', (tester, c, session) async {
+      bothTokens();
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      repository.holdMe[SessionSlot.customer] = Completer<void>();
+      repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+      await begin(tester, c);
+
+      c.dispose();
+    });
+
+    checking('disposing mid pressed check leaves no timer', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      await begin(tester, c);
+      repository.holdMe[SessionSlot.staff] = Completer<void>();
+      unawaited(session().retry());
+      await tester.pump();
+
+      c.dispose();
     });
   });
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -6,6 +8,7 @@ import '../../features/auth/domain/auth_repository.dart';
 import '../errors/report_unexpected_error.dart';
 import '../localization/app_language.dart';
 import '../network/api_failure.dart';
+import '../platform/clock.dart';
 import '../storage/token_store.dart';
 import 'session_end_hook.dart';
 import 'session_state.dart';
@@ -28,8 +31,44 @@ class SessionController extends AsyncNotifier<SessionState> {
 
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
+  /// The longest one check of the stored sessions may take (`DL-136` (10)).
+  static const Duration checkCap = Duration(seconds: 8);
+
+  /// How long a pressed check shows «Проверяем…» at the least, so a quick
+  /// answer is still seen (`DL-136` (14)).
+  static const Duration leastPressedCheck = Duration(milliseconds: 800);
+
+  /// The check running now, if any; a second request joins it.
+  Future<void>? _check;
+
+  /// Completes [leastPressedCheck] after the press the running check is held
+  /// for.
+  Completer<void>? _pressedHold;
+
+  final Set<Timer> _timers = <Timer>{};
+  bool _disposed = false;
+
   @override
-  Future<SessionState> build() => _bootstrap();
+  Future<SessionState> build() {
+    ref.onDispose(() {
+      _disposed = true;
+      for (final Timer timer in _timers) {
+        timer.cancel();
+      }
+      _timers.clear();
+    });
+    return _bootstrap();
+  }
+
+  Timer _timer(Duration after, void Function() action) {
+    late final Timer timer;
+    timer = Timer(after, () {
+      _timers.remove(timer);
+      action();
+    });
+    _timers.add(timer);
+    return timer;
+  }
 
   /// The slot requests are made on behalf of by default: the active mode's,
   /// or none while signed out.
@@ -38,38 +77,65 @@ class SessionController extends AsyncNotifier<SessionState> {
     _ => null,
   };
 
-  /// Confirms every stored token. [prefer] names the mode to open when it is
-  /// among the confirmed ones; otherwise the staff mode opens first, because
-  /// the person installed the app to work and Customer mode is entered
-  /// deliberately.
+  /// Confirms every stored token, all at once. [prefer] names the mode to
+  /// open when it is among the confirmed ones; otherwise the staff mode opens
+  /// first, because the person installed the app to work and Customer mode is
+  /// entered deliberately. Past [checkCap] the check gives up as offline,
+  /// keeping every token; an answer that comes later changes nothing except a
+  /// `401`, which still clears its own slot (`DL-136` (10)).
   Future<SessionState> _bootstrap({SessionMode? prefer}) async {
+    final TokenStore store = _tokenStore;
+    final AuthRepository repository = _repository;
     final Map<SessionSlot, String?> tokens = <SessionSlot, String?>{
       for (final SessionSlot slot in SessionSlot.values)
-        slot: await _tokenStore.read(slot),
+        slot: await store.read(slot),
     };
 
     if (tokens.values.every((String? token) => token == null)) {
       return const SignedOut();
     }
 
-    final Map<SessionSlot, AppUser> confirmed = <SessionSlot, AppUser>{};
+    final Map<SessionSlot, Future<_Answer>> asked =
+        <SessionSlot, Future<_Answer>>{
+          for (final SessionSlot slot in SessionSlot.values)
+            if (tokens[slot] != null) slot: _ask(slot, store, repository),
+        };
 
-    for (final SessionSlot slot in SessionSlot.values) {
-      if (tokens[slot] == null) {
-        continue;
+    final Completer<void> capped = Completer<void>();
+    final Timer capTimer = _timer(checkCap, capped.complete);
+    bool overdue = false;
+    try {
+      await Future.any(<Future<void>>[
+        Future.wait(asked.values),
+        capped.future.then((_) => overdue = true),
+      ]);
+    } finally {
+      capTimer.cancel();
+      _timers.remove(capTimer);
+    }
+    if (overdue) {
+      return const SessionUnreachable();
+    }
+
+    final Map<SessionSlot, AppUser> confirmed = <SessionSlot, AppUser>{};
+    ApiFailure? failure;
+    for (final MapEntry<SessionSlot, Future<_Answer>> entry in asked.entries) {
+      final _Answer answer = await entry.value;
+      final AppUser? user = answer.user;
+      if (user != null) {
+        confirmed[entry.key] = user;
       }
-      try {
-        confirmed[slot] = await _repository.me(slot);
-      } on ApiRefusal catch (refusal) {
-        if (!refusal.isUnauthenticated) {
-          return const SessionUnreachable();
-        }
-        // The interceptor has already cleared the slot; clearing again is
-        // harmless and keeps this correct without it.
-        await _tokenStore.clear(slot);
-      } on ApiFailure {
-        return const SessionUnreachable();
+      final ApiFailure? failed = answer.failure;
+      if (failed != null && (failure == null || failed is NetworkFailure)) {
+        failure = failed;
       }
+    }
+    if (failure != null) {
+      return SessionUnreachable(
+        cause: failure is NetworkFailure
+            ? UnreachableCause.offline
+            : UnreachableCause.server,
+      );
     }
 
     if (confirmed.isEmpty) {
@@ -91,35 +157,109 @@ class SessionController extends AsyncNotifier<SessionState> {
     );
   }
 
-  /// Confirms the sessions again after an unreachable bootstrap. The retry
-  /// screen stays while the retry runs — the state says it is retrying
-  /// rather than becoming a loading state that would bounce the interface
-  /// through the bootstrap screen — and a retry that throws leaves an error
-  /// the retry screen recovers from, never a wait with no way out.
-  Future<void> retry() async {
+  /// One `/auth/me` for [slot]. A `401` clears the slot here, so it clears it
+  /// even when the check has already given up.
+  Future<_Answer> _ask(
+    SessionSlot slot,
+    TokenStore store,
+    AuthRepository repository,
+  ) async {
+    try {
+      return _Answer(user: await repository.me(slot));
+    } on ApiRefusal catch (refusal) {
+      if (!refusal.isUnauthenticated) {
+        return _Answer(failure: refusal);
+      }
+      // The interceptor has already cleared the slot; clearing again is
+      // harmless and keeps this correct without it.
+      await store.clear(slot);
+      return const _Answer();
+    } on ApiFailure catch (failure) {
+      return _Answer(failure: failure);
+    }
+  }
+
+  /// Confirms the sessions again after an unreachable check (`DL-136` (10),
+  /// (14)). A pressed retry marks the state `retrying` at once and shows its
+  /// result no sooner than [leastPressedCheck] after the press; a [quiet] one
+  /// changes nothing on screen until it finds something. One check runs at a
+  /// time: a second call joins it, and a press joining a quiet check turns it
+  /// into a pressed one. A check that throws is reported and leaves the retry
+  /// offered, never a wait with no way out.
+  Future<void> retry({bool quiet = false}) {
     final SessionState? current = state.value;
-    if (current is SessionUnreachable && current.retrying) {
+    if (current is! SessionUnreachable) {
+      return Future<void>.value();
+    }
+    if (!quiet) {
+      _press(current);
+    }
+    return _check ??= _runCheck();
+  }
+
+  void _press(SessionUnreachable current) {
+    if (_pressedHold != null) {
       return;
     }
-    state = const AsyncData<SessionState>(SessionUnreachable(retrying: true));
+    final Completer<void> hold = Completer<void>();
+    _pressedHold = hold;
+    _timer(leastPressedCheck, hold.complete);
+    state = AsyncData<SessionState>(
+      SessionUnreachable(
+        retrying: true,
+        cause: current.cause,
+        checkedAt: current.checkedAt,
+      ),
+    );
+  }
 
-    final AsyncValue<SessionState> result = await AsyncValue.guard(_bootstrap);
-    if (result case AsyncError<SessionState>(
-      :final Object error,
-      :final StackTrace stackTrace,
-    )) {
+  Future<void> _runCheck() async {
+    SessionState? result;
+    Object? error;
+    StackTrace? stackTrace;
+    try {
+      result = await _bootstrap();
+    } catch (thrown, trace) {
+      error = thrown;
+      stackTrace = trace;
+    }
+    await _pressedHold?.future;
+    if (_disposed) {
+      return;
+    }
+
+    final bool pressed = _pressedHold != null;
+    _pressedHold = null;
+    _check = null;
+
+    if (error != null) {
       // Something other than the server failed — storage, a platform
-      // channel. Reported, and the retry screen is offered again: an error
-      // state would carry the "retrying" value along with it.
+      // channel.
       reportUnexpectedError(
         error,
-        stackTrace,
+        stackTrace!,
         'while confirming the stored sessions',
       );
-      state = const AsyncData<SessionState>(SessionUnreachable());
+    }
+    final SessionState? shown = state.value;
+    if (shown is! SessionUnreachable) {
       return;
     }
-    state = result;
+    if (result != null && result is! SessionUnreachable) {
+      state = AsyncData<SessionState>(result);
+      return;
+    }
+    final DateTime? checkedAt = pressed || shown.checkedAt != null
+        ? ref.read(clockProvider)()
+        : null;
+    state = AsyncData<SessionState>(
+      SessionUnreachable(
+        cause: result is SessionUnreachable
+            ? result.cause
+            : UnreachableCause.offline,
+        checkedAt: error != null ? shown.checkedAt : checkedAt,
+      ),
+    );
   }
 
   /// Customer login from a signed-out app.
@@ -432,4 +572,13 @@ class SessionController extends AsyncNotifier<SessionState> {
     }
     throw StateError('no confirmed staff session');
   }
+}
+
+/// One slot's answer to `/auth/me`: a user, a failure, or neither when the
+/// token was refused and cleared.
+final class _Answer {
+  const _Answer({this.user, this.failure});
+
+  final AppUser? user;
+  final ApiFailure? failure;
 }

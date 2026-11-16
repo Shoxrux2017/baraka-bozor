@@ -22,14 +22,34 @@ final class SignedOut extends SessionState {
   const SignedOut();
 }
 
+/// Why a stored session could not be confirmed (`DL-136` (10)).
+enum UnreachableCause {
+  /// No answer: the phone has no connection, or the check hit its cap.
+  offline,
+
+  /// The server answered with an error, or with something unreadable.
+  server,
+}
+
 /// At least one token exists but the server could not be reached to confirm
 /// it. Every token is kept; the person may retry.
 final class SessionUnreachable extends SessionState {
-  const SessionUnreachable({this.retrying = false});
+  const SessionUnreachable({
+    this.retrying = false,
+    this.cause = UnreachableCause.offline,
+    this.checkedAt,
+  });
 
   /// A retry is running: the screen waits for it rather than starting
   /// another.
   final bool retrying;
+
+  /// What the last check found.
+  final UnreachableCause cause;
+
+  /// When a check last failed while the person was looking at the result;
+  /// none until a pressed check has failed (`DL-136` (14)).
+  final DateTime? checkedAt;
 }
 
 /// Every stored session confirmed, and which one is active.
