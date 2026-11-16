@@ -1410,6 +1410,50 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressRemove => 'O\'chirish';
 
   @override
+  String get addressesAdd => 'Manzil qo\'shish';
+
+  @override
+  String get addressesEmptyText =>
+      'Manzil qo\'shing — kuryer buyurtmani o\'sha yerga olib keladi. Nuqtani xaritada belgilaysiz.';
+
+  @override
+  String get addressesFailedTitle => 'Manzillar yuklanmadi';
+
+  @override
+  String get addressesFailedOffline =>
+      'Internetni tekshirib, «Qayta urinish»ni bosing.';
+
+  @override
+  String get addressesFailedOther =>
+      'Yana bir bor urinib ko\'ring: «Qayta urinish»ni bosing.';
+
+  @override
+  String get addressesLoadingSpoken => 'Manzillar yuklanmoqda';
+
+  @override
+  String get addressDeliveryHere => 'Shu yerga yetkaziladi';
+
+  @override
+  String get addressDeliveryHereSpoken => 'shu yerga yetkaziladi';
+
+  @override
+  String get addressDeliverHere => 'Shu yerga yetkazish';
+
+  @override
+  String addressActionsSpoken(String name) {
+    return 'Amallar: $name';
+  }
+
+  @override
+  String get addressEditHint => 'o\'zgartirish';
+
+  @override
+  String get addressNotRemovedOffline => 'Aloqa yo\'q — manzil o\'chirilmadi';
+
+  @override
+  String get addressNotRemovedOther => 'Manzilni o\'chirib bo\'lmadi';
+
+  @override
   String get addressRemoveConfirm => 'Bu manzil o\'chirilsinmi?';
 
   @override

@@ -1423,6 +1423,49 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressRemove => 'Удалить';
 
   @override
+  String get addressesAdd => 'Добавить адрес';
+
+  @override
+  String get addressesEmptyText =>
+      'Добавьте адрес — курьер привезёт заказ туда. Точку отметите на карте.';
+
+  @override
+  String get addressesFailedTitle => 'Не удалось загрузить адреса';
+
+  @override
+  String get addressesFailedOffline =>
+      'Проверьте интернет и нажмите «Повторить».';
+
+  @override
+  String get addressesFailedOther => 'Попробуйте ещё раз: нажмите «Повторить».';
+
+  @override
+  String get addressesLoadingSpoken => 'Загружаем адреса';
+
+  @override
+  String get addressDeliveryHere => 'Доставка сюда';
+
+  @override
+  String get addressDeliveryHereSpoken => 'доставка сюда';
+
+  @override
+  String get addressDeliverHere => 'Доставлять сюда';
+
+  @override
+  String addressActionsSpoken(String name) {
+    return 'Действия: $name';
+  }
+
+  @override
+  String get addressEditHint => 'изменить';
+
+  @override
+  String get addressNotRemovedOffline => 'Нет связи — адрес не удалён';
+
+  @override
+  String get addressNotRemovedOther => 'Не удалось удалить адрес';
+
+  @override
   String get addressRemoveConfirm => 'Удалить этот адрес?';
 
   @override

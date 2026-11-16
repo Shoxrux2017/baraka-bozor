@@ -702,6 +702,26 @@
     }
   },
   "addressRemove": "O'chirish",
+  "addressesAdd": "Manzil qo'shish",
+  "addressesEmptyText": "Manzil qo'shing — kuryer buyurtmani o'sha yerga olib keladi. Nuqtani xaritada belgilaysiz.",
+  "addressesFailedTitle": "Manzillar yuklanmadi",
+  "addressesFailedOffline": "Internetni tekshirib, «Qayta urinish»ni bosing.",
+  "addressesFailedOther": "Yana bir bor urinib ko'ring: «Qayta urinish»ni bosing.",
+  "addressesLoadingSpoken": "Manzillar yuklanmoqda",
+  "addressDeliveryHere": "Shu yerga yetkaziladi",
+  "addressDeliveryHereSpoken": "shu yerga yetkaziladi",
+  "addressDeliverHere": "Shu yerga yetkazish",
+  "addressActionsSpoken": "Amallar: {name}",
+  "@addressActionsSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressEditHint": "o'zgartirish",
+  "addressNotRemovedOffline": "Aloqa yo'q — manzil o'chirilmadi",
+  "addressNotRemovedOther": "Manzilni o'chirib bo'lmadi",
   "addressRemoveConfirm": "Bu manzil o'chirilsinmi?",
   "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring",
   "orderStatusNew": "Yangi",

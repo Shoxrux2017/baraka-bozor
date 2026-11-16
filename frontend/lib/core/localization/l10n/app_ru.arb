@@ -622,6 +622,26 @@
   "addressLandmarkLine": "Ориентир: {landmark}",
   "addressApartmentShort": "кв. {apartment}",
   "addressRemove": "Удалить",
+  "addressesAdd": "Добавить адрес",
+  "addressesEmptyText": "Добавьте адрес — курьер привезёт заказ туда. Точку отметите на карте.",
+  "addressesFailedTitle": "Не удалось загрузить адреса",
+  "addressesFailedOffline": "Проверьте интернет и нажмите «Повторить».",
+  "addressesFailedOther": "Попробуйте ещё раз: нажмите «Повторить».",
+  "addressesLoadingSpoken": "Загружаем адреса",
+  "addressDeliveryHere": "Доставка сюда",
+  "addressDeliveryHereSpoken": "доставка сюда",
+  "addressDeliverHere": "Доставлять сюда",
+  "addressActionsSpoken": "Действия: {name}",
+  "@addressActionsSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressEditHint": "изменить",
+  "addressNotRemovedOffline": "Нет связи — адрес не удалён",
+  "addressNotRemovedOther": "Не удалось удалить адрес",
   "addressRemoveConfirm": "Удалить этот адрес?",
   "errorConfigurationIncomplete": "Сервис ещё не настроен до конца. Попробуйте позже",
   "orderStatusNew": "Новый",

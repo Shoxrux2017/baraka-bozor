@@ -2612,6 +2612,84 @@ abstract class AppLocalizations {
   /// **'O\'chirish'**
   String get addressRemove;
 
+  /// No description provided for @addressesAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qo\'shish'**
+  String get addressesAdd;
+
+  /// No description provided for @addressesEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qo\'shing — kuryer buyurtmani o\'sha yerga olib keladi. Nuqtani xaritada belgilaysiz.'**
+  String get addressesEmptyText;
+
+  /// No description provided for @addressesFailedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar yuklanmadi'**
+  String get addressesFailedTitle;
+
+  /// No description provided for @addressesFailedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internetni tekshirib, «Qayta urinish»ni bosing.'**
+  String get addressesFailedOffline;
+
+  /// No description provided for @addressesFailedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana bir bor urinib ko\'ring: «Qayta urinish»ni bosing.'**
+  String get addressesFailedOther;
+
+  /// No description provided for @addressesLoadingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar yuklanmoqda'**
+  String get addressesLoadingSpoken;
+
+  /// No description provided for @addressDeliveryHere.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu yerga yetkaziladi'**
+  String get addressDeliveryHere;
+
+  /// No description provided for @addressDeliveryHereSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'shu yerga yetkaziladi'**
+  String get addressDeliveryHereSpoken;
+
+  /// No description provided for @addressDeliverHere.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu yerga yetkazish'**
+  String get addressDeliverHere;
+
+  /// No description provided for @addressActionsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Amallar: {name}'**
+  String addressActionsSpoken(String name);
+
+  /// No description provided for @addressEditHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'o\'zgartirish'**
+  String get addressEditHint;
+
+  /// No description provided for @addressNotRemovedOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — manzil o\'chirilmadi'**
+  String get addressNotRemovedOffline;
+
+  /// No description provided for @addressNotRemovedOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni o\'chirib bo\'lmadi'**
+  String get addressNotRemovedOther;
+
   /// No description provided for @addressRemoveConfirm.
   ///
   /// In uz, this message translates to:
