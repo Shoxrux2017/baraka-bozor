@@ -639,6 +639,14 @@
       }
     }
   },
+  "addressDeliveryChosenSpoken": "Доставка: «{name}»",
+  "@addressDeliveryChosenSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "addressEditHint": "изменить",
   "addressNotRemovedOffline": "Нет связи — адрес не удалён",
   "addressNotRemovedOther": "Не удалось удалить адрес",

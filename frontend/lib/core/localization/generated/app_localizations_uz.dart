@@ -1445,6 +1445,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String addressDeliveryChosenSpoken(String name) {
+    return 'Yetkazish: «$name»';
+  }
+
+  @override
   String get addressEditHint => 'o\'zgartirish';
 
   @override

@@ -2672,6 +2672,12 @@ abstract class AppLocalizations {
   /// **'Amallar: {name}'**
   String addressActionsSpoken(String name);
 
+  /// No description provided for @addressDeliveryChosenSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish: «{name}»'**
+  String addressDeliveryChosenSpoken(String name);
+
   /// No description provided for @addressEditHint.
   ///
   /// In uz, this message translates to:

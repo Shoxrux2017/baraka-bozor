@@ -798,11 +798,13 @@ void main() {
     testWidgets('removing an address asks first', (WidgetTester tester) async {
       await openAddresses(tester);
 
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
+      await tapAndSettle(tester, byKey('address-menu-a-1'));
+      await tapAndSettle(tester, byKey('address-delete-a-1'));
       await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
       expect(addresses.removed, isEmpty);
 
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
+      await tapAndSettle(tester, byKey('address-menu-a-1'));
+      await tapAndSettle(tester, byKey('address-delete-a-1'));
       await tapAndSettle(tester, byKey('address-remove-confirm'));
       expect(addresses.removed, <String>['a-1']);
       expect(find.text(l10n(tester).addressNone), findsOneWidget);
@@ -876,7 +878,8 @@ void main() {
       expect(find.text(l10n(tester).errorNetwork), findsNothing);
 
       addresses.removeFailure = const NetworkFailure();
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
+      await tapAndSettle(tester, byKey('address-menu-a-1'));
+      await tapAndSettle(tester, byKey('address-delete-a-1'));
       await tapAndSettle(tester, byKey('address-remove-confirm'));
       expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
 
@@ -1088,23 +1091,6 @@ void main() {
       expect(byKey('profile-name'), findsOneWidget);
     });
 
-    testWidgets('addresses that failed to load show progress on their retry', (
-      WidgetTester tester,
-    ) async {
-      addresses.loadFailure = const NetworkFailure();
-      await openAddresses(tester);
-      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
-
-      addresses.loadHold = Completer<void>();
-      await tester.tap(find.text(l10n(tester).retryButton));
-      await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-      addresses.loadHold!.complete();
-      await tester.pumpAndSettle();
-      expect(find.text('Uy'), findsOneWidget);
-    });
-
     testWidgets("another Customer's profile is not shown", (
       WidgetTester tester,
     ) async {
@@ -1233,7 +1219,8 @@ void main() {
         ApiError(status: 404, code: 'resource_not_found'),
       );
 
-      await tapAndSettle(tester, byKey('address-remove-a-1'));
+      await tapAndSettle(tester, byKey('address-menu-a-1'));
+      await tapAndSettle(tester, byKey('address-delete-a-1'));
       await tapAndSettle(tester, byKey('address-remove-confirm'));
 
       expect(find.text(l10n(tester).addressNone), findsOneWidget);

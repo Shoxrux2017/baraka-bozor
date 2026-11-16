@@ -1457,6 +1457,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String addressDeliveryChosenSpoken(String name) {
+    return 'Доставка: «$name»';
+  }
+
+  @override
   String get addressEditHint => 'изменить';
 
   @override
