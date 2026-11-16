@@ -1214,9 +1214,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileDeleteHint => 'сначала спросим';
 
   @override
-  String get profilePrivacy => 'Конфиденциальность';
-
-  @override
   String get profileName => 'Ваше имя';
 
   @override
@@ -3600,6 +3597,52 @@ class AppLocalizationsRu extends AppLocalizations {
   String legalEdition(String date) {
     return 'Редакция от $date';
   }
+
+  @override
+  String monthLong(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'января',
+      'm2': 'февраля',
+      'm3': 'марта',
+      'm4': 'апреля',
+      'm5': 'мая',
+      'm6': 'июня',
+      'm7': 'июля',
+      'm8': 'августа',
+      'm9': 'сентября',
+      'm10': 'октября',
+      'm11': 'ноября',
+      'm12': 'декабря',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String dateLong(String day, String month, String year) {
+    return '$day $month $year';
+  }
+
+  @override
+  String legalEditionSpoken(String date) {
+    return 'Редакция от $date года';
+  }
+
+  @override
+  String legalOnlyIn(String language) {
+    String _temp0 = intl.Intl.selectLogic(language, {
+      'ru': 'русском',
+      'uz': 'узбекском',
+      'other': 'другом',
+    });
+    return 'Этот документ пока только на $_temp0 языке.';
+  }
+
+  @override
+  String get legalCopy => 'Копировать';
+
+  @override
+  String get legalSelectAll => 'Выделить всё';
 
   @override
   String get legalNotPublishedYet => 'Документ пока не опубликован.';

@@ -11,7 +11,7 @@ import '../../../core/network/api_failure.dart';
 import '../domain/legal.dart';
 import 'legal_providers.dart';
 
-/// What the document screen shows for one kind (`DL-136` (4)): the text on
+/// What the document screen shows for one kind (`DL-136` (5)): the text on
 /// screen, whether it is being refreshed, and why the last load failed.
 final class LegalReading {
   const LegalReading({
@@ -42,7 +42,7 @@ final class LegalReading {
 }
 
 /// The documents read this session, kept per kind and interface language, so
-/// reopening one shows it at once (`DL-136` (5)). A plain map, not provider
+/// reopening one shows it at once (`DL-136` (4)). A plain map, not provider
 /// state: a load writes it while no screen is watching. Keyed by the
 /// interface language, not the document's, so a document that fell back to
 /// the other language is still found.
@@ -103,6 +103,9 @@ class LegalReader extends Notifier<LegalReading> {
   }
 
   Future<void> _load(AppLanguage language, int generation) async {
+    if (!ref.mounted) {
+      return;
+    }
     final LegalRepository repository = ref.read(legalRepositoryProvider);
     bool current() => ref.mounted && generation == _generation;
     try {

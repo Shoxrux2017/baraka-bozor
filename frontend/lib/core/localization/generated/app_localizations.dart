@@ -2234,12 +2234,6 @@ abstract class AppLocalizations {
   /// **'avval so\'raymiz'**
   String get profileDeleteHint;
 
-  /// No description provided for @profilePrivacy.
-  ///
-  /// In uz, this message translates to:
-  /// **'Maxfiylik'**
-  String get profilePrivacy;
-
   /// No description provided for @profileName.
   ///
   /// In uz, this message translates to:
@@ -6115,6 +6109,42 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tahrir: {date}'**
   String legalEdition(String date);
+
+  /// No description provided for @monthLong.
+  ///
+  /// In uz, this message translates to:
+  /// **'{month, select, m1{yanvar} m2{fevral} m3{mart} m4{aprel} m5{may} m6{iyun} m7{iyul} m8{avgust} m9{sentabr} m10{oktabr} m11{noyabr} m12{dekabr} other{}}'**
+  String monthLong(String month);
+
+  /// No description provided for @dateLong.
+  ///
+  /// In uz, this message translates to:
+  /// **'{year}-yil {day}-{month}'**
+  String dateLong(String day, String month, String year);
+
+  /// No description provided for @legalEditionSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tahrir: {date}'**
+  String legalEditionSpoken(String date);
+
+  /// No description provided for @legalOnlyIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu hujjat hozircha faqat {language, select, ru{rus} uz{o\'zbek} other{boshqa}} tilida.'**
+  String legalOnlyIn(String language);
+
+  /// No description provided for @legalCopy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nusxa olish'**
+  String get legalCopy;
+
+  /// No description provided for @legalSelectAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini tanlash'**
+  String get legalSelectAll;
 
   /// No description provided for @legalNotPublishedYet.
   ///

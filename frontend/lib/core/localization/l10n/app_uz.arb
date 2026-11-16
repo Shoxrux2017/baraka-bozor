@@ -585,7 +585,6 @@
   "profileGroupHelp": "Yordam",
   "profileCallSupport": "Qo'llab-quvvatlashga qo'ng'iroq",
   "profileDeleteHint": "avval so'raymiz",
-  "profilePrivacy": "Maxfiylik",
   "profileName": "Ismingiz",
   "profileSaved": "Ism saqlandi",
   "profileNameLabel": "Ism",
@@ -2498,6 +2497,46 @@
       }
     }
   },
+  "monthLong": "{month, select, m1{yanvar} m2{fevral} m3{mart} m4{aprel} m5{may} m6{iyun} m7{iyul} m8{avgust} m9{sentabr} m10{oktabr} m11{noyabr} m12{dekabr} other{}}",
+  "@monthLong": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "dateLong": "{year}-yil {day}-{month}",
+  "@dateLong": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "legalEditionSpoken": "Tahrir: {date}",
+  "@legalEditionSpoken": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "legalOnlyIn": "Bu hujjat hozircha faqat {language, select, ru{rus} uz{o'zbek} other{boshqa}} tilida.",
+  "@legalOnlyIn": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "legalCopy": "Nusxa olish",
+  "legalSelectAll": "Hammasini tanlash",
   "legalNotPublishedYet": "Hujjat hali e'lon qilinmagan.",
   "consentAll": "Davom etib, siz {terms} va {privacy}ni qabul qilasiz",
   "@consentAll": {

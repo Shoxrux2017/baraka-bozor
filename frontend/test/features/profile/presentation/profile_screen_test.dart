@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/legal/domain/legal.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
@@ -274,7 +275,7 @@ void main() {
       profile.current = named('Дилноза Каримова');
       legal.publishOnly(LegalDocumentKind.privacy);
       await openProfile(tester);
-      expect(find.text('Конфиденциальность'), findsOneWidget);
+      expect(find.text('Политика конфиденциальности'), findsOneWidget);
       expect(byKey('profile-terms'), findsNothing);
     });
 
@@ -892,11 +893,45 @@ void main() {
       expect(byKey('profile-support-skeleton'), findsNothing);
     });
 
+    testWidgets('the profile row and the screen share one name', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      legal.publishBoth();
+      legal.documents[(
+        LegalDocumentKind.privacy,
+        AppLanguage.ru,
+      )] = LegalDocument(
+        kind: LegalDocumentKind.privacy,
+        language: AppLanguage.ru,
+        updatedAt: DateTime.utc(2026, 10, 18, 20, 30),
+        blocks: const <LegalBlock>[
+          LegalBlock(type: LegalBlockType.paragraph, text: 'Текст.'),
+        ],
+      );
+      await openProfile(tester, size: const Size(400, 1400));
+
+      expect(
+        find.descendant(
+          of: byKey('profile-privacy'),
+          matching: find.text('Политика конфиденциальности'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(byKey('profile-privacy'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Text>(byKey('legal-title')).data,
+        'Политика конфиденциальности',
+      );
+    });
+
     testWidgets('a language change keeps the rows in place', (tester) async {
       profile.current = named('Дилноза Каримова');
       legal.publishBoth();
       await openProfile(tester, size: const Size(400, 1400));
-      expect(find.text('Конфиденциальность'), findsOneWidget);
+      expect(find.text('Политика конфиденциальности'), findsOneWidget);
 
       legal.indexHold = Completer<void>();
       await tester.tap(byKey('profile-language'));
@@ -911,7 +946,7 @@ void main() {
 
       legal.indexHold!.complete();
       await tester.pumpAndSettle();
-      expect(find.text('Maxfiylik'), findsOneWidget);
+      expect(find.text('Maxfiylik siyosati'), findsOneWidget);
       expect(find.text('Til'), findsOneWidget);
     });
 

@@ -1198,9 +1198,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileDeleteHint => 'avval so\'raymiz';
 
   @override
-  String get profilePrivacy => 'Maxfiylik';
-
-  @override
   String get profileName => 'Ismingiz';
 
   @override
@@ -3564,6 +3561,52 @@ class AppLocalizationsUz extends AppLocalizations {
   String legalEdition(String date) {
     return 'Tahrir: $date';
   }
+
+  @override
+  String monthLong(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'yanvar',
+      'm2': 'fevral',
+      'm3': 'mart',
+      'm4': 'aprel',
+      'm5': 'may',
+      'm6': 'iyun',
+      'm7': 'iyul',
+      'm8': 'avgust',
+      'm9': 'sentabr',
+      'm10': 'oktabr',
+      'm11': 'noyabr',
+      'm12': 'dekabr',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String dateLong(String day, String month, String year) {
+    return '$year-yil $day-$month';
+  }
+
+  @override
+  String legalEditionSpoken(String date) {
+    return 'Tahrir: $date';
+  }
+
+  @override
+  String legalOnlyIn(String language) {
+    String _temp0 = intl.Intl.selectLogic(language, {
+      'ru': 'rus',
+      'uz': 'o\'zbek',
+      'other': 'boshqa',
+    });
+    return 'Bu hujjat hozircha faqat $_temp0 tilida.';
+  }
+
+  @override
+  String get legalCopy => 'Nusxa olish';
+
+  @override
+  String get legalSelectAll => 'Hammasini tanlash';
 
   @override
   String get legalNotPublishedYet => 'Hujjat hali e\'lon qilinmagan.';
