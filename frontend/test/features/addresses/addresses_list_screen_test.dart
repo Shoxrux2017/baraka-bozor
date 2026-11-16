@@ -103,6 +103,8 @@ void main() {
   /// skeleton stands there.
   Future<void> retryHeld(WidgetTester tester) async {
     addresses.loadHold = Completer<void>();
+    await tester.ensureVisible(byKey('addresses-retry'));
+    await tester.pump();
     await tester.tap(byKey('addresses-retry'));
     await tester.pump();
     await tester.pump();
@@ -181,6 +183,37 @@ void main() {
     expect(byKey('address-point-confirm'), findsOneWidget);
   });
 
+  testWidgets('opened while the list loads shows skeletons, not a spinner', (
+    WidgetTester tester,
+  ) async {
+    addresses.loadHold = Completer<void>();
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      appUnderTest(
+        tokens: tokens,
+        repository: auth,
+        device: const Locale('ru'),
+        addresses: addresses,
+        preferences: preferences,
+        overrides: [profileRepositoryProvider.overrideWithValue(profile)],
+      ),
+    );
+    for (int i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    unawaited(
+      GoRouter.of(tester.element(find.byType(Scaffold).last))
+          .push<void>(AppPaths.customerAddresses),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(byKey('address-skeleton'), findsNWidgets(3));
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
   testWidgets('the cards fade in where the skeleton stood', (
     WidgetTester tester,
   ) async {
@@ -217,6 +250,7 @@ void main() {
   ) async {
     await openFailed(tester);
 
+    expect(byKey('address-new'), findsOneWidget, reason: 'the footer');
     expect(find.text('Не удалось загрузить адреса'), findsOneWidget);
     expect(
       find.text('Проверьте интернет и нажмите «Повторить».'),

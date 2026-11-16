@@ -175,7 +175,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen>
           child: Column(
             children: <Widget>[
               Expanded(child: body),
-              if (face == _Face.loading || face == _Face.cards)
+              if (face != _Face.empty)
                 _Footer(label: l10n.addressesAdd, onPressed: _addNew),
             ],
           ),
