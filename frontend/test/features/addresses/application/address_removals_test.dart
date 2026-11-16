@@ -297,4 +297,14 @@ void main() {
     expect(shown.hasError, isTrue);
     expect(shown.value?.map((Address a) => a.id), <String>['a-3', 'a-1']);
   });
+
+  test('a bar that ends after the container is gone sends nothing', () async {
+    final AddressRemoval removal = await hold('a-2');
+    final AddressRemovals notifier = removals();
+
+    container.dispose();
+
+    expect(await notifier.commit(removal), isNull);
+    expect(repository.removed, isEmpty);
+  });
 }

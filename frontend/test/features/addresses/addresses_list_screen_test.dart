@@ -4,6 +4,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/addresses/application/address_removals.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
@@ -519,6 +520,29 @@ void main() {
       );
     });
 
+    testWidgets('the delivery address removed while the list reloads still '
+        'says where delivery goes', (WidgetTester tester) async {
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester);
+      await removeVia(tester, 'a-work');
+      await folded(tester);
+      addresses.loadHold = Completer<void>();
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(addresses.removed, <String>['a-work']);
+
+      await removeVia(tester, 'a-home');
+      await folded(tester);
+
+      expect(
+        find.text('Удалили «Дом». Доставка теперь: «Мама».'),
+        findsOneWidget,
+      );
+      addresses.loadHold!.complete();
+      addresses.loadHold = null;
+      await tester.pump();
+    });
+
     testWidgets('offline the card returns and says it was not removed', (
       WidgetTester tester,
     ) async {
@@ -654,6 +678,69 @@ void main() {
       expect(addresses.removed, <String>['a-home']);
       expect(byKey('address-card-a-mama'), findsOneWidget);
       expect(byKey('address-card-a-home'), findsNothing);
+    });
+
+    /// The card's custom «Удалить» action, as a screen reader performs it.
+    void readerRemove(WidgetTester tester, String id) {
+      final SemanticsNode node = tester.getSemantics(byKey('address-card-$id'));
+      final SemanticsData data = node.getSemanticsData();
+      node.owner!.performAction(
+        node.id,
+        SemanticsAction.customAction,
+        data.customSemanticsActionIds!.firstWhere(
+          (int id) => CustomSemanticsAction.getAction(id)!.label == 'Удалить',
+        ),
+      );
+    }
+
+    testWidgets('three removals close together hold each and send each once', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      addresses.rows = <Address>[
+        home(),
+        mama(),
+        work(),
+        address(id: 'a-dacha', label: 'Дача', street: 'Olmazor'),
+      ];
+      await openList(tester);
+
+      readerRemove(tester, 'a-home');
+      await tester.pump();
+      await folded(tester);
+      readerRemove(tester, 'a-mama');
+      await tester.pump(const Duration(milliseconds: 100));
+      readerRemove(tester, 'a-work');
+      await frames(tester, 40);
+
+      expect(tester.takeException(), isNull);
+      expect(addresses.removed, <String>['a-home', 'a-mama', 'a-work']);
+      expect(byKey('address-card-a-dacha'), findsOneWidget);
+      expect(byKey('address-card-a-work'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('an account change before the next bar is in leaves nothing '
+        'of the previous Customer', (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      addresses.rows = <Address>[home(), mama(), work()];
+      await openList(tester);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).last),
+      );
+
+      readerRemove(tester, 'a-home');
+      await tester.pump();
+      await folded(tester);
+      readerRemove(tester, 'a-mama');
+      await tester.pump(const Duration(milliseconds: 100));
+      container.invalidate(addressRemovalsProvider);
+      await frames(tester, 40);
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Удалили'), findsNothing);
+      expect(addresses.removed, <String>['a-home']);
+      semantics.dispose();
     });
 
     testWidgets("the reader's Удалить removes and is announced", (

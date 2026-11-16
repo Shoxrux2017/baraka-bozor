@@ -143,6 +143,9 @@ class AddressRemovals extends Notifier<AddressRemovalsState> {
       removal._account == ref.read(customerAccountProvider);
 
   Future<ApiFailure?> _send(AddressRemoval removal) async {
+    if (!ref.mounted) {
+      return null;
+    }
     if (identical(state.held, removal)) {
       _closeBar = null;
       state = AddressRemovalsState(

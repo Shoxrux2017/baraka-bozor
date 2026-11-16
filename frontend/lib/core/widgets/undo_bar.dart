@@ -13,7 +13,9 @@ const Duration undoBarDuration = Duration(seconds: 4);
 /// [undoBarDuration]; with a screen reader on it stays until its action, a
 /// swipe or the next bar, so the person can reach the action (`DL-119`).
 /// [duration] and [margin] default to the usual bar; the search screen gives a
-/// longer one that sits above its cart bar (`DL-128`).
+/// longer one that sits above its cart bar (`DL-128`). [onVisible] runs once
+/// the bar has come in; before then it is queued or still entering and cannot
+/// be closed through its controller.
 ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showUndoBar(
   ScaffoldMessengerState messenger, {
   required String text,
@@ -21,6 +23,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showUndoBar(
   required VoidCallback onUndo,
   Duration duration = undoBarDuration,
   EdgeInsetsGeometry? margin,
+  VoidCallback? onVisible,
 }) {
   messenger.hideCurrentSnackBar();
   return messenger.showSnackBar(
@@ -30,6 +33,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showUndoBar(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       duration: duration,
       margin: margin,
+      onVisible: onVisible,
       persist: MediaQuery.accessibleNavigationOf(messenger.context),
       content: _UndoContent(
         text: text,

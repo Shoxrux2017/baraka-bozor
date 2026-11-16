@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/accessibility/announce.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/session/customer_account.dart';
 import '../../../core/widgets/undo_bar.dart';
 import '../application/address_removals.dart';
+import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
 import '../domain/addresses.dart';
 
@@ -23,12 +25,16 @@ abstract interface class UndoOffer {
   void close();
 }
 
-/// The undo bar of the screen's `ScaffoldMessenger`.
+/// The undo bar of the screen's `ScaffoldMessenger`. A bar queued behind the
+/// one leaving cannot be closed yet (its controller asserts it is current), so
+/// a close asked before it has come in waits until it has (`DL-137`).
 final class ScreenUndoOffer implements UndoOffer {
   ScreenUndoOffer(this._messenger);
 
   final ScaffoldMessengerState _messenger;
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _bar;
+  bool _visible = false;
+  bool _closeWhenVisible = false;
 
   @override
   Future<void> show({required String text, required VoidCallback onUndo}) {
@@ -39,18 +45,46 @@ final class ScreenUndoOffer implements UndoOffer {
           actionLabel: AppLocalizations.of(_messenger.context).undoAction,
           duration: addressUndoDuration,
           onUndo: onUndo,
+          onVisible: _becameVisible,
         );
     _bar = bar;
     return bar.closed;
   }
 
+  void _becameVisible() {
+    _visible = true;
+    if (_closeWhenVisible) {
+      _closeWhenVisible = false;
+      close();
+    }
+  }
+
   /// Ends the bar; one whose messenger is gone has already ended.
   @override
   void close() {
-    if (_messenger.mounted) {
+    if (!_messenger.mounted) {
+      return;
+    }
+    if (_visible) {
       _bar?.close();
+    } else if (_bar != null) {
+      _closeWhenVisible = true;
     }
   }
+}
+
+/// The delivery address by the rule of `deliveryAddressProvider`, from the
+/// list shown and the stored choice, so a list that is reloading still names
+/// it.
+Address? _deliveryOf(ProviderContainer container) {
+  final List<Address> shown =
+      container.read(shownAddressesProvider).value ?? const <Address>[];
+  final String? account = container.read(customerAccountProvider);
+  final String? chosen = account == null
+      ? null
+      : container.read(deliveryAddressChoiceProvider(account)).value;
+  return shown.where((Address a) => a.id == chosen).firstOrNull ??
+      shown.firstOrNull;
 }
 
 /// Takes [address] off the lists at once, offers «Вернуть», and tells the
@@ -74,16 +108,13 @@ Future<void> removeAddress(
   final AddressRemovals removals = container.read(
     addressRemovalsProvider.notifier,
   );
-  final String? deliveryBefore = container
-      .read(deliveryAddressProvider)
-      .value
-      ?.id;
+  final String? deliveryBefore = _deliveryOf(container)?.id;
   final AddressRemoval removal = AddressRemoval(address);
   removals.hold(removal, closeBar: offer.close);
 
   // The removal is already hidden, so this names where delivery goes now.
   final String? next = deliveryBefore == address.id
-      ? container.read(deliveryAddressProvider).value?.name
+      ? _deliveryOf(container)?.name
       : null;
   final String name = address.name;
   final String text = next == null
