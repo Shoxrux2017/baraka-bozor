@@ -188,13 +188,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get switchToStaff => 'Вернуться в режим сотрудника';
 
   @override
-  String get sessionUnreachableTitle => 'Нет связи с сервером';
-
-  @override
-  String get sessionUnreachableBody =>
-      'Проверьте подключение к интернету и попробуйте снова';
-
-  @override
   String get errorAuthenticationRequired => 'Войдите заново';
 
   @override
@@ -5604,4 +5597,43 @@ class AppLocalizationsRu extends AppLocalizations {
   String languageChosenSpoken(String language) {
     return 'Язык: $language, выбрано';
   }
+
+  @override
+  String get unreachableOfflineTitle => 'Нет связи';
+
+  @override
+  String get unreachableOfflineBody =>
+      'Проверьте мобильный интернет или Wi‑Fi. Приложение откроется само, когда связь появится.';
+
+  @override
+  String get unreachableServerTitle => 'BarakaBozor сейчас недоступен';
+
+  @override
+  String get unreachableServerBody =>
+      'Интернет на телефоне в порядке. Попробуйте через пару минут — приложение тоже проверит само.';
+
+  @override
+  String get unreachableChecking => 'Проверяем…';
+
+  @override
+  String get unreachableCheckingSpoken => 'Проверяем связь…';
+
+  @override
+  String get unreachableStillOffline => 'Связи пока нет';
+
+  @override
+  String get unreachableStillDown => 'BarakaBozor пока недоступен';
+
+  @override
+  String unreachableCheckedAt(String result, String time) {
+    return '$result · проверено в $time';
+  }
+
+  @override
+  String unreachableCheckedAtSpoken(String result, String time) {
+    return '$result, проверено в $time';
+  }
+
+  @override
+  String get unreachableOpening => 'Связь есть, открываем приложение';
 }

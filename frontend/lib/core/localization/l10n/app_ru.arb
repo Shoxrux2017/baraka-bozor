@@ -83,8 +83,6 @@
   "staffModeLabel": "Режим сотрудника",
   "switchToCustomer": "Продолжить как клиент",
   "switchToStaff": "Вернуться в режим сотрудника",
-  "sessionUnreachableTitle": "Нет связи с сервером",
-  "sessionUnreachableBody": "Проверьте подключение к интернету и попробуйте снова",
   "errorAuthenticationRequired": "Войдите заново",
   "errorAccountBlocked": "Эта учётная запись заблокирована",
   "errorInvalidCredentials": "Неверный номер телефона или пароль",
@@ -3543,5 +3541,36 @@
         "type": "String"
       }
     }
-  }
+  },
+  "unreachableOfflineTitle": "Нет связи",
+  "unreachableOfflineBody": "Проверьте мобильный интернет или Wi‑Fi. Приложение откроется само, когда связь появится.",
+  "unreachableServerTitle": "BarakaBozor сейчас недоступен",
+  "unreachableServerBody": "Интернет на телефоне в порядке. Попробуйте через пару минут — приложение тоже проверит само.",
+  "unreachableChecking": "Проверяем…",
+  "unreachableCheckingSpoken": "Проверяем связь…",
+  "unreachableStillOffline": "Связи пока нет",
+  "unreachableStillDown": "BarakaBozor пока недоступен",
+  "unreachableCheckedAt": "{result} · проверено в {time}",
+  "@unreachableCheckedAt": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unreachableCheckedAtSpoken": "{result}, проверено в {time}",
+  "@unreachableCheckedAtSpoken": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unreachableOpening": "Связь есть, открываем приложение"
 }

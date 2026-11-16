@@ -3,7 +3,9 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/brand_wordmark.dart';
+import 'package:baraka_bozor/core/widgets/kit/quiet_icon.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/auth/presentation/auth_scaffold.dart';
 import 'package:baraka_bozor/features/auth/presentation/phone_field.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
@@ -477,18 +479,11 @@ void main() {
         find.descendant(of: card, matching: find.text(t.wrongSurfaceWeb)),
         findsOneWidget,
       );
-      final Finder halo = find.byWidgetPredicate(
-        (Widget w) =>
-            w is Container &&
-            w.constraints?.maxWidth == 110 &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).color == KitColors.primaryWash,
+      final Finder icon = find.byWidgetPredicate(
+        (Widget w) => w is QuietIcon && w.icon == Icons.smartphone,
       );
-      expect(halo, findsOneWidget);
-      expect(
-        find.descendant(of: halo, matching: find.byIcon(Icons.smartphone)),
-        findsOneWidget,
-      );
+      expect(find.descendant(of: card, matching: icon), findsOneWidget);
+      expect(find.byType(StatusHalo), findsNothing);
       expect(
         find.descendant(
           of: card,

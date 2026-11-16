@@ -428,18 +428,6 @@ abstract class AppLocalizations {
   /// **'Xodim rejimiga qaytish'**
   String get switchToStaff;
 
-  /// No description provided for @sessionUnreachableTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Server bilan aloqa yo\'q'**
-  String get sessionUnreachableTitle;
-
-  /// No description provided for @sessionUnreachableBody.
-  ///
-  /// In uz, this message translates to:
-  /// **'Internet aloqasini tekshiring va qayta urinib ko\'ring'**
-  String get sessionUnreachableBody;
-
   /// No description provided for @errorAuthenticationRequired.
   ///
   /// In uz, this message translates to:
@@ -8995,6 +8983,72 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Til: {language}, tanlangan'**
   String languageChosenSpoken(String language);
+
+  /// No description provided for @unreachableOfflineTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q'**
+  String get unreachableOfflineTitle;
+
+  /// No description provided for @unreachableOfflineBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mobil internet yoki Wi‑Fi\'ni tekshiring. Aloqa paydo bo\'lganda ilova o\'zi ochiladi.'**
+  String get unreachableOfflineBody;
+
+  /// No description provided for @unreachableServerTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'BarakaBozor hozir ishlamayapti'**
+  String get unreachableServerTitle;
+
+  /// No description provided for @unreachableServerBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefoningizda internet bor. Bir necha daqiqadan so\'ng urinib ko\'ring — ilova ham o\'zi tekshiradi.'**
+  String get unreachableServerBody;
+
+  /// No description provided for @unreachableChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirilmoqda…'**
+  String get unreachableChecking;
+
+  /// No description provided for @unreachableCheckingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa tekshirilmoqda…'**
+  String get unreachableCheckingSpoken;
+
+  /// No description provided for @unreachableStillOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali aloqa yo\'q'**
+  String get unreachableStillOffline;
+
+  /// No description provided for @unreachableStillDown.
+  ///
+  /// In uz, this message translates to:
+  /// **'BarakaBozor hali ishlamayapti'**
+  String get unreachableStillDown;
+
+  /// No description provided for @unreachableCheckedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{result} · {time} da tekshirildi'**
+  String unreachableCheckedAt(String result, String time);
+
+  /// No description provided for @unreachableCheckedAtSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{result}, {time} da tekshirildi'**
+  String unreachableCheckedAtSpoken(String result, String time);
+
+  /// No description provided for @unreachableOpening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa bor, ilova ochilmoqda'**
+  String get unreachableOpening;
 }
 
 class _AppLocalizationsDelegate

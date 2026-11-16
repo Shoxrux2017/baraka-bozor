@@ -23,6 +23,7 @@ import 'fake_auth_repository.dart';
 import 'fake_cart_repository.dart';
 import 'fake_catalog_repository.dart';
 import 'fake_checkout_repository.dart';
+import 'fake_connectivity_signal.dart';
 import 'fake_courier_orders_repository.dart';
 import 'fake_customer_orders_repository.dart';
 import 'fake_customer_repositories.dart';
@@ -51,6 +52,7 @@ Widget appUnderTest({
   FakeLegalRepository? legal,
   FakePhoneCalls? phoneCalls,
   FakeMapLinks? maps,
+  FakeConnectivitySignal? connectivity,
   InMemoryPreferenceStore? preferences,
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
@@ -99,6 +101,9 @@ Widget appUnderTest({
       legalRepositoryProvider.overrideWithValue(legal ?? FakeLegalRepository()),
       phoneCallsProvider.overrideWithValue(phoneCalls ?? FakePhoneCalls()),
       mapLinksProvider.overrideWithValue(maps ?? FakeMapLinks()),
+      connectivitySignalProvider.overrideWithValue(
+        connectivity ?? FakeConnectivitySignal(),
+      ),
       if (clock != null) clockProvider.overrideWithValue(clock),
       ...overrides,
     ],

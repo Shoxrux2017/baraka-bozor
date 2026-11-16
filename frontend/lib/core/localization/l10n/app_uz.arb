@@ -83,8 +83,6 @@
   "staffModeLabel": "Xodim rejimi",
   "switchToCustomer": "Mijoz sifatida davom etish",
   "switchToStaff": "Xodim rejimiga qaytish",
-  "sessionUnreachableTitle": "Server bilan aloqa yo'q",
-  "sessionUnreachableBody": "Internet aloqasini tekshiring va qayta urinib ko'ring",
   "errorAuthenticationRequired": "Qaytadan kiring",
   "errorAccountBlocked": "Bu hisob bloklangan",
   "errorInvalidCredentials": "Telefon raqami yoki parol noto'g'ri",
@@ -4274,5 +4272,36 @@
         "type": "String"
       }
     }
-  }
+  },
+  "unreachableOfflineTitle": "Aloqa yo'q",
+  "unreachableOfflineBody": "Mobil internet yoki Wi‑Fi'ni tekshiring. Aloqa paydo bo'lganda ilova o'zi ochiladi.",
+  "unreachableServerTitle": "BarakaBozor hozir ishlamayapti",
+  "unreachableServerBody": "Telefoningizda internet bor. Bir necha daqiqadan so'ng urinib ko'ring — ilova ham o'zi tekshiradi.",
+  "unreachableChecking": "Tekshirilmoqda…",
+  "unreachableCheckingSpoken": "Aloqa tekshirilmoqda…",
+  "unreachableStillOffline": "Hali aloqa yo'q",
+  "unreachableStillDown": "BarakaBozor hali ishlamayapti",
+  "unreachableCheckedAt": "{result} · {time} da tekshirildi",
+  "@unreachableCheckedAt": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unreachableCheckedAtSpoken": "{result}, {time} da tekshirildi",
+  "@unreachableCheckedAtSpoken": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unreachableOpening": "Aloqa bor, ilova ochilmoqda"
 }

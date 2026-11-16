@@ -509,6 +509,26 @@ void main() {
       expect(repository.meCalls(SessionSlot.customer), 1);
     });
 
+    checking('a rebuilt provider retries as the first one did', (
+      tester,
+      c,
+      session,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      await begin(tester, c);
+
+      c.invalidate(sessionControllerProvider);
+      await begin(tester, c);
+      expect(current(c), isA<SessionUnreachable>());
+
+      unawaited(session().retry());
+      await tester.pump(SessionController.leastPressedCheck);
+
+      expect(unreachable(c).retrying, isFalse);
+      expect(unreachable(c).checkedAt, isNotNull);
+    });
+
     checking('a retry does nothing unless the state is unreachable', (
       tester,
       c,

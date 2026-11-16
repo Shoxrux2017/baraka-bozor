@@ -188,13 +188,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get switchToStaff => 'Xodim rejimiga qaytish';
 
   @override
-  String get sessionUnreachableTitle => 'Server bilan aloqa yo\'q';
-
-  @override
-  String get sessionUnreachableBody =>
-      'Internet aloqasini tekshiring va qayta urinib ko\'ring';
-
-  @override
   String get errorAuthenticationRequired => 'Qaytadan kiring';
 
   @override
@@ -5508,4 +5501,43 @@ class AppLocalizationsUz extends AppLocalizations {
   String languageChosenSpoken(String language) {
     return 'Til: $language, tanlangan';
   }
+
+  @override
+  String get unreachableOfflineTitle => 'Aloqa yo\'q';
+
+  @override
+  String get unreachableOfflineBody =>
+      'Mobil internet yoki Wi‑Fi\'ni tekshiring. Aloqa paydo bo\'lganda ilova o\'zi ochiladi.';
+
+  @override
+  String get unreachableServerTitle => 'BarakaBozor hozir ishlamayapti';
+
+  @override
+  String get unreachableServerBody =>
+      'Telefoningizda internet bor. Bir necha daqiqadan so\'ng urinib ko\'ring — ilova ham o\'zi tekshiradi.';
+
+  @override
+  String get unreachableChecking => 'Tekshirilmoqda…';
+
+  @override
+  String get unreachableCheckingSpoken => 'Aloqa tekshirilmoqda…';
+
+  @override
+  String get unreachableStillOffline => 'Hali aloqa yo\'q';
+
+  @override
+  String get unreachableStillDown => 'BarakaBozor hali ishlamayapti';
+
+  @override
+  String unreachableCheckedAt(String result, String time) {
+    return '$result · $time da tekshirildi';
+  }
+
+  @override
+  String unreachableCheckedAtSpoken(String result, String time) {
+    return '$result, $time da tekshirildi';
+  }
+
+  @override
+  String get unreachableOpening => 'Aloqa bor, ilova ochilmoqda';
 }

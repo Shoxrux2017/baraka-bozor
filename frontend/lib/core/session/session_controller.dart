@@ -50,6 +50,10 @@ class SessionController extends AsyncNotifier<SessionState> {
 
   @override
   Future<SessionState> build() {
+    // A rebuilt provider keeps this object: its retries must not be dead.
+    _disposed = false;
+    _check = null;
+    _pressedHold = null;
     ref.onDispose(() {
       _disposed = true;
       for (final Timer timer in _timers) {

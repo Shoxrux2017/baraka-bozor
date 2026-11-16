@@ -92,13 +92,13 @@ void main() {
 
         await openApp(tester, Surface.mobile);
 
-        expect(find.text(l10n(tester).sessionUnreachableTitle), findsOneWidget);
+        expect(find.text(l10n(tester).unreachableOfflineTitle), findsOneWidget);
         expect(tokens.tokens[SessionSlot.staff], 's');
 
         await tester.tap(retryButton);
         await tester.pumpAndSettle();
         expect(
-          find.text(l10n(tester).sessionUnreachableTitle),
+          find.text(l10n(tester).unreachableOfflineTitle),
           findsOneWidget,
           reason: 'still unreachable',
         );
