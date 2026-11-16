@@ -1001,9 +1001,8 @@ void main() {
     });
   });
 
-  group('every face fits at large text and meets the tap target guideline', () {
+  group('every face fits and meets the tap target guideline', () {
     const Size phone = Size(360, 640);
-    const TextScaler large = NonlinearTextScaler(2);
 
     Future<void> check(WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
@@ -1013,49 +1012,71 @@ void main() {
       semantics.dispose();
     }
 
-    testWidgets('loaded', (WidgetTester tester) async {
-      addresses.rows = <Address>[
-        address(
-          label: 'Ota-onamning uyi, Chilonzor tumani',
-          landmark: 'Maktab',
-        ),
-        address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
-      ];
-      await openList(tester, size: phone, textScaler: large);
-      expect(byKey('address-card-a-1'), findsOneWidget);
-      await check(tester);
-    });
+    // At 100 % and at the largest text the batch tests (`DL-126`).
+    for (final (String scale, TextScaler scaler) in <(String, TextScaler)>[
+      ('100 %', TextScaler.noScaling),
+      ('x2', const NonlinearTextScaler(2)),
+    ]) {
+      group(scale, () {
+        testWidgets('loaded', (WidgetTester tester) async {
+          addresses.rows = <Address>[
+            address(
+              label: 'Ota-onamning uyi, Chilonzor tumani',
+              landmark: 'Maktab',
+            ),
+            address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+          ];
+          await openList(tester, size: phone, textScaler: scaler);
+          expect(byKey('address-card-a-1'), findsOneWidget);
+          await check(tester);
+        });
 
-    testWidgets('loaded, with a revealed card', (WidgetTester tester) async {
-      addresses.rows = <Address>[
-        address(label: 'Ota-onamning uyi, Chilonzor tumani'),
-        address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
-      ];
-      await openList(tester, size: phone, textScaler: large);
-      await tester.drag(byKey('address-card-a-1'), const Offset(-150, 0));
-      await tester.pumpAndSettle();
-      expect(byKey('address-reveal-a-1'), findsOneWidget);
-      await check(tester);
-    });
+        testWidgets('loaded, with a revealed card', (
+          WidgetTester tester,
+        ) async {
+          addresses.rows = <Address>[
+            address(label: 'Ota-onamning uyi, Chilonzor tumani'),
+            address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+          ];
+          await openList(tester, size: phone, textScaler: scaler);
+          await tester.drag(byKey('address-card-a-1'), const Offset(-150, 0));
+          await tester.pumpAndSettle();
+          expect(byKey('address-reveal-a-1'), findsOneWidget);
+          await check(tester);
+        });
 
-    testWidgets('loading', (WidgetTester tester) async {
-      await openFailed(tester, size: phone, textScaler: large);
-      await retryHeld(tester);
-      expect(byKey('address-skeleton'), findsWidgets);
-      await check(tester);
-    });
+        testWidgets('loaded, with the menu open', (WidgetTester tester) async {
+          addresses.rows = <Address>[
+            address(label: 'Ota-onamning uyi, Chilonzor tumani'),
+            address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+          ];
+          await openList(tester, size: phone, textScaler: scaler);
+          await tester.tap(byKey('address-menu-a-1'));
+          await tester.pumpAndSettle();
+          expect(byKey('address-delete-a-1'), findsOneWidget);
+          await check(tester);
+        });
 
-    testWidgets('failed', (WidgetTester tester) async {
-      await openFailed(tester, size: phone, textScaler: large);
-      expect(byKey('addresses-retry'), findsOneWidget);
-      await check(tester);
-    });
+        testWidgets('loading', (WidgetTester tester) async {
+          await openFailed(tester, size: phone, textScaler: scaler);
+          await retryHeld(tester);
+          expect(byKey('address-skeleton'), findsWidgets);
+          await check(tester);
+        });
 
-    testWidgets('empty', (WidgetTester tester) async {
-      addresses.rows = <Address>[];
-      await openList(tester, size: phone, textScaler: large);
-      expect(byKey('address-new'), findsOneWidget);
-      await check(tester);
-    });
+        testWidgets('failed', (WidgetTester tester) async {
+          await openFailed(tester, size: phone, textScaler: scaler);
+          expect(byKey('addresses-retry'), findsOneWidget);
+          await check(tester);
+        });
+
+        testWidgets('empty', (WidgetTester tester) async {
+          addresses.rows = <Address>[];
+          await openList(tester, size: phone, textScaler: scaler);
+          expect(byKey('address-new'), findsOneWidget);
+          await check(tester);
+        });
+      });
+    }
   });
 }

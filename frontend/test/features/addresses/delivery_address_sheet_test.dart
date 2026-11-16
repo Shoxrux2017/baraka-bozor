@@ -15,6 +15,7 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// The delivery-address sheet in the kit look (drawings 21, 21a), opened
 /// from the home header through the real router.
@@ -65,12 +66,14 @@ void main() {
   Future<void> openSheet(
     WidgetTester tester, {
     Locale device = const Locale('ru'),
+    TextScaler? textScaler,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
         tokens: tokens,
         repository: auth,
         device: device,
+        textScaler: textScaler,
         catalog: FakeCatalogRepository(),
         addresses: addresses,
         preferences: preferences,
@@ -338,6 +341,26 @@ void main() {
       greaterThan(tester.getTopLeft(find.text('Ориентир: у банка')).dy),
     );
   });
+
+  for (final (String scale, TextScaler scaler) in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('x2', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets('the sheet with its bar meets the tap target guideline at '
+        '$scale', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await openSheet(tester, textScaler: scaler);
+      await deleteCard(tester, 'a-work');
+      expect(undoButton(tester), findsOneWidget);
+
+      expect(tester.takeException(), isNull);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      semantics.dispose();
+    });
+  }
 
   testWidgets('offline the card returns in the sheet with why', (
     WidgetTester tester,
