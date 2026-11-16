@@ -17,6 +17,7 @@ import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/soft_change.dart';
+import '../../../core/widgets/swipe_to_remove.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../catalog/presentation/catalog_paths.dart';
 import '../../catalog/presentation/quantity_sheet.dart';
@@ -25,7 +26,6 @@ import '../application/cart_quantity_queue.dart';
 import '../domain/cart.dart';
 import 'cart_line_stepper.dart';
 import 'cart_feedback.dart';
-import 'swipe_to_remove.dart';
 
 /// One line of the cart (drawings 19 and 19б): picture, name, the unit price,
 /// the rule and the note when set, and a bottom row with the line's estimate
