@@ -510,9 +510,9 @@ class _TopBar extends StatelessWidget {
 }
 
 /// A 40 px circle with a hairline border around one icon button. On the
-/// panel's page ([filled]) the circle is drawn 44 over the same 40 px slot,
-/// so its tap target meets the iOS guideline and the bar keeps its height
-/// (`DL-136`); the hairline is drawn over the circle, not inside it.
+/// panel's page ([filled]) the circle and its slot are 44, a real 44 tap
+/// target (`DL-117`, `DL-136`); the hairline is drawn over the circle, not
+/// inside it.
 class _CircleButton extends StatelessWidget {
   const _CircleButton({required this.child, this.filled = false});
 
@@ -538,20 +538,7 @@ class _CircleButton extends StatelessWidget {
           : null,
       child: ClipOval(child: Center(child: child)),
     );
-    if (!filled) {
-      return circle;
-    }
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: OverflowBox(
-        minWidth: side,
-        maxWidth: side,
-        minHeight: side,
-        maxHeight: side,
-        child: circle,
-      ),
-    );
+    return circle;
   }
 }
 
@@ -587,10 +574,10 @@ class _WideCardPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       _TopBar(onBack: onBack, filled: true),
-                      // 16 + 24 of padding and the 40 px bar stand above.
+                      // 16 + 24 of padding and the 44 px bar stand above.
                       ConstrainedBox(
                         constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - 80).clamp(
+                          minHeight: (constraints.maxHeight - 84).clamp(
                             0,
                             double.infinity,
                           ),

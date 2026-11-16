@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/localization/language_menu.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/kit/quiet_icon.dart';
@@ -195,6 +196,32 @@ void main() {
       expect(
         find.byKey(const ValueKey<String>('password-field')),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('the language circle on the panel page is a real 44 target', (
+      WidgetTester tester,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(role: UserRole.courier);
+      await openRu(tester, Surface.web, size: const Size(900, 700));
+
+      final Finder circle = find
+          .ancestor(
+            of: find.byType(LanguageMenuButton),
+            matching: find.byWidgetPredicate(
+              (Widget w) => w is Container && w.foregroundDecoration != null,
+            ),
+          )
+          .first;
+      expect(tester.getSize(circle), const Size(44, 44));
+
+      await tester.tapAt(tester.getTopLeft(circle) + const Offset(1, 22));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate((Widget w) => w is PopupMenuItem),
+        findsWidgets,
       );
     });
 

@@ -361,9 +361,9 @@ void main() {
       expect(style.fontWeight, FontWeight.w600);
 
       // Above the wordmark (and its 24 px) and below the card the same room
-      // stands between the top bar (56) and the page's end (24 padding).
+      // stands between the top bar (60) and the page's end (24 padding).
       final double above =
-          tester.getTopLeft(find.byType(BrandWordmark)).dy - 24 - 56;
+          tester.getTopLeft(find.byType(BrandWordmark)).dy - 24 - 60;
       final double below = 900 - 24 - tester.getBottomLeft(card).dy;
       expect(above, closeTo(below, 1));
     });
