@@ -1,12 +1,20 @@
 import 'dart:async';
 
+import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/orders/order_values.dart';
+import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
+import 'package:baraka_bozor/features/catalog/application/recent_searches.dart';
 import 'package:baraka_bozor/features/profile/application/account_deletion_controller.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../support/fake_account_deletion_repository.dart';
+import '../../../support/fake_auth_repository.dart';
+import '../../../support/in_memory_stores.dart';
 
 void main() {
   late FakeAccountDeletionRepository repository;
@@ -58,14 +66,162 @@ void main() {
     expect(state().unfinished, isNull);
   });
 
-  test('a wrong code is refused with its failure', () async {
+  test('a wrong code counts a miss with the tries left', () async {
     await controller().requestCode();
-    repository.deleteFailures.add(wrongCodeRefusal());
+    repository.deleteFailures.add(
+      const ApiRefusal(
+        ApiError(
+          status: 422,
+          code: 'code_invalid',
+          details: <String, Object?>{'attempts_left': 2},
+        ),
+      ),
+    );
 
     expect(await controller().delete('111111'), DeletionOutcome.refused);
 
-    expect((state().failure as ApiRefusal).code, 'code_invalid');
+    expect(state().wrongCode, isTrue);
+    expect(state().attemptsLeft, 2);
+    expect(state().misses, 1);
+    expect(state().failure, isNull);
+    expect(state().running, isNull);
     expect(state().entryOpen, isTrue);
+  });
+
+  test('a lost answer runs the check', () async {
+    await controller().requestCode();
+    repository.deleteFailures.add(const NetworkFailure());
+    repository.exists = false;
+    final List<DeletionAction?> seen = <DeletionAction?>[];
+    container.listen(
+      accountDeletionControllerProvider,
+      (_, next) => seen.add(next.running),
+    );
+
+    expect(await controller().delete('123456'), DeletionOutcome.deleted);
+
+    expect(repository.checks, 1);
+    expect(seen, contains(DeletionAction.check));
+    expect(state().running, isNull);
+  });
+
+  test('a lost answer on a living account keeps the code and fails '
+      'offline', () async {
+    await controller().requestCode();
+    repository.deleteFailures.add(const NetworkFailure());
+    repository.exists = true;
+
+    expect(await controller().delete('123456'), DeletionOutcome.refused);
+
+    expect(state().offline, isTrue);
+    expect(state().failedAction, DeletionAction.delete);
+    expect(state().running, isNull);
+    expect(state().entryOpen, isTrue);
+  });
+
+  test('a check that fails is offline too', () async {
+    await controller().requestCode();
+    repository.deleteFailures.add(const NetworkFailure());
+    repository.existsFailures.add(const NetworkFailure());
+
+    expect(await controller().delete('123456'), DeletionOutcome.refused);
+
+    expect(state().offline, isTrue);
+    expect(state().failedAction, DeletionAction.delete);
+  });
+
+  test('a request that never left skips the check', () async {
+    await controller().requestCode();
+    repository.deleteFailures.add(const NetworkFailure(mayHaveArrived: false));
+
+    expect(await controller().delete('123456'), DeletionOutcome.refused);
+
+    expect(repository.checks, 0);
+    expect(state().offline, isTrue);
+    expect(state().failedAction, DeletionAction.delete);
+  });
+
+  test('a retry answered 401 is a deletion', () async {
+    await controller().requestCode();
+    repository.deleteFailures.add(
+      const ApiRefusal(ApiError(status: 401, code: 'authentication_required')),
+    );
+
+    expect(await controller().delete('123456'), DeletionOutcome.deleted);
+    expect(repository.checks, 0);
+  });
+
+  test('a 409 on request keeps the order with its status', () async {
+    repository.requestFailures.add(
+      const ApiRefusal(
+        ApiError(
+          status: 409,
+          code: 'account_has_unfinished_orders',
+          details: <String, Object?>{
+            'order_id': 'o-9',
+            'order_number': 1021,
+            'status': 'shopping',
+            'item_count': 7,
+          },
+        ),
+      ),
+    );
+
+    expect(await controller().requestCode(), isFalse);
+
+    expect(state().unfinished?.id, 'o-9');
+    expect(state().unfinished?.status, OrderStatus.shopping);
+    expect(state().unfinished?.itemCount, 7);
+  });
+
+  test('reset drops a request in flight', () async {
+    final Completer<void> hold = Completer<void>();
+    repository.hold = hold;
+
+    final Future<bool> first = controller().requestCode();
+    controller().reset();
+    hold.complete();
+
+    expect(await first, isFalse);
+    expect(state().requested, isNull);
+    expect(state().running, isNull);
+
+    repository.hold = null;
+    expect(await controller().requestCode(), isTrue);
+    expect(state().requested, isNotNull);
+  });
+
+  test('forgetAccount removes both keys and drops the Customer '
+      'session', () async {
+    final InMemoryTokenStore tokens = InMemoryTokenStore();
+    tokens.tokens[SessionSlot.customer] = 'c';
+    final FakeAuthRepository auth = FakeAuthRepository();
+    auth.identities[SessionSlot.customer] = user(id: 'c');
+    final InMemoryPreferenceStore preferences = InMemoryPreferenceStore(
+      <String, String>{
+        RecentSearches.preferenceKey('c'): '["sut"]',
+        DeliveryAddressChoice.preferenceKey('c'): 'a-1',
+        'language': 'ru',
+      },
+    );
+    final ProviderContainer own = ProviderContainer(
+      overrides: [
+        accountDeletionRepositoryProvider.overrideWithValue(repository),
+        tokenStoreProvider.overrideWithValue(tokens),
+        authRepositoryProvider.overrideWithValue(auth),
+        preferenceStoreProvider.overrideWithValue(preferences),
+      ],
+    );
+    addTearDown(own.dispose);
+    await own.read(sessionControllerProvider.future);
+
+    await own
+        .read(accountDeletionControllerProvider.notifier)
+        .forgetAccount('c');
+
+    expect(preferences.values.keys, <String>['language']);
+    expect(tokens.tokens.containsKey(SessionSlot.customer), isFalse);
+    expect(own.read(sessionControllerProvider).value, isA<SignedOut>());
   });
 
   test('a right code deletes', () async {

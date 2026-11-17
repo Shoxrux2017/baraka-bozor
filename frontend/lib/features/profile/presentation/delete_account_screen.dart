@@ -7,9 +7,7 @@ import '../../../core/formatting/countdown_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
-import '../../../core/session/session_controller.dart';
 import '../../../core/session/session_state.dart';
-import '../../../core/storage/token_store.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -17,7 +15,6 @@ import '../../../core/widgets/kit_app_bar.dart';
 import '../../auth/presentation/code_boxes.dart';
 import '../../auth/presentation/code_entry.dart';
 import '../../auth/presentation/lock_message.dart';
-import '../../catalog/application/recent_searches.dart';
 import '../application/account_deletion_controller.dart';
 import 'delete_account_sheets.dart';
 
@@ -59,13 +56,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     final AccountDeletionController controller = ref.read(
       accountDeletionControllerProvider.notifier,
     );
-    final SessionController session = ref.read(
-      sessionControllerProvider.notifier,
-    );
     final String? account = ref.read(customerAccountProvider);
-    final RecentSearches? searches = account == null
-        ? null
-        : ref.read(recentSearchesProvider(account).notifier);
 
     final DeletionOutcome outcome = await controller.delete(_code.text);
     if (!mounted) {
@@ -78,8 +69,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         // forgotten after it: the server has already revoked the token, and
         // the page is open to a signed-out phone.
         context.go(AppPaths.accountDeleted);
-        await searches?.clear();
-        await session.dropSession(SessionSlot.customer);
+        if (account != null) {
+          await controller.forgetAccount(account);
+        }
       case DeletionOutcome.unfinished:
         final order = ref.read(accountDeletionControllerProvider).unfinished;
         if (order != null) {
@@ -174,6 +166,21 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                           }
                         },
                       ),
+                      if (state.wrongCode)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            state.attemptsLeft == null
+                                ? l10n.errorCodeInvalid
+                                : l10n.codeWrongLeft(state.attemptsLeft!),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: KitColors.danger,
+                            ),
+                          ),
+                        ),
                       FailureMessage(state.failure),
                       LockMessage(
                         lockedSeconds: state.lockedSeconds,

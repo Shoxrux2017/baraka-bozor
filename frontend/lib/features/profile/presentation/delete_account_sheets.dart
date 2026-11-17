@@ -262,6 +262,19 @@ class _DeleteAccountSheet extends ConsumerWidget {
               ),
             ),
           ),
+          if (state.wrongCode)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                l10n.errorCodeInvalid,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: KitColors.danger,
+                ),
+              ),
+            ),
           FailureMessage(state.failure),
           LockMessage(lockedSeconds: state.lockedSeconds),
           const SizedBox(height: 20),

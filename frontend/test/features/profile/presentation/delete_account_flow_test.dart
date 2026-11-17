@@ -352,7 +352,7 @@ void main() {
         host(tester),
       );
       expect(container.read(sessionControllerProvider).value, isA<SignedOut>());
-      expect(preferences.values[searchesKey], '[]');
+      expect(preferences.values.containsKey(searchesKey), isFalse);
 
       await tester.tap(byKey('account-deleted-done'));
       await tester.pumpAndSettle();
