@@ -4,12 +4,12 @@
 - Manzillar va xaritadagi nuqta — yetkazib berish uchun.
 - Buyurtmalar, teruvchiga javoblar, baholar va fikrlar.
 - Ilova tili.
-Telefoningiz joylashuvi faqat sizni xaritada ko'rsatish uchun kerak — biz uni saqlamaymiz.
+Telefoningiz joylashuvi faqat sizni xaritada ko'rsatish uchun kerak: ruxsat avval berilgan bo'lsa, xarita siz turgan joyda ochiladi, «Men qayerdaman» tugmasi esa belgini siz turgan joyga qo'yadi. Biz uni saqlamaymiz; belgi nuqtasini ko'cha va uyni aytish uchun Google'ga yuboramiz.
 ## Ularni kim ko'radi
 BarakaBozor teruvchisi, kuryeri va operatori — faqat buyurtmangiz uchun keraklisini.
 ## Ma'lumotlarni kimga beramiz
 - Telegram — kirish kodini yuborish uchun telefon raqami.
-- Google — xaritada manzil qidirgan so'zlaringiz.
+- Google — xaritada manzil qidirgan so'zlaringiz va belgi nuqtasi — uning ostidagi ko'cha va uyni aytish uchun.
 - Google (xaritalar) — xarita ishlashi va nosozliklari haqidagi texnik ma'lumotlar.
 - Google (Firebase) — bildirishnomalar uchun qurilma identifikatori va ularning matni: buyurtma raqami va summa.
 Biz ma'lumotlaringizni sotmaymiz.

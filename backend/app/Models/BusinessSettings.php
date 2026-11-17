@@ -62,6 +62,16 @@ class BusinessSettings extends Model
     }
 
     /**
+     * Whether the delivery circle is set: a centre and a radius (`DL-17`).
+     */
+    public function hasServiceArea(): bool
+    {
+        return $this->service_centre_latitude !== null
+            && $this->service_centre_longitude !== null
+            && $this->service_radius_km !== null;
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

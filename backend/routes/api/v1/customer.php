@@ -10,6 +10,7 @@ use App\Modules\Customer\Http\Controllers\AddressController;
 use App\Modules\Customer\Http\Controllers\AddressSearchController;
 use App\Modules\Customer\Http\Controllers\FavoriteController;
 use App\Modules\Customer\Http\Controllers\ProfileController;
+use App\Modules\Customer\Http\Controllers\ServiceAreaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,6 +38,8 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
         Route::delete('addresses/{address}', [AddressController::class, 'destroy'])->name('customer.addresses.destroy');
 
         Route::post('address-search', [AddressSearchController::class, 'store'])->name('customer.address-search');
+        Route::post('address-search/reverse', [AddressSearchController::class, 'reverse'])->name('customer.address-search.reverse');
+        Route::get('service-area', [ServiceAreaController::class, 'show'])->name('customer.service-area');
 
         Route::get('favorites', [FavoriteController::class, 'index'])->name('customer.favorites.index');
         Route::delete('favorites/unavailable', [FavoriteController::class, 'destroyUnavailable'])->name('customer.favorites.destroy-unavailable');

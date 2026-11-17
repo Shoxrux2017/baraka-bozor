@@ -34,7 +34,7 @@ Rules for every stage:
 | 15 | Rating | 10 | `reviewed_at` | Merged (PR #137) |
 | 16 | Profile and name | 18 | — | Merged (PR #138) |
 | 17 | Documents | 9 | — | Merged (PR #140) |
-| 18 | Addresses | 9 | — | Planned |
+| 18 | Addresses | 9 | — | Merged (PR #141) |
 | 19 | New address | 12 | reverse geocoding, zone | Planned |
 | 20 | Sign-in | 14 | tries left | Planned |
 | 21 | Account deletion | 11 | erasure race | Planned |
@@ -428,3 +428,6 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stages 17 + 22 re-review, P3: a capped check's late answer can still be applied after the session provider was rebuilt. Ruling: nothing in the app rebuilds that provider (only tests invalidate it), and the answer lands only while the state is still «Нет связи»; kept.
 - Stage 18 final review, P3: after a save the list finds the edited card to bring into view by walking its elements for the card's key. Ruling: it works and is tested; a `GlobalKey` on the pending card with `Scrollable.ensureVisible` is plainer, taken when the list is next touched.
 - Stage 18 final review, P3: `clearSnackBars()` elsewhere (the cart's and favourites' failure bars) drops a queued address-removal bar without completing its `closed`, so that removal waits instead of being sent when its bar would have ended. Ruling: it is still sent at the next removal or when the app goes out of sight (`flush`), and stays hidden meanwhile; never lost, never sent twice.
+- Stage 19 re-review, P3: when an older lookup's `429` lands after a newer lookup answered, the pause it starts keeps the newer answer, so a pin moved more than 15 m during the pause can show that earlier address until the pause ends. Ruling: it needs a stale answer refused while a newer one passed, inside one minute's limit, and the line is display only (never put into the street or stored); taken when the step is next touched.
+- Stage 19 re-review, P3: a `429` that lands after the step closed starts a pause timer that is never cancelled. Ruling: its callback checks `mounted` and does nothing; taken with the line above.
+- Stage 19 re-review, P3: the map's height for the morph back is refreshed only on a build without the keyboard, so an answer row added while the keyboard is up leaves it a few pixels off. Ruling: cosmetic, the morph ends at the measured map either way.

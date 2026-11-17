@@ -1331,6 +1331,58 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressSaveButton => 'Сохранить адрес';
 
   @override
+  String fieldRequiredSpoken(String label) {
+    return '$label, обязательное поле';
+  }
+
+  @override
+  String fieldOptionalSpoken(String label) {
+    return '$label, необязательно';
+  }
+
+  @override
+  String addressFieldMissingSpoken(String label) {
+    return 'Заполните поле «$label»';
+  }
+
+  @override
+  String addressOptional(String label) {
+    return '$label · необязательно';
+  }
+
+  @override
+  String get addressSaving => 'Сохраняем…';
+
+  @override
+  String get addressSavedButton => 'Сохранено';
+
+  @override
+  String get addressChangePointSpoken => 'Изменить точку на карте';
+
+  @override
+  String addressPinLine(String line) {
+    return 'Метка: $line';
+  }
+
+  @override
+  String get addressLeaveTitle => 'Выйти без сохранения?';
+
+  @override
+  String addressLeaveNamed(String name) {
+    return 'Адрес не сохранится — «$name», и всё, что вы ввели, пропадёт.';
+  }
+
+  @override
+  String get addressLeavePlain =>
+      'Адрес не сохранится, и всё, что вы ввели, пропадёт.';
+
+  @override
+  String get addressLeaveStay => 'Продолжить ввод';
+
+  @override
+  String get addressLeaveGo => 'Выйти';
+
+  @override
   String get addressMapHint =>
       'Передвиньте карту, чтобы метка встала на вход в ваш дом';
 
@@ -1341,20 +1393,124 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressSearchHint => 'Или напишите адрес: улица, дом';
 
   @override
-  String get addressSearchFound =>
-      'Проверьте метку: курьер приедет точно к ней';
+  String get addressStepPoint => 'Шаг 1 из 2 · точка на карте';
+
+  @override
+  String get addressStepDetails => 'Шаг 2 из 2 · подъезд и квартира';
+
+  @override
+  String get addressStepPointSpoken =>
+      'Новый адрес, шаг 1 из 2: точка на карте';
+
+  @override
+  String get addressStepDetailsSpoken =>
+      'Новый адрес, шаг 2 из 2: подъезд и квартира';
+
+  @override
+  String get addressPointTextLarge =>
+      'Передвиньте карту, чтобы метка встала на вход в дом. Квартиру и подъезд укажете на следующем шаге.';
+
+  @override
+  String addressOpenedAt(String name) {
+    return 'Карта открыта у вашего адреса «$name». Передвиньте её так, чтобы метка встала на вход нового дома.';
+  }
+
+  @override
+  String get addressMoveFirst => 'Сначала передвиньте карту к дому';
+
+  @override
+  String get addressConfirmWhyMove => 'недоступна: сначала передвиньте карту';
+
+  @override
+  String get addressConfirmWhyZone => 'недоступна: сюда не возим';
+
+  @override
+  String get addressPlaceNoHouse =>
+      'Дом не определили — поставьте метку на здание';
+
+  @override
+  String get addressPlaceUnknown => 'Адрес не определили';
+
+  @override
+  String get addressPlaceUnknownHint => 'Поставьте метку на здание';
+
+  @override
+  String get addressPlaceLooking => 'Ищем адрес';
+
+  @override
+  String addressOutsideZone(String distance, String radius) {
+    return 'Сюда пока не возим: до метки $distance км, а возим в радиусе $radius км. Передвиньте метку ближе к городу.';
+  }
+
+  @override
+  String addressOutsideZoneSpoken(String distance, String radius) {
+    return 'Сюда пока не возим: $distance километра, возим в радиусе $radius';
+  }
+
+  @override
+  String get addressSearchGo => 'Найти';
+
+  @override
+  String addressSearchFoundAt(String query) {
+    return 'Нашли: «$query». Проверьте, что метка на вашем доме.';
+  }
+
+  @override
+  String addressSearchNotFoundAt(String query) {
+    return 'Не нашли «$query». Передвиньте карту к дому сами.';
+  }
+
+  @override
+  String get addressSearchDown =>
+      'Поиск сейчас не работает. Передвиньте карту сами.';
+
+  @override
+  String get addressFoundSpoken => 'Нашли адрес. Метка передвинута';
+
+  @override
+  String get addressLocatedSpoken => 'Метка там, где вы';
+
+  @override
+  String get addressLocationDenied =>
+      'Доступ к геолокации запрещён. Разрешите в настройках или передвиньте карту сами.';
+
+  @override
+  String get addressLocationSettings => 'Настройки';
+
+  @override
+  String get addressLocationOff => 'Геолокация на телефоне выключена.';
+
+  @override
+  String get addressLocationTurnOn => 'Включить';
+
+  @override
+  String get addressLocationSlow =>
+      'Не нашли вас за 10 секунд. Передвиньте карту сами.';
+
+  @override
+  String get addressLocationAgain => 'Ещё раз';
+
+  @override
+  String get addressSearchSpoken => 'Адрес словами. Найдём и передвинем метку';
+
+  @override
+  String get addressMapSpoken => 'Карта, метка в центре.';
+
+  @override
+  String addressMapPinSpoken(String line) {
+    return 'Метка: $line.';
+  }
+
+  @override
+  String get addressMapWaySpoken =>
+      'Без карты метку ставят поиском или кнопкой «Где я»';
+
+  @override
+  String get addressMyLocationSpoken => 'Где я: поставить метку туда, где вы';
 
   @override
   String get addressPointText =>
       'Курьер приедет к метке. Квартиру, подъезд и ориентир укажете на следующем шаге.';
-
-  @override
-  String get addressSearchNotFound =>
-      'На карте такого адреса не нашлось. Передвиньте карту и поставьте метку на свой дом сами.';
-
-  @override
-  String get addressSearchUnavailable =>
-      'Поиск адреса сейчас не работает. Передвиньте карту и поставьте метку сами.';
 
   @override
   String get addressWordsKept => 'Ваш адрес словами сохраним для курьера';

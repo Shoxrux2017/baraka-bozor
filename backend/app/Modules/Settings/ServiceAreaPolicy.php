@@ -37,9 +37,7 @@ final class ServiceAreaPolicy
      */
     public static function assertDeliverableUnder(BusinessSettings $settings, string $latitude, string $longitude): void
     {
-        if ($settings->service_centre_latitude === null
-            || $settings->service_centre_longitude === null
-            || $settings->service_radius_km === null) {
+        if (! $settings->hasServiceArea()) {
             throw ApiException::conflict('checkout_configuration_incomplete');
         }
 

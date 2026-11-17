@@ -660,6 +660,8 @@ void main() {
   });
 
   Future<void> saveNewAddress(WidgetTester tester) async {
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pumpAndSettle();
     await tester.tap(byKey('address-point-confirm'));
     await tester.pumpAndSettle();
     await tester.enterText(byKey('field-street'), 'Dacha');

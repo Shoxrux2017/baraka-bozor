@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- "Где я" reads the device's position, only when the Customer taps it. -->
+    <!-- "Где я" reads the device's position when the Customer taps it, and a new
+         address opens at the position when the permission was already given.
+         The position only moves the map's camera; the point the pin then rests
+         on is sent to Google through the backend to name the street
+         (`DL-138`). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <!-- The client talks to the API on every surface, so this belongs in the

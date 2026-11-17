@@ -22,6 +22,13 @@ final Provider<AddressSearchRepository> addressSearchRepositoryProvider =
       (Ref ref) => AddressSearchRepositoryImpl(ref.watch(apiClientProvider)),
     );
 
+/// The delivery zone, previewed on the map; `null` while none is set
+/// (`DL-138`).
+final FutureProvider<ServiceArea?> serviceAreaProvider =
+    FutureProvider.autoDispose<ServiceArea?>(
+      (Ref ref) => ref.watch(addressSearchRepositoryProvider).serviceArea(),
+    );
+
 /// The Customer's active addresses.
 final FutureProvider<List<Address>> addressesProvider =
     FutureProvider.autoDispose<List<Address>>((Ref ref) {

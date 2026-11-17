@@ -2456,6 +2456,84 @@ abstract class AppLocalizations {
   /// **'Manzilni saqlash'**
   String get addressSaveButton;
 
+  /// No description provided for @fieldRequiredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label}, majburiy maydon'**
+  String fieldRequiredSpoken(String label);
+
+  /// No description provided for @fieldOptionalSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label}, ixtiyoriy'**
+  String fieldOptionalSpoken(String label);
+
+  /// No description provided for @addressFieldMissingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{label}» maydonini to\'ldiring'**
+  String addressFieldMissingSpoken(String label);
+
+  /// No description provided for @addressOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label} · ixtiyoriy'**
+  String addressOptional(String label);
+
+  /// No description provided for @addressSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda…'**
+  String get addressSaving;
+
+  /// No description provided for @addressSavedButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlandi'**
+  String get addressSavedButton;
+
+  /// No description provided for @addressChangePointSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritadagi nuqtani o\'zgartirish'**
+  String get addressChangePointSpoken;
+
+  /// No description provided for @addressPinLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgi: {line}'**
+  String addressPinLine(String line);
+
+  /// No description provided for @addressLeaveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamasdan chiqasizmi?'**
+  String get addressLeaveTitle;
+
+  /// No description provided for @addressLeaveNamed.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili saqlanmaydi, kiritganlaringiz o\'chib ketadi.'**
+  String addressLeaveNamed(String name);
+
+  /// No description provided for @addressLeavePlain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil saqlanmaydi, kiritganlaringiz o\'chib ketadi.'**
+  String get addressLeavePlain;
+
+  /// No description provided for @addressLeaveStay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kiritishni davom ettirish'**
+  String get addressLeaveStay;
+
+  /// No description provided for @addressLeaveGo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqish'**
+  String get addressLeaveGo;
+
   /// No description provided for @addressMapHint.
   ///
   /// In uz, this message translates to:
@@ -2474,29 +2552,203 @@ abstract class AppLocalizations {
   /// **'Yoki manzilni yozing: ko\'cha, uy'**
   String get addressSearchHint;
 
-  /// No description provided for @addressSearchFound.
+  /// No description provided for @addressStepPoint.
   ///
   /// In uz, this message translates to:
-  /// **'Belgini tekshiring: kuryer aynan unga keladi'**
-  String get addressSearchFound;
+  /// **'2 qadamdan 1-chisi · xaritadagi nuqta'**
+  String get addressStepPoint;
+
+  /// No description provided for @addressStepDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'2 qadamdan 2-chisi · podyezd va xonadon'**
+  String get addressStepDetails;
+
+  /// No description provided for @addressStepPointSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil, 2 qadamdan 1-chisi: xaritadagi nuqta'**
+  String get addressStepPointSpoken;
+
+  /// No description provided for @addressStepDetailsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil, 2 qadamdan 2-chisi: podyezd va xonadon'**
+  String get addressStepDetailsSpoken;
+
+  /// No description provided for @addressPointTextLarge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritani suring: belgi uy kirish joyida tursin. Xonadon va podyezdni keyingi qadamda kiritasiz.'**
+  String get addressPointTextLarge;
+
+  /// No description provided for @addressOpenedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xarita «{name}» manzilingizda ochildi. Uni suring: belgi yangi uy kirish joyida tursin.'**
+  String addressOpenedAt(String name);
+
+  /// No description provided for @addressMoveFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval xaritani uyga suring'**
+  String get addressMoveFirst;
+
+  /// No description provided for @addressConfirmWhyMove.
+  ///
+  /// In uz, this message translates to:
+  /// **'hozircha yopiq: avval xaritani suring'**
+  String get addressConfirmWhyMove;
+
+  /// No description provided for @addressConfirmWhyZone.
+  ///
+  /// In uz, this message translates to:
+  /// **'hozircha yopiq: bu yerga yetkazmaymiz'**
+  String get addressConfirmWhyZone;
+
+  /// No description provided for @addressPlaceNoHouse.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uy aniqlanmadi — belgini binoga qo\'ying'**
+  String get addressPlaceNoHouse;
+
+  /// No description provided for @addressPlaceUnknown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil aniqlanmadi'**
+  String get addressPlaceUnknown;
+
+  /// No description provided for @addressPlaceUnknownHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgini binoga qo\'ying'**
+  String get addressPlaceUnknownHint;
+
+  /// No description provided for @addressPlaceLooking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qidirilmoqda'**
+  String get addressPlaceLooking;
+
+  /// No description provided for @addressOutsideZone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yerga hozircha yetkazmaymiz: belgigacha {distance} km, biz esa {radius} km radiusda yetkazamiz. Belgini shaharga yaqinroq suring.'**
+  String addressOutsideZone(String distance, String radius);
+
+  /// No description provided for @addressOutsideZoneSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yerga hozircha yetkazmaymiz: {distance} kilometr, {radius} kilometr radiusda yetkazamiz'**
+  String addressOutsideZoneSpoken(String distance, String radius);
+
+  /// No description provided for @addressSearchGo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Topish'**
+  String get addressSearchGo;
+
+  /// No description provided for @addressSearchFoundAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» topildi. Belgi uyingizda turganini tekshiring.'**
+  String addressSearchFoundAt(String query);
+
+  /// No description provided for @addressSearchNotFoundAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» topilmadi. Xaritani uyga o\'zingiz suring.'**
+  String addressSearchNotFoundAt(String query);
+
+  /// No description provided for @addressSearchDown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidiruv hozir ishlamayapti. Xaritani o\'zingiz suring.'**
+  String get addressSearchDown;
+
+  /// No description provided for @addressFoundSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil topildi. Belgi surildi'**
+  String get addressFoundSpoken;
+
+  /// No description provided for @addressLocatedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgi siz turgan joyda'**
+  String get addressLocatedSpoken;
+
+  /// No description provided for @addressLocationDenied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joylashuvga ruxsat berilmagan. Sozlamalarda ruxsat bering yoki xaritani o\'zingiz suring.'**
+  String get addressLocationDenied;
+
+  /// No description provided for @addressLocationSettings.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalar'**
+  String get addressLocationSettings;
+
+  /// No description provided for @addressLocationOff.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefonda joylashuv o\'chirilgan.'**
+  String get addressLocationOff;
+
+  /// No description provided for @addressLocationTurnOn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoqish'**
+  String get addressLocationTurnOn;
+
+  /// No description provided for @addressLocationSlow.
+  ///
+  /// In uz, this message translates to:
+  /// **'10 soniyada sizni topa olmadik. Xaritani o\'zingiz suring.'**
+  String get addressLocationSlow;
+
+  /// No description provided for @addressLocationAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana bir bor'**
+  String get addressLocationAgain;
+
+  /// No description provided for @addressSearchSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil so\'z bilan. Topib, belgini suramiz'**
+  String get addressSearchSpoken;
+
+  /// No description provided for @addressMapSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xarita, belgi markazda.'**
+  String get addressMapSpoken;
+
+  /// No description provided for @addressMapPinSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgi: {line}.'**
+  String addressMapPinSpoken(String line);
+
+  /// No description provided for @addressMapWaySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritasiz belgi qidiruv yoki «Men qayerdaman» tugmasi bilan qo\'yiladi'**
+  String get addressMapWaySpoken;
+
+  /// No description provided for @addressMyLocationSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Men qayerdaman: belgini siz turgan joyga qo\'yish'**
+  String get addressMyLocationSpoken;
 
   /// No description provided for @addressPointText.
   ///
   /// In uz, this message translates to:
   /// **'Kuryer belgiga keladi. Xonadon, podyezd va mo\'ljalni keyingi qadamda kiritasiz.'**
   String get addressPointText;
-
-  /// No description provided for @addressSearchNotFound.
-  ///
-  /// In uz, this message translates to:
-  /// **'Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o\'zingiz qo\'ying.'**
-  String get addressSearchNotFound;
-
-  /// No description provided for @addressSearchUnavailable.
-  ///
-  /// In uz, this message translates to:
-  /// **'Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o\'zingiz qo\'ying.'**
-  String get addressSearchUnavailable;
 
   /// No description provided for @addressWordsKept.
   ///

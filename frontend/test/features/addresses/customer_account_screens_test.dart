@@ -6,14 +6,19 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/core/widgets/shake.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
+import 'package:baraka_bozor/features/addresses/data/device_location.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +30,9 @@ import '../../support/fake_address_map.dart';
 import '../../support/fake_address_search.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_customer_repositories.dart';
+import '../../support/fake_device_location.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// The Customer's profile and addresses (W1-13) through the real router,
 /// session and screens.
@@ -66,6 +73,8 @@ void main() {
     bool fakeMap = true,
     Size size = const Size(800, 2000),
     Locale device = const Locale('uz'),
+    FakeDeviceLocation? location,
+    TextScaler? textScaler,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -75,12 +84,15 @@ void main() {
         tokens: tokens,
         repository: auth,
         device: device,
+        textScaler: textScaler,
         addresses: addresses,
         preferences: preferences,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
           addressSearchRepositoryProvider.overrideWithValue(search),
           if (fakeMap) addressMapProvider.overrideWithValue(FakeAddressMap()),
+          if (location != null)
+            deviceLocationProvider.overrideWithValue(location),
         ],
       ),
     );
@@ -112,9 +124,14 @@ void main() {
     expect(byKey('edit-profile'), findsOneWidget);
   }
 
-  /// The map step of a new address: the pin moved when asked, then confirmed.
+  /// The map step of a new address: the pin moved when asked or when it is
+  /// not yet placed (confirm waits for that), then confirmed.
   Future<void> confirmPoint(WidgetTester tester, {bool move = false}) async {
-    if (move) {
+    final Finder confirm = byKey('address-point-confirm');
+    final bool waiting =
+        tester.widgetList<FilledButton>(confirm).isNotEmpty &&
+        tester.widget<FilledButton>(confirm).onPressed == null;
+    if (move || waiting) {
       await tapAndSettle(tester, byKey('fake-map-move'));
     }
     await tapAndSettle(tester, byKey('address-point-confirm'));
@@ -284,6 +301,36 @@ void main() {
       );
     });
 
+    testWidgets('a new address says its step in the bar and the panel has no '
+        'heading', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+
+      final AppLocalizations strings = l10n(tester);
+      expect(find.text(strings.addressNew), findsOneWidget);
+      expect(find.text(strings.addressStepPoint), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(strings.addressStepPointSpoken),
+        findsOneWidget,
+      );
+      expect(
+        find.text(strings.addressPointTitle),
+        findsNothing,
+        reason: 'neither the bar nor the panel carries the old heading',
+      );
+      expect(
+        tester.widget<Text>(byKey('fake-map-initial')).data,
+        '41.311081,69.240562',
+        reason: 'the delivery address Uy is where the map opens',
+      );
+
+      await confirmPoint(tester, move: true);
+      expect(find.text(strings.addressStepDetails), findsOneWidget);
+      expect(find.text(strings.addressStepPoint), findsNothing);
+      handle.dispose();
+    });
+
     testWidgets('the street and the house are required', (
       WidgetTester tester,
     ) async {
@@ -322,7 +369,8 @@ void main() {
       expect(byKey('address-save'), findsOneWidget, reason: 'the form stays');
 
       await tapAndSettle(tester, byKey('address-change-point'));
-      await confirmPoint(tester, move: true);
+      await tapAndSettle(tester, byKey('fake-map-far'));
+      await confirmPoint(tester);
       expect(
         byKey('address-outside-area'),
         findsNothing,
@@ -527,6 +575,13 @@ void main() {
       expect(byKey('address-point-confirm'), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
+      expect(
+        byKey('address-leave-sheet'),
+        findsOneWidget,
+        reason: 'a filled form asks before it is left (DL-138)',
+      );
+      await tester.tap(byKey('address-leave-go'));
+      await tester.pumpAndSettle();
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
 
       // A new address changing its point from the form: back returns to the
@@ -559,6 +614,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(byKey('address-point-confirm'), findsOneWidget, reason: 'step 1');
       await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-leave-go'));
       await tester.pumpAndSettle();
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
 
@@ -596,7 +653,7 @@ void main() {
       expect(byKey('address-save'), findsOneWidget);
       expect(byKey('address-point-confirm'), findsNothing);
       expect(
-        tester.widget<InkWell>(byKey('address-change-point')).onTap,
+        tester.widget<InkWell>(byKey('address-preview')).onTap,
         isNull,
         reason: 'the point cannot be changed mid-save',
       );
@@ -728,7 +785,7 @@ void main() {
     }
 
     for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
-      testWidgets('the change-point chip leaves the map logo free at 320x640 '
+      testWidgets('the change-point pill leaves the map logo free at 320x640 '
           'with text x2 (${device.languageCode})', (WidgetTester tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = 2;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -737,21 +794,29 @@ void main() {
             .push(AppPaths.customerAddress('a-1'));
         await tester.pumpAndSettle();
 
-        final Finder chip = byKey('address-change-point');
-        final Rect preview = tester.getRect(
-          find
-              .ancestor(
-                of: chip,
-                matching: find.byWidgetPredicate(
-                  (Widget w) => w is SizedBox && w.height == 118,
-                ),
-              )
-              .first,
-        );
-        expect(
-          tester.getTopLeft(chip).dx,
-          greaterThanOrEqualTo(preview.left + preview.width * 0.4),
-        );
+        final Rect preview = tester.getRect(byKey('address-preview'));
+        final Rect pill = tester.getRect(byKey('address-change-point'));
+        expect(pill.height, greaterThanOrEqualTo(44));
+        // The lite map's Google logo sits at the preview's bottom left and is
+        // never covered (`DL-86` (2)).
+        expect(pill.left, greaterThanOrEqualTo(preview.left + 90));
+        expect(pill.top, greaterThanOrEqualTo(preview.top + 10));
+        expect(pill.bottom, closeTo(preview.bottom - 10, 0.5));
+        expect(pill.right, closeTo(preview.right - 10, 0.5));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the change-point pill leaves the map logo free at 320x640 '
+          'at 100 % (${device.languageCode})', (WidgetTester tester) async {
+        await openProfile(tester, size: const Size(320, 640), device: device);
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerAddress('a-1'));
+        await tester.pumpAndSettle();
+
+        final Rect preview = tester.getRect(byKey('address-preview'));
+        final Rect pill = tester.getRect(byKey('address-change-point'));
+        expect(pill.left, greaterThanOrEqualTo(preview.left + 90));
+        expect(preview.height, closeTo(118, 0.5));
         expect(tester.takeException(), isNull);
       });
 
@@ -854,7 +919,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
+      // The button's spinner never settles while the save is held.
+      await tester.pump(const Duration(milliseconds: 500));
       expect(byKey('address-save'), findsOneWidget, reason: 'nothing moves');
       expect(byKey('address-new'), findsNothing);
 
@@ -886,6 +952,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(byKey('address-point-confirm'), findsOneWidget);
       await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-leave-go'));
       await tester.pumpAndSettle();
       expect(find.text(l10n(tester).errorNetwork), findsNothing);
 
@@ -943,7 +1011,13 @@ void main() {
         ),
       ];
 
-      await openProfile(tester, size: const Size(320, 568));
+      // The search field grows with the text and covers the fake map's
+      // buttons, so the pin is placed by the silent fix instead.
+      await openProfile(
+        tester,
+        size: const Size(320, 568),
+        location: FakeDeviceLocation()..silent = fakeDoor,
+      );
       await tester.scrollUntilVisible(
         byKey('profile-addresses'),
         200,
@@ -968,6 +1042,390 @@ void main() {
             .first,
       );
       await tester.pumpAndSettle();
+    });
+  });
+
+  group('address details', () {
+    const Size phone = Size(360, 640);
+
+    /// The details of a new address in Russian, the pin placed by the silent
+    /// fix so a large search field cannot cover the fake map's buttons.
+    Future<void> openDetails(
+      WidgetTester tester, {
+      TextScaler? textScaler,
+    }) async {
+      await openProfile(
+        tester,
+        size: phone,
+        device: const Locale('ru'),
+        textScaler: textScaler,
+        location: FakeDeviceLocation()..silent = fakeDoor,
+      );
+      await tester.scrollUntilVisible(
+        byKey('profile-addresses'),
+        200,
+        scrollable: find
+            .descendant(
+              of: byKey('profile-list'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tapAndSettle(tester, byKey('profile-addresses'));
+      await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester);
+      expect(byKey('address-save'), findsOneWidget);
+    }
+
+    List<String> haptics(WidgetTester tester) {
+      final List<String> calls = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            calls.add(call.arguments as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      return calls;
+    }
+
+    Finder editable(String key) => find.descendant(
+      of: byKey('field-$key'),
+      matching: find.byType(EditableText),
+    );
+
+    FocusNode focusOf(WidgetTester tester, String key) =>
+        tester.widget<EditableText>(editable(key)).focusNode;
+
+    testWidgets('optional fields say so and required ones carry no star', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester);
+      final AppLocalizations strings = l10n(tester);
+
+      expect(
+        find.descendant(
+          of: byKey('label-of-house'),
+          matching: find.text(strings.addressHouse),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(strings.addressFieldStreet), findsOneWidget);
+      expect(
+        find.text(strings.addressOptional(strings.addressFieldApartment)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(strings.addressOptional(strings.addressLandmark)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(strings.addressOptional(strings.addressFieldNote)),
+        findsOneWidget,
+      );
+      expect(find.textContaining('*'), findsNothing);
+      await tester.scrollUntilVisible(
+        byKey('label-custom'),
+        200,
+        scrollable: find
+            .descendant(
+              of: byKey('address-form'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tapAndSettle(tester, byKey('label-custom'));
+      expect(
+        find.text(strings.addressOptional(strings.addressLabelName)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a reader hears required and optional', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openDetails(tester);
+      final AppLocalizations strings = l10n(tester);
+
+      final SemanticsNode house = tester.getSemantics(editable('house'));
+      expect(house.label, strings.fieldRequiredSpoken(strings.addressHouse));
+      expect(house.flagsCollection.isTextField, isTrue);
+      expect(
+        tester.getSemantics(editable('apartment')).label,
+        strings.fieldOptionalSpoken(strings.addressFieldApartment),
+      );
+      expect(
+        find.bySemanticsLabel(strings.addressHouse),
+        findsNothing,
+        reason: 'the visible label is not read apart from its field',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('Далее walks the fields', (WidgetTester tester) async {
+      await openDetails(tester);
+      await tester.tap(byKey('field-street'));
+      await tester.pump();
+
+      for (final String next in <String>[
+        'house',
+        'apartment',
+        'landmark',
+        'delivery_note',
+      ]) {
+        await tester.testTextInput.receiveAction(TextInputAction.next);
+        await tester.pumpAndSettle();
+        expect(focusOf(tester, next).hasFocus, isTrue, reason: next);
+      }
+    });
+
+    testWidgets('leaving an empty required field says so at once', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester);
+      final String required = l10n(tester).fieldRequired;
+      expect(find.text(required), findsNothing);
+
+      await tester.tap(byKey('field-house'));
+      await tester.pump();
+      await tester.tap(byKey('field-street'));
+      await tester.pump();
+      expect(find.text(required), findsOneWidget);
+
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.pump();
+      expect(find.text(required), findsOneWidget, reason: 'the house still');
+      await tester.enterText(byKey('field-house'), '5');
+      await tester.pump();
+      expect(find.text(required), findsNothing, reason: 'typing clears it');
+    });
+
+    testWidgets(
+      'saving with a gap brings it into view, focuses and shakes it',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await openDetails(tester);
+        final AppLocalizations strings = l10n(tester);
+        final List<String> taps = haptics(tester);
+        await tester.enterText(byKey('field-street'), 'Navoiy');
+        await tester.enterText(byKey('field-apartment'), '12');
+        await tester.enterText(byKey('field-landmark'), 'Apteka');
+        await tester.enterText(byKey('field-delivery_note'), 'Domofon');
+        await tester.drag(byKey('address-form'), const Offset(0, -2000));
+        await tester.pumpAndSettle();
+        final Finder label = byKey('label-of-house');
+        final double rest = tester.getTopLeft(label).dx;
+        final double listTop = tester.getTopLeft(byKey('address-form')).dy;
+        expect(
+          tester.getTopLeft(label).dy - listTop,
+          greaterThan(12.5),
+          reason: 'the label stands below where the scroll will put it',
+        );
+        tester.takeAnnouncements();
+
+        await tester.tap(byKey('address-save'));
+        // One frame lays the error lines out, the next starts the scroll.
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          tester.getTopLeft(label).dy - listTop,
+          closeTo(12, 0.5),
+          reason: 'the label stands 12 below the top of the list',
+        );
+        // Focus and the shake follow the scroll by about 20 ms.
+        bool shook = false;
+        for (int step = 0; step < 6; step++) {
+          await tester.pump(const Duration(milliseconds: 20));
+          shook = shook || (tester.getTopLeft(label).dx - rest).abs() > 0.01;
+        }
+        expect(focusOf(tester, 'house').hasFocus, isTrue);
+        expect(shook, isTrue, reason: 'the field is shaking');
+        expect(taps, <String>['HapticFeedbackType.warningNotification']);
+        expect(
+          tester
+              .takeAnnouncements()
+              .map((CapturedAccessibilityAnnouncement a) => a.message)
+              .toList(),
+          <String>[strings.addressFieldMissingSpoken(strings.addressHouse)],
+        );
+        expect(addresses.saved, isEmpty);
+        await tester.pumpAndSettle();
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'a gap whose row is not built is still brought into view, with the '
+      'keyboard up and text x2',
+      (WidgetTester tester) async {
+        await openDetails(tester, textScaler: const NonlinearTextScaler(2));
+        final List<String> taps = haptics(tester);
+        await tester.scrollUntilVisible(
+          byKey('label-custom'),
+          200,
+          scrollable: find
+              .descendant(
+                of: byKey('address-form'),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tapAndSettle(tester, byKey('label-custom'));
+        await tester.enterText(byKey('field-label'), 'Dacha');
+        await tester.drag(byKey('address-form'), const Offset(0, -4000));
+        await tester.pumpAndSettle();
+        tester.view.viewInsets = const FakeViewPadding(bottom: 250);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+        expect(byKey('label-of-street'), findsNothing, reason: 'not built');
+
+        await tester.tap(byKey('address-save'));
+        await tester.pumpAndSettle();
+
+        final double listTop = tester.getTopLeft(byKey('address-form')).dy;
+        expect(
+          tester.getTopLeft(byKey('label-of-street')).dy - listTop,
+          closeTo(12, 0.5),
+        );
+        expect(focusOf(tester, 'street').hasFocus, isTrue);
+        expect(
+          tester
+              .widget<Shake>(
+                find.ancestor(
+                  of: byKey('label-of-street'),
+                  matching: find.byType(Shake),
+                ),
+              )
+              .trigger,
+          1,
+          reason: 'the field shook',
+        );
+        expect(taps, <String>['HapticFeedbackType.warningNotification']);
+        expect(addresses.saved, isEmpty);
+      },
+    );
+
+    testWidgets('saving stays green and ends with a check', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester);
+      final AppLocalizations strings = l10n(tester);
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.enterText(byKey('field-house'), '5A');
+      addresses.hold = Completer<void>();
+
+      await tester.tap(byKey('address-save'));
+      await tester.pump();
+      final Finder button = byKey('address-save');
+      expect(
+        find.descendant(of: button, matching: find.text(strings.addressSaving)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: button,
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      final Material face = tester.widget<Material>(
+        find.descendant(of: button, matching: find.byType(Material)).first,
+      );
+      expect(face.color, KitColors.primary);
+      for (final String key in <String>['street', 'house']) {
+        final TextField field = tester.widget<TextField>(
+          find.descendant(
+            of: byKey('field-$key'),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(field.enabled, isTrue, reason: key);
+        expect(field.readOnly, isTrue, reason: key);
+      }
+
+      addresses.hold!.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: button,
+          matching: find.text(strings.addressSavedButton),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: button, matching: find.byIcon(Icons.check)),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('address-save'), findsOneWidget, reason: 'still the form');
+      expect(find.text(strings.addressAdded('Navoiy, 5A')), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.addressAdded('Navoiy, 5A')), findsOneWidget);
+      expect(byKey('address-save'), findsNothing, reason: 'back on the list');
+    });
+
+    testWidgets('a failed save gives the button back', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester);
+      final AppLocalizations strings = l10n(tester);
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.enterText(byKey('field-house'), '5A');
+      addresses.saveFailure = const NetworkFailure();
+
+      await tapAndSettle(tester, byKey('address-save'));
+
+      expect(
+        find.descendant(
+          of: byKey('address-save'),
+          matching: find.text(strings.addressSaveButton),
+        ),
+        findsOneWidget,
+      );
+      expect(inForm(find.text(strings.errorNetwork)), findsOneWidget);
+    });
+
+    testWidgets('house and apartment inputs stand level at normal text', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester);
+
+      final double level = tester.getRect(byKey('field-house')).top;
+      expect(tester.getRect(byKey('field-apartment')).top, level);
+
+      await tapAndSettle(tester, byKey('address-save'));
+      expect(find.text('Заполните поле'), findsWidgets);
+      expect(
+        tester.getRect(byKey('field-apartment')).top,
+        tester.getRect(byKey('field-house')).top,
+        reason: 'the house error line does not move the apartment input',
+      );
+    });
+
+    testWidgets('large text stacks house and apartment', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester, textScaler: const NonlinearTextScaler(2));
+
+      final Offset house = tester.getTopLeft(byKey('field-house'));
+      final Offset apartment = tester.getTopLeft(byKey('field-apartment'));
+      expect(house.dy, lessThan(apartment.dy), reason: 'house above');
+      expect(house.dx, apartment.dx);
+      expect(tester.takeException(), isNull);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
     });
   });
 

@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/features/addresses/domain/address_search.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
@@ -37,6 +38,7 @@ void main() {
           initial: point,
           mover: PointMapMover(),
           enabled: true,
+          onMoveStarted: () {},
           onMoved: (_) {},
         ),
       ),
@@ -50,6 +52,38 @@ void main() {
       find.byKey(const ValueKey<String>('point-longitude')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the fields map takes the move callbacks and the zone', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+    final AddressMap map = container.read(addressMapProvider);
+    final List<GeoPoint> moved = <GeoPoint>[];
+
+    await tester.pumpWidget(
+      host(
+        map.picker(
+          initial: point,
+          mover: PointMapMover(),
+          enabled: true,
+          onMoveStarted: () {},
+          onMoved: moved.add,
+          zone: const ServiceArea(centre: point, radiusKm: '12.5'),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('point-latitude')),
+      findsOneWidget,
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('point-latitude')),
+      '41.3',
+    );
+    expect(moved.single.latitude, '41.300000');
   });
 
   testWidgets('the fields map previews the point as text', (

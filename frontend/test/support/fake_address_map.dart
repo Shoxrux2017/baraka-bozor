@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/features/addresses/domain/address_search.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,12 @@ const GeoPoint fakeDoor = GeoPoint(
   longitude: '69.250000',
 );
 
+/// The point [FakeAddressMap]'s far button reports: outside any city zone.
+const GeoPoint fakeFar = GeoPoint(
+  latitude: '41.311081',
+  longitude: '69.380000',
+);
+
 /// A map for widget tests: it shows where the pin starts, moves the pin to
 /// [fakeDoor] on a tap, and shows where it was asked to move.
 class FakeAddressMap implements AddressMap {
@@ -16,40 +23,81 @@ class FakeAddressMap implements AddressMap {
   @override
   final bool movable;
 
+  VoidCallback? _onMoveStarted;
   ValueChanged<GeoPoint>? _onMoved;
+
+  /// The zone the step last gave the map.
+  ServiceArea? zone;
 
   /// Reports a move the way a camera event does: no finger on the map.
   void emitMove(GeoPoint point) => _onMoved!(point);
+
+  /// Reports a camera move the way the SDK does when the keyboard resizes the
+  /// map or a permission window covers it: a start and a rest with no finger
+  /// on the map (`DL-86` (7), `DL-138`). A method, not a button: tapping a
+  /// button puts a pointer on the map.
+  void emitSystemCamera(GeoPoint point) {
+    _onMoveStarted!();
+    _onMoved!(point);
+  }
 
   @override
   Widget picker({
     required GeoPoint initial,
     required PointMapMover mover,
     required bool enabled,
+    required VoidCallback onMoveStarted,
     required ValueChanged<GeoPoint> onMoved,
+    ServiceArea? zone,
   }) {
+    _onMoveStarted = onMoveStarted;
     _onMoved = onMoved;
+    this.zone = zone;
     return ListenableBuilder(
       listenable: mover,
-      builder: (BuildContext context, Widget? child) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(
-            '${initial.latitude},${initial.longitude}',
-            key: const ValueKey<String>('fake-map-initial'),
+      builder: (BuildContext context, Widget? child) => Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                '${initial.latitude},${initial.longitude}',
+                key: const ValueKey<String>('fake-map-initial'),
+              ),
+              TextButton(
+                key: const ValueKey<String>('fake-map-move'),
+                onPressed: enabled
+                    ? () {
+                        onMoveStarted();
+                        onMoved(fakeDoor);
+                      }
+                    : null,
+                child: const Text('move'),
+              ),
+              TextButton(
+                key: const ValueKey<String>('fake-map-start'),
+                onPressed: enabled ? onMoveStarted : null,
+                child: const Text('start'),
+              ),
+              TextButton(
+                key: const ValueKey<String>('fake-map-far'),
+                onPressed: enabled
+                    ? () {
+                        onMoveStarted();
+                        onMoved(fakeFar);
+                      }
+                    : null,
+                child: const Text('far'),
+              ),
+              Text(
+                mover.target == null
+                    ? ''
+                    : '${mover.target!.latitude},${mover.target!.longitude}',
+                key: const ValueKey<String>('fake-map-target'),
+              ),
+            ],
           ),
-          TextButton(
-            key: const ValueKey<String>('fake-map-move'),
-            onPressed: enabled ? () => onMoved(fakeDoor) : null,
-            child: const Text('move'),
-          ),
-          Text(
-            mover.target == null
-                ? ''
-                : '${mover.target!.latitude},${mover.target!.longitude}',
-            key: const ValueKey<String>('fake-map-target'),
-          ),
-        ],
+        ),
       ),
     );
   }

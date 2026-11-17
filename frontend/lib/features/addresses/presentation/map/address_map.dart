@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/address_search.dart';
 import '../../domain/addresses.dart';
 import 'google_address_map.dart';
 import 'point_fields_address_map.dart';
@@ -25,13 +26,18 @@ abstract interface class AddressMap {
   /// fields.
   bool get movable;
 
-  /// Fills its parent. Reports the point under the pin each time the
-  /// Customer's own move comes to rest, never after a move [mover] asked for.
+  /// Fills its parent and draws no pin: the step owns it. [onMoveStarted]
+  /// fires when the Customer's own move starts, never for a move [mover]
+  /// asked for; [onMoved] reports the point under the pin each time such a
+  /// move comes to rest. The [zone], when given, is drawn on the map
+  /// (`DL-138`).
   Widget picker({
     required GeoPoint initial,
     required PointMapMover mover,
     required bool enabled,
+    required VoidCallback onMoveStarted,
     required ValueChanged<GeoPoint> onMoved,
+    ServiceArea? zone,
   });
 
   /// A still map centred on [point] with the pin, sized by its parent.
