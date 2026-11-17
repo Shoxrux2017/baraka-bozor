@@ -95,6 +95,10 @@ enum _Step { point, details }
 /// motion the map step fading in after it (`DL-138`).
 enum _Move { none, toDetails, toMap, mapIn }
 
+/// Which part of a form field a call builds: the field whole, or its label
+/// and its input apart, for two fields that share a row.
+enum _FieldPart { whole, label, input }
+
 class _AddressForm extends ConsumerStatefulWidget {
   const _AddressForm({required this.address});
 
@@ -788,19 +792,25 @@ class _AddressFormState extends ConsumerState<_AddressForm>
     // At large text the house and the apartment each take the width.
     final bool stacked =
         textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
-    final Widget house = _field(
+    Widget house(_FieldPart part) => _field(
       'house',
       l10n.addressHouse,
       locked: locked,
       required: true,
       action: TextInputAction.next,
+      part: part,
     );
-    final Widget apartment = _field(
+    Widget apartment(_FieldPart part) => _field(
       'apartment',
       l10n.addressFieldApartment,
       locked: locked,
       action: TextInputAction.next,
+      part: part,
     );
+    final Widget houseLabel = house(_FieldPart.label);
+    final Widget houseInput = house(_FieldPart.input);
+    final Widget apartmentLabel = apartment(_FieldPart.label);
+    final Widget apartmentInput = apartment(_FieldPart.input);
     final PointAddress? place = _place;
     // Each row below the preview arrives on its own, so the list still builds
     // only the rows in view.
@@ -836,15 +846,32 @@ class _AddressFormState extends ConsumerState<_AddressForm>
                         required: true,
                         action: TextInputAction.next,
                       ),
-                      if (stacked) ...<Widget>[house, apartment] else
+                      if (stacked) ...<Widget>[
+                        house(_FieldPart.whole),
+                        apartment(_FieldPart.whole),
+                      ] else ...<Widget>[
+                        // The labels stand in their own row, bottom-aligned,
+                        // so the inputs below stay level whatever a label
+                        // wraps to or the house error line adds.
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: <Widget>[
+                              Expanded(child: houseLabel),
+                              const SizedBox(width: 12),
+                              Expanded(child: apartmentLabel),
+                            ],
+                          ),
+                        ),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Expanded(child: house),
+                            Expanded(child: houseInput),
                             const SizedBox(width: 12),
-                            Expanded(child: apartment),
+                            Expanded(child: apartmentInput),
                           ],
                         ),
+                      ],
                       _field(
                         'landmark',
                         l10n.addressLandmark,
@@ -1082,6 +1109,7 @@ class _AddressFormState extends ConsumerState<_AddressForm>
     String? hint,
     bool counter = false,
     TextInputAction? action,
+    _FieldPart part = _FieldPart.whole,
   }) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final TextEditingController controller = _controller(key);
@@ -1091,6 +1119,26 @@ class _AddressFormState extends ConsumerState<_AddressForm>
       borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(color: color),
     );
+    final bool withLabel = part != _FieldPart.input;
+    final bool withInput = part != _FieldPart.label;
+    final Widget labelText = ExcludeSemantics(
+      key: ValueKey<String>('label-of-$key'),
+      child: Text(
+        key: _labelKeys[key],
+        required ? label : l10n.addressOptional(label),
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: KitColors.muted,
+        ),
+      ),
+    );
+    if (!withInput) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Shake(trigger: _shakes[key] ?? 0, child: labelText),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Shake(
@@ -1098,19 +1146,7 @@ class _AddressFormState extends ConsumerState<_AddressForm>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            ExcludeSemantics(
-              key: ValueKey<String>('label-of-$key'),
-              child: Text(
-                key: _labelKeys[key],
-                required ? label : l10n.addressOptional(label),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: KitColors.muted,
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
+            if (withLabel) ...<Widget>[labelText, const SizedBox(height: 6)],
             Semantics(
               label: required
                   ? l10n.fieldRequiredSpoken(label)

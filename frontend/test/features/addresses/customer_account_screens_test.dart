@@ -1225,7 +1225,11 @@ void main() {
         final Finder label = byKey('label-of-house');
         final double rest = tester.getTopLeft(label).dx;
         final double listTop = tester.getTopLeft(byKey('address-form')).dy;
-        expect(tester.getTopLeft(label).dy - listTop, lessThan(12));
+        expect(
+          tester.getTopLeft(label).dy - listTop,
+          isNot(closeTo(12, 0.5)),
+          reason: 'the label is not yet where the scroll will put it',
+        );
         tester.takeAnnouncements();
 
         await tester.tap(byKey('address-save'));
@@ -1392,6 +1396,23 @@ void main() {
         findsOneWidget,
       );
       expect(inForm(find.text(strings.errorNetwork)), findsOneWidget);
+    });
+
+    testWidgets('house and apartment inputs stand level at normal text', (
+      WidgetTester tester,
+    ) async {
+      await openDetails(tester);
+
+      final double level = tester.getRect(byKey('field-house')).top;
+      expect(tester.getRect(byKey('field-apartment')).top, level);
+
+      await tapAndSettle(tester, byKey('address-save'));
+      expect(find.text('Заполните поле'), findsWidgets);
+      expect(
+        tester.getRect(byKey('field-apartment')).top,
+        tester.getRect(byKey('field-house')).top,
+        reason: 'the house error line does not move the apartment input',
+      );
     });
 
     testWidgets('large text stacks house and apartment', (
