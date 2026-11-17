@@ -2119,5 +2119,16 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
 10. **Leaving** (`naddr-10`): back from a filled map asks «Выйти без сохранения?» with «Продолжить ввод» and a red «Выйти»; an untouched one closes at once.
 11. **Large text** (`naddr-11`): no hint over the map (the panel says it), the search field grows, house and apartment stack.
 12. **Screen reader** (`naddr-12`): the map is one stop that names the pin; the search, «Где я» and the zone are announced; fields say «обязательное поле» or «необязательно»; a gap is announced; a confirm that is off says why.
-13. **Reproduction**: filled by later tasks.
-14. **Rulings** made while coding: filled by later tasks.
+13. **Reproduction**: key-free scratch tests run on main (`241c9d35`) before the change, red as expected: `naddr-9` — a save with only the street filled, the list at its end (186): «Expected: a value less than <186.0> Actual: <186.0>», nothing scrolls; `naddr-11` — the map step at 320 × 640 with text ×2: «Found 1 widget with key [<'address-point-hint'>]», the hint stays over the map; the details at 360 × 640 ×2: «Expected: a value greater than or equal to <482.0> Actual: <476.0>», the apartment stands beside the house; `naddr-12` — no node labelled «Карта, метка в центре…» («Found 0 widgets with a semantics label matching the pattern»), and the house field is read as «Дом *» («Found 1 widget with text "Дом *"»).
+14. **Rulings** made while coding:
+    (a) The provider-failure log of both lookups names the lookup (`lookup: search` or `reverse`) beside the reason; nothing else is logged.
+    (b) The silent location read lists the platform failures it turns into nothing, as the tapped read does; no catch-all.
+    (c) The bar's title and subtitle sit in a scale-down box: at text ×2 on a narrow phone they shrink to the bar rather than overflow; the bar's height still grows with the text.
+    (d) The silent fix at open is dropped once the Customer touches the map, searches, presses «Где я» or starts a move.
+    (e) A map that opens already placed (an edit's, or the one reopened from the details) also asks once for the address under its pin; it is a placed pin at rest.
+    (f) A found or located announcement and the outside-zone one are spoken as one line.
+    (g) The search field is at least 50 high and grows with its text (70 at ×2).
+    (h) The first gap is measured after the frame that lays out the error lines, so a gap near the end still comes 12 below the list's top when the list can scroll that far; the warning tap is `HapticFeedback.warningNotification`.
+    (i) The step reports the typed words (`onWords`) beside whether there are any (`onTyped`), so the leave sheet can name them.
+    (j) The morph runs on confirm and on «Изменить точку» or back from a new address' details; back from a map reopened from the details, and an edit's change of point, stay instant. The rows under the preview fade one by one so the list stays lazy.
+    (k) Tests that confirmed a new address without moving the map (the home, checkout and the form's own) now place the pin first; no expectation was dropped.
