@@ -24,7 +24,7 @@ Customer login → catalog → cart → checkout preview → order
 4. The backend verifies the challenge. An invalid, expired or exhausted code fails with its own code and stops; a wrong code against an open challenge also says how many tries are left (`details.attempts_left`, `DL-139`). The third wrong code locks the phone for sixty seconds with a countdown; during it neither a code nor a new code is accepted, and afterwards only a new code opens (`DL-87`).
 5. The active Customer account for the phone is resolved, or created when none is active. A blocked Customer account is refused with `account_blocked`.
 6. A Customer token is issued, with `staff_step` when the phone also holds a Shopper or Courier account (section 3); the app bootstraps identity through `/auth/me`.
-7. A Customer without a name gives one on the name step and sees a welcome; then the home opens with a welcome strip over it (`DL-139`).
+7. A Customer without a name gives one on the name step; the home then opens with a welcome strip over it (`DL-139`).
 
 A configured test phone number verifies with the configured fixed code and skips step 2's delivery; so does the store reviewer's phone with its own code, the one such number allowed in production, and it never gets a staff step (`DL-105`, `DL-110` (6)). No cart is created here; the cart is created on first cart access.
 

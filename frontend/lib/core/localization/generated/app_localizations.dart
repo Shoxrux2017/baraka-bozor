@@ -6650,11 +6650,41 @@ abstract class AppLocalizations {
   /// **'Bozordan yangi mahsulotlar sizni kutmoqda'**
   String get welcomeBody;
 
-  /// No description provided for @welcomeButton.
+  /// No description provided for @nameLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Xaridlarga'**
-  String get welcomeButton;
+  /// **'Ism'**
+  String get nameLabel;
+
+  /// No description provided for @nameExample.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan, Aziza'**
+  String get nameExample;
+
+  /// No description provided for @nameSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda…'**
+  String get nameSaving;
+
+  /// No description provided for @nameSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get nameSaved;
+
+  /// No description provided for @nameOtherNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa raqam bilan kirish'**
+  String get nameOtherNumber;
+
+  /// No description provided for @nameOffHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'ismingizni kiriting'**
+  String get nameOffHint;
 
   /// No description provided for @staffPasswordTitle.
   ///

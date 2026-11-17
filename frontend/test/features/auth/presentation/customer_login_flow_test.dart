@@ -696,7 +696,7 @@ void main() {
   });
 
   testWidgets(
-    'a new customer gives a name, is welcomed, and lands on the catalog',
+    'a new customer gives a name and lands on the catalog under a welcome strip',
     (WidgetTester tester) async {
       repository.verifyResult = IssuedSession(
         token: 'c',
@@ -727,31 +727,26 @@ void main() {
       );
       expect(nameField, findsOneWidget);
       expect(find.text(l10n(tester).nameTitle), findsOneWidget);
-
-      await tester.tap(nameContinue);
-      await tester.pumpAndSettle();
-      expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
-      expect(profiles.renames, isEmpty);
+      expect(tester.widget<FilledButton>(nameContinue).onPressed, isNull);
 
       await tester.enterText(nameField, 'Aziza');
+      await tester.pump();
       await tester.tap(nameContinue);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      await tester.pump();
 
       expect(profiles.renames, <String>['Aziza']);
-      expect(find.text(l10n(tester).welcomeTitle('Aziza')), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey<String>('catalog-search')),
-        findsNothing,
-        reason: 'the welcome waits for the button',
-      );
-
-      await tester.tap(find.byKey(const ValueKey<String>('welcome-button')));
-      await tester.pumpAndSettle();
-
+      expect(find.byType(Dialog), findsNothing);
       expect(
         find.byKey(const ValueKey<String>('catalog-search')),
         findsOneWidget,
       );
+      expect(find.text(l10n(tester).welcomeTitle('Aziza')), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 4400));
       expect(find.text(l10n(tester).welcomeTitle('Aziza')), findsNothing);
     },
   );
@@ -776,12 +771,14 @@ void main() {
       find.byKey(const ValueKey<String>('customer-name-field')),
       'Aziza',
     );
+    await tester.pump();
     await tester.tap(
       find.byKey(const ValueKey<String>('customer-name-continue')),
     );
     await tester.pumpAndSettle();
 
-    expect(failure, findsOneWidget);
+    expect(authNotice, findsOneWidget);
+    expect(failure, findsNothing);
     expect(
       find.byKey(const ValueKey<String>('customer-name-field')),
       findsOneWidget,

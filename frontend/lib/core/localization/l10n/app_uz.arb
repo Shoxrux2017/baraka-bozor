@@ -2853,7 +2853,12 @@
     }
   },
   "welcomeBody": "Bozordan yangi mahsulotlar sizni kutmoqda",
-  "welcomeButton": "Xaridlarga",
+  "nameLabel": "Ism",
+  "nameExample": "Masalan, Aziza",
+  "nameSaving": "Saqlanmoqda…",
+  "nameSaved": "Tayyor",
+  "nameOtherNumber": "Boshqa raqam bilan kirish",
+  "nameOffHint": "ismingizni kiriting",
   "staffPasswordTitle": "Xodim sifatida kirish",
   "staffPasswordSubtitle": "Raqam tasdiqlandi. Xodim parolini kiriting",
   "panelTagline": "Boshqaruv paneli",

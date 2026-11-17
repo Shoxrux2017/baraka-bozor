@@ -181,9 +181,9 @@ void main() {
       await tester.enterText(find.byKey(key('customer-name-field')), 'Aziza');
       await tapKey(tester, 'customer-name-continue');
       await tester.pumpAndSettle();
-      expect(find.byKey(key('failure-message')), findsOneWidget);
+      expect(find.byKey(key('auth-notice')), findsOneWidget);
     },
-    'welcome dialog': (WidgetTester tester, String language) async {
+    'welcome strip': (WidgetTester tester, String language) async {
       tokens.tokens[SessionSlot.customer] = 'c';
       repository.identities[SessionSlot.customer] = user(
         id: 'c',
@@ -192,8 +192,11 @@ void main() {
       await open(tester, language);
       await tester.enterText(find.byKey(key('customer-name-field')), 'Aziza');
       await tapKey(tester, 'customer-name-continue');
-      await tester.pumpAndSettle();
-      expect(find.byKey(key('welcome-button')), findsOneWidget);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+      expect(find.byKey(key('welcome-banner')), findsOneWidget);
     },
     'staff password': (WidgetTester tester, String language) async {
       await open(tester, language);

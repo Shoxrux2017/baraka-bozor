@@ -2688,7 +2688,12 @@
     }
   },
   "welcomeBody": "Свежие продукты с базара уже ждут вас",
-  "welcomeButton": "К покупкам",
+  "nameLabel": "Имя",
+  "nameExample": "Например, Азиза",
+  "nameSaving": "Сохраняем…",
+  "nameSaved": "Готово",
+  "nameOtherNumber": "Войти с другим номером",
+  "nameOffHint": "введите имя",
   "staffPasswordTitle": "Вход для сотрудника",
   "staffPasswordSubtitle": "Номер подтверждён. Введите пароль сотрудника",
   "panelTagline": "Панель управления",

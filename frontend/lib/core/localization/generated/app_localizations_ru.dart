@@ -3975,7 +3975,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get welcomeBody => 'Свежие продукты с базара уже ждут вас';
 
   @override
-  String get welcomeButton => 'К покупкам';
+  String get nameLabel => 'Имя';
+
+  @override
+  String get nameExample => 'Например, Азиза';
+
+  @override
+  String get nameSaving => 'Сохраняем…';
+
+  @override
+  String get nameSaved => 'Готово';
+
+  @override
+  String get nameOtherNumber => 'Войти с другим номером';
+
+  @override
+  String get nameOffHint => 'введите имя';
 
   @override
   String get staffPasswordTitle => 'Вход для сотрудника';

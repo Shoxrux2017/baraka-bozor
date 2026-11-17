@@ -3934,7 +3934,22 @@ class AppLocalizationsUz extends AppLocalizations {
   String get welcomeBody => 'Bozordan yangi mahsulotlar sizni kutmoqda';
 
   @override
-  String get welcomeButton => 'Xaridlarga';
+  String get nameLabel => 'Ism';
+
+  @override
+  String get nameExample => 'Masalan, Aziza';
+
+  @override
+  String get nameSaving => 'Saqlanmoqda…';
+
+  @override
+  String get nameSaved => 'Tayyor';
+
+  @override
+  String get nameOtherNumber => 'Boshqa raqam bilan kirish';
+
+  @override
+  String get nameOffHint => 'ismingizni kiriting';
 
   @override
   String get staffPasswordTitle => 'Xodim sifatida kirish';

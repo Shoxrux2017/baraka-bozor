@@ -18,6 +18,8 @@ import '../../../core/widgets/fade_in_sliver.dart';
 import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/stale_data_line.dart';
 import '../../addresses/presentation/delivery_address_widgets.dart';
+import '../../auth/application/welcome_notice.dart';
+import '../../auth/presentation/welcome_banner.dart';
 import '../../cart/application/cart_controllers.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../../orders/application/customer_orders_controllers.dart';
@@ -55,6 +57,33 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
   );
 
   bool _sawSkeleton = false;
+
+  /// The name of a new Customer the welcome strip greets; set once, after the
+  /// first frame, when the name step left a notice for this account.
+  String? _welcomed;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _takeWelcome());
+  }
+
+  /// Takes the notice the name step left for the signed-in Customer (`DL-139`).
+  void _takeWelcome() {
+    final String? account = ref.read(customerAccountProvider);
+    if (!mounted || account == null) {
+      return;
+    }
+    final Welcome? welcome = ref
+        .read(welcomeNoticeProvider.notifier)
+        .take(account);
+    if (welcome == null) {
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    setState(() => _welcomed = welcome.name);
+    announce(context, '${l10n.welcomeTitle(welcome.name)} ${l10n.welcomeBody}');
+  }
 
   static ApiFailure? _failureOf(AsyncValue<Object?> value) {
     if (!value.hasError) {
@@ -209,74 +238,88 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
       bottomNavigationBar: const CustomerTabBar(current: CustomerTab.home),
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: KitColors.primary,
-          onRefresh: _refresh,
-          child: CustomScrollView(
-            key: const ValueKey<String>('home-scroll'),
-            primary: true,
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: <Widget>[
-              const SliverToBoxAdapter(
-                child: ActiveModeBar(action: _SwitchToStaffButton()),
-              ),
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 4, 0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(child: DeliveryAddressLine()),
-                      SizedBox(width: 8),
-                      CartButton(),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPersistentHeader(
-                key: const ValueKey<String>('home-search-bar'),
-                pinned: true,
-                delegate: _SearchHeader(
-                  hint: l10n.catalogSearchHint,
-                  hintStyle: hintStyle,
-                  spoken: l10n.catalogSearchSpoken,
-                  extent: _SearchHeader.extentFor(
-                    context,
-                    l10n.catalogSearchHint,
-                    hintStyle,
-                  ),
-                  reduceMotion: MediaQuery.disableAnimationsOf(context),
-                ),
-              ),
-              const SliverToBoxAdapter(child: StoreClosedLine()),
-              const SliverToBoxAdapter(child: QuestionBanner()),
-              if (failure != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: StaleDataLine(
-                      key: const ValueKey<String>('stale-line'),
-                      failure: failure,
-                      shownAt: loaded?.at,
-                      onRetry: _refresh,
-                      busy: categories.isLoading || recommended.isLoading,
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: RefreshIndicator(
+                color: KitColors.primary,
+                onRefresh: _refresh,
+                child: CustomScrollView(
+                  key: const ValueKey<String>('home-scroll'),
+                  primary: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: <Widget>[
+                    const SliverToBoxAdapter(
+                      child: ActiveModeBar(action: _SwitchToStaffButton()),
                     ),
-                  ),
-                ),
-              SliverToBoxAdapter(
-                child: SectionTitle(
-                  title: l10n.homeCategories,
-                  seeAllKey: 'open-categories',
-                  seeAllLabel: l10n.homeCategoriesAll,
-                  onSeeAll: () => context.push<void>(CatalogPaths.categories),
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 8, 4, 0),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(child: DeliveryAddressLine()),
+                            SizedBox(width: 8),
+                            CartButton(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPersistentHeader(
+                      key: const ValueKey<String>('home-search-bar'),
+                      pinned: true,
+                      delegate: _SearchHeader(
+                        hint: l10n.catalogSearchHint,
+                        hintStyle: hintStyle,
+                        spoken: l10n.catalogSearchSpoken,
+                        extent: _SearchHeader.extentFor(
+                          context,
+                          l10n.catalogSearchHint,
+                          hintStyle,
+                        ),
+                        reduceMotion: MediaQuery.disableAnimationsOf(context),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: StoreClosedLine()),
+                    const SliverToBoxAdapter(child: QuestionBanner()),
+                    if (failure != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: StaleDataLine(
+                            key: const ValueKey<String>('stale-line'),
+                            failure: failure,
+                            shownAt: loaded?.at,
+                            onRetry: _refresh,
+                            busy: categories.isLoading || recommended.isLoading,
+                          ),
+                        ),
+                      ),
+                    SliverToBoxAdapter(
+                      child: SectionTitle(
+                        title: l10n.homeCategories,
+                        seeAllKey: 'open-categories',
+                        seeAllLabel: l10n.homeCategoriesAll,
+                        onSeeAll: () =>
+                            context.push<void>(CatalogPaths.categories),
+                      ),
+                    ),
+                    categoryGrid,
+                    const SliverToBoxAdapter(
+                      child: RecommendedRow(placeholders: true),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  ],
                 ),
               ),
-              categoryGrid,
-              const SliverToBoxAdapter(
-                child: RecommendedRow(placeholders: true),
+            ),
+            if (_welcomed != null)
+              Positioned(
+                top: 56,
+                left: 12,
+                right: 12,
+                child: IgnorePointer(child: WelcomeBanner(name: _welcomed!)),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            ],
-          ),
+          ],
         ),
       ),
     );
