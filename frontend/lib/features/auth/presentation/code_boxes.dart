@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -34,7 +36,6 @@ class CodeBoxes extends StatefulWidget {
     this.misses = 0,
     this.onCompleted,
     this.spokenLabel,
-    this.blinkCaret = false,
     super.key,
   });
 
@@ -62,11 +63,6 @@ class CodeBoxes extends StatefulWidget {
   /// What the reader says first; the label of the code by default.
   final String? spokenLabel;
 
-  /// Blinks the caret (530 ms on, 530 ms off) while the field is focused. Off
-  /// by default: a blink never lets `pumpAndSettle` settle, so a screen opts
-  /// in (`DL-139`).
-  final bool blinkCaret;
-
   @override
   State<CodeBoxes> createState() => _CodeBoxesState();
 }
@@ -79,11 +75,10 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
 
   final FocusNode _focus = FocusNode();
 
-  /// The caret: on for the first half of 1060 ms, off for the second.
-  late final AnimationController _caret = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1060),
-  );
+  /// Flips the caret every 530 ms while it blinks. A timer, not a ticker: it
+  /// only changes paint state, so `pumpAndSettle` still settles.
+  Timer? _blink;
+  bool _caretOn = true;
 
   /// The digit pop: 180 ms.
   late final AnimationController _pop = AnimationController(
@@ -133,7 +128,7 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
     _focus
       ..removeListener(_onFocus)
       ..dispose();
-    _caret.dispose();
+    _blink?.cancel();
     _pop.dispose();
     _pulse.dispose();
     super.dispose();
@@ -148,6 +143,10 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
     final int before = _length;
     final int now = widget.controller.text.length;
     _length = now;
+    if (_blink != null) {
+      _caretOn = true;
+      _restartBlink();
+    }
     if (now > before && !_reduced) {
       _popFrom = before;
       _pop.forward(from: 0);
@@ -158,14 +157,26 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
     }
   }
 
+  void _restartBlink() {
+    _blink?.cancel();
+    _blink = Timer.periodic(const Duration(milliseconds: 530), (Timer _) {
+      setState(() => _caretOn = !_caretOn);
+    });
+  }
+
   void _syncTickers() {
-    final bool blink = widget.blinkCaret && _focus.hasFocus && !_reduced;
-    if (blink && !_caret.isAnimating) {
-      _caret
-        ..value = 0
-        ..repeat();
-    } else if (!blink && _caret.isAnimating) {
-      _caret.stop();
+    final bool blink =
+        _focus.hasFocus &&
+        widget.enabled &&
+        widget.look == CodeBoxesLook.entry &&
+        !_reduced;
+    if (blink && _blink == null) {
+      _caretOn = true;
+      _restartBlink();
+    } else if (!blink && _blink != null) {
+      _blink!.cancel();
+      _blink = null;
+      _caretOn = true;
     }
     final bool pulse = widget.look == CodeBoxesLook.checking && !_reduced;
     if (pulse && !_pulse.isAnimating) {
@@ -217,7 +228,6 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
                         ExcludeSemantics(
                           child: AnimatedBuilder(
                             animation: Listenable.merge(<Listenable>[
-                              _caret,
                               _pop,
                               _pulse,
                             ]),
@@ -322,7 +332,7 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
       height: _boxHeight,
       digit: i < code.length ? code[i] : null,
       caret: focused && i == code.length,
-      caretOn: _reduced || !widget.blinkCaret || _caret.value < 0.5,
+      caretOn: _caretOn,
       highlighted: i < code.length || (focused && i == code.length),
       failed: failed,
       accent: widget.accent,

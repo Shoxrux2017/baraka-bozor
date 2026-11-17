@@ -21,7 +21,6 @@ void main() {
     CodeBoxesLook look = CodeBoxesLook.entry,
     int misses = 0,
     bool reduced = false,
-    bool blink = false,
   }) {
     return MaterialApp(
       locale: const Locale('ru'),
@@ -43,7 +42,6 @@ void main() {
               look: look,
               misses: misses,
               onCompleted: completed.add,
-              blinkCaret: blink,
             ),
           ),
         ),
@@ -143,7 +141,7 @@ void main() {
   });
 
   testWidgets('the caret blinks while focused', (WidgetTester tester) async {
-    await tester.pumpWidget(app(blink: true));
+    await tester.pumpWidget(app());
     await tester.pump();
     const Key caret = ValueKey<String>('code-caret');
     expect(find.byKey(caret), findsOneWidget);
@@ -151,6 +149,18 @@ void main() {
     expect(find.byKey(caret), findsNothing);
     await tester.pump(const Duration(milliseconds: 530));
     expect(find.byKey(caret), findsOneWidget);
+  });
+
+  testWidgets('the caret is steady with reduced motion', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(app(reduced: true));
+    await tester.pump();
+    const Key caret = ValueKey<String>('code-caret');
+    for (int i = 0; i < 3; i++) {
+      expect(find.byKey(caret), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 530));
+    }
   });
 
   testWidgets('checking pulses the boxes', (WidgetTester tester) async {
