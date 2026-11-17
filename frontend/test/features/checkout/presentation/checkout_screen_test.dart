@@ -640,6 +640,7 @@ void main() {
 
         await tapAndSettle(tester, byKey('checkout-address-change'));
         await tapAndSettle(tester, byKey('delivery-address-new'));
+        await tapAndSettle(tester, byKey('fake-map-move'));
         await tapAndSettle(tester, byKey('address-point-confirm'));
         await tester.enterText(byKey('field-street'), 'Dacha');
         await tester.enterText(byKey('field-house'), '9');
