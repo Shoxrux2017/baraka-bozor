@@ -2167,3 +2167,19 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
     (f) The consent text is 12 (was 11) in the app's font.
     (g) The sign-in caret blinks by a 530 ms timer, not a ticker, so tests settle; the checking pulse is a ticker only while a verify runs.
     (h) `smart_auth` 3.2.0 pulls `androidx.credentials` 1.5.0-beta01, whose `androidx.biometric` 1.1.0 declares `USE_BIOMETRIC` and `USE_FINGERPRINT` for passkeys. The app uses neither biometrics nor passkeys, so the app manifest removes both (`tools:node="remove"`); the merged manifest of the debug build was checked. No SMS permission comes with the package.
+
+## DL-140 — The Apple batch, stage 21: account deletion (2026-11-17, agent; items `del-1`, `del-10` Owner)
+
+1. **Owner `del-1`**: the sheet says what is erased — «Имя и номер телефона», «Адреса», «Избранное», «Корзина» — and what stays — «Заказы — без имени, телефона и адреса, для учёта» — which is what `EraseCustomer` erases; supersedes the sheet text of `DL-94` and kit drawing 36.
+2. **Owner `del-10`**: the done screen shows a calm grey check and the true text (orders stay), with a fade and a success buzz instead of the green halo; supersedes drawing 36в.
+3. **The code is spent last**: the code check runs as the erasure's consent under the cart and user locks after the unfinished-order check; a refused code commits its count and is rethrown after the commit, so an order placed during the deletion either comes first and refuses it without costing the code, or waits for the lock and finds the tokens gone. The lock order is cart → user → challenge; sign-in takes only the challenge, so no new deadlock.
+4. **The `409` details** gain `status` and `item_count` for the sheet's order card (`UnfinishedOrders::details`, the count as `OrderLineSums::add` gives it); the panel ignores them.
+5. **A lost answer**: after a delete that may have arrived, the app asks `GET /customer/profile`; a `401 authentication_required` there or on the delete itself means the account is gone, because Customer tokens are revoked only by that token's logout and by the erasure, and a blocked account answers `account_blocked`; only these two calls keep the session on that answer. A check that answers `200` or fails shows «Нет связи — аккаунт не удалён» and keeps the code.
+6. **Push**: the logout hook is not run (reason as above, «Before the tasks» (2)).
+7. **The device forgets** the account's recent searches and chosen delivery address (`PreferenceStore.remove`).
+8. **The sheet drags** with Flutter's own drag; while the code is sent `SheetHold` rubber-bands it, and «Оставить аккаунт», the scrim and back still close it.
+9. **One sheet, two faces**, the order card opens the order.
+10. **Code entry**: the sign-in pieces of `DL-139` without auto-verify (`DL-139` (5)); «Открыть Telegram» and «Не пришёл код?» hide during the lock and after it, as drawn (unlike sign-in, `DL-139` (14)(c)); the no-code sheet has no «Изменить номер».
+11. **Tokens for the drawing's greys**: the groups and the card `page` (#F6F7F6), the check circle `chip` (#F1F3F1 for #F1F2F1), rules `line`, «Оставить аккаунт»'s edge `outline`.
+12. **Reproduction** — filled by the lead.
+13. **Final review** — filled by the lead.

@@ -36,7 +36,7 @@ Rules for every stage:
 | 17 | Documents | 9 | — | Merged (PR #140) |
 | 18 | Addresses | 9 | — | Merged (PR #141) |
 | 19 | New address | 12 | reverse geocoding, zone | Merged (PR #142) |
-| 20 | Sign-in | 14 | tries left | Planned |
+| 20 | Sign-in | 14 | tries left | Merged (PR #143) |
 | 21 | Account deletion | 11 | erasure race | Planned |
 | 22 | System screens | 10 | — | Merged (PR #140) |
 

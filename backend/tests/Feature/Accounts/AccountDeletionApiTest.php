@@ -218,6 +218,91 @@ final class AccountDeletionApiTest extends TestCase
         $this->assertSame(UserStatus::Active, User::query()->findOrFail($customer->id)->status);
     }
 
+    public function test_the_code_is_spent_only_after_the_last_unfinished_order_check(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        $this->withToken($token)->postJson('/api/v1/customer/account/deletion-code')->assertOk();
+
+        // An order placed the moment the code is spent: the erasure's own check,
+        // made before the code, does not see it yet (`DL-140`).
+        $placed = false;
+        LoginChallenge::updated(function (LoginChallenge $challenge) use ($customer, &$placed): void {
+            if ($challenge->consumed_at !== null && ! $placed) {
+                $placed = true;
+                Order::factory()->shopping()->create(['customer_id' => $customer->id]);
+            }
+        });
+
+        $this->deleteWith($token, self::CODE)->assertNoContent();
+
+        $this->assertTrue($placed);
+        $this->assertSame(UserStatus::Deleted, User::query()->findOrFail($customer->id)->status);
+    }
+
+    public function test_an_unfinished_order_refuses_before_the_code_is_spent(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        Order::factory()->shopping()->create(['customer_id' => $customer->id]);
+        LoginChallenge::query()->forceCreate([
+            'phone' => self::PHONE, 'purpose' => LoginChallenge::PURPOSE_ACCOUNT_DELETION, 'code_hash' => bcrypt(self::CODE),
+            'failed_attempts' => 0, 'channel' => 'test', 'expires_at' => now()->addMinutes(5), 'created_at' => now(),
+        ]);
+
+        $this->deleteWith($token, '111111')->assertStatus(409)->assertJsonPath('code', 'account_has_unfinished_orders');
+
+        $challenge = LoginChallenge::query()->sole();
+        $this->assertSame(0, $challenge->failed_attempts);
+        $this->assertNull($challenge->consumed_at);
+    }
+
+    public function test_a_wrong_code_counts_though_nothing_is_erased(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        $this->withToken($token)->postJson('/api/v1/customer/account/deletion-code')->assertOk();
+
+        $this->deleteWith($token, '111111')->assertStatus(422)->assertJsonPath('details.attempts_left', 2);
+
+        $this->assertSame(1, LoginChallenge::query()->sole()->failed_attempts);
+        $this->assertSame(UserStatus::Active, User::query()->findOrFail($customer->id)->status);
+    }
+
+    public function test_wrong_codes_still_lock_after_three(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        $this->withToken($token)->postJson('/api/v1/customer/account/deletion-code')->assertOk();
+
+        $this->deleteWith($token, '111111')->assertStatus(422)->assertJsonPath('details.attempts_left', 2);
+        $this->deleteWith($token, '111111')->assertStatus(422)->assertJsonPath('details.attempts_left', 1);
+        $this->deleteWith($token, '111111')->assertStatus(429)->assertJsonPath('code', 'code_locked')->assertHeader('Retry-After', '60');
+
+        $this->flushHeaders();
+        $this->postJson('/api/v1/auth/customer/code/verify', ['phone' => self::PHONE, 'code' => self::CODE])
+            ->assertStatus(429)->assertJsonPath('code', 'code_locked');
+    }
+
+    public function test_the_unfinished_order_names_its_status_and_item_count(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        $order = Order::factory()->shopping()->create(['customer_id' => $customer->id]);
+        OrderItem::factory()->count(2)->create(['order_id' => $order->id]);
+        OrderItem::factory()->removed()->create(['order_id' => $order->id]);
+        $details = ['order_id' => $order->id, 'order_number' => $order->refresh()->order_number, 'status' => 'shopping', 'item_count' => 2];
+
+        $this->withToken($token)->postJson('/api/v1/customer/account/deletion-code')
+            ->assertStatus(409)->assertJsonPath('details', $details);
+
+        LoginChallenge::query()->forceCreate([
+            'phone' => self::PHONE, 'purpose' => LoginChallenge::PURPOSE_ACCOUNT_DELETION, 'code_hash' => bcrypt(self::CODE),
+            'failed_attempts' => 0, 'channel' => 'test', 'expires_at' => now()->addMinutes(5), 'created_at' => now(),
+        ]);
+        $this->deleteWith($token, self::CODE)->assertStatus(409)->assertJsonPath('details', $details);
+    }
+
     public function test_the_erasure_itself_refuses_an_unfinished_order_and_changes_nothing(): void
     {
         $customer = $this->customer();

@@ -7,6 +7,7 @@ namespace Tests\Feature\Accounts;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Modules\Auth\TestPhones;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +90,7 @@ final class AdminCustomersApiTest extends TestCase
         $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$deleted->id.'/erase')->assertNoContent();
         $busy = User::factory()->customer()->create();
         $order = Order::factory()->onTheWay()->create(['customer_id' => $busy->id]);
+        OrderItem::factory()->count(2)->create(['order_id' => $order->id]);
 
         foreach ([$courier->id, $deleted->id, (string) Str::uuid()] as $id) {
             $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$id.'/erase')
@@ -98,8 +100,12 @@ final class AdminCustomersApiTest extends TestCase
         $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$busy->id.'/erase')
             ->assertStatus(409)
             ->assertJsonPath('code', 'account_has_unfinished_orders')
-            ->assertJsonPath('details.order_id', $order->id)
-            ->assertJsonPath('details.order_number', $order->fresh()?->order_number);
+            ->assertJsonPath('details', [
+                'order_id' => $order->id,
+                'order_number' => $order->fresh()?->order_number,
+                'status' => 'on_the_way',
+                'item_count' => 2,
+            ]);
         $this->assertSame(UserStatus::Active, User::query()->findOrFail($busy->id)->status);
     }
 
