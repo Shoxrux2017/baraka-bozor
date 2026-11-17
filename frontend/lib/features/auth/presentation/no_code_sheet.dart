@@ -90,7 +90,8 @@ class _NoCodeBody extends ConsumerWidget {
       face = SubmitFace.off;
       label = l10n.resendCode;
     } else {
-      face = SubmitFace.ready;
+      // Off too when a lock started while the sheet was open.
+      face = state.canResend ? SubmitFace.ready : SubmitFace.off;
       label = l10n.resendCode;
     }
 

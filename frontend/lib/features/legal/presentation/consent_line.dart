@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/legal/legal_document_kind.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../application/legal_providers.dart';
 import '../domain/legal.dart';
@@ -29,16 +30,25 @@ class ConsentLine extends ConsumerWidget {
   static final RegExp _marks = RegExp('$_termsMark|$_privacyMark');
 
   static const TextStyle _base = TextStyle(
+    fontFamily: appFontFamily,
     fontSize: 12,
     height: 1.55,
     color: KitColors.muted,
   );
   static const TextStyle _link = TextStyle(
+    fontFamily: appFontFamily,
     fontSize: 12,
     height: 1.55,
     fontWeight: FontWeight.w600,
     color: KitColors.primaryDark,
   );
+
+  /// The styles the sentence is painted in: the painter has no theme above
+  /// it, so the app's font is named here (`DL-139`).
+  @visibleForTesting
+  static const TextStyle baseStyle = _base;
+  @visibleForTesting
+  static const TextStyle linkStyle = _link;
 
   /// Room above and below the text, so a 44 tall target centred on a line
   /// stays inside the line's box.

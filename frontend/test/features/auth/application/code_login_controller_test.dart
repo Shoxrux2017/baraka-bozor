@@ -353,6 +353,21 @@ void main() {
     expect(state(c).locked, isFalse);
   });
 
+  test('verify after changing the phone sends nothing', () async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901234567');
+    controller(c).changePhone();
+
+    expect(await controller(c).verify('482913'), isFalse);
+
+    expect(
+      repository.calls.where((String call) => call.startsWith('verify:')),
+      isEmpty,
+    );
+    expect(state(c).busy, isFalse);
+  });
+
   testWidgets('changing the phone keeps the lock and its timer', (
     WidgetTester tester,
   ) async {

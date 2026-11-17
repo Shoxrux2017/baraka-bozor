@@ -4,6 +4,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/features/legal/application/legal_providers.dart';
 import 'package:baraka_bozor/features/legal/presentation/consent_line.dart';
+import 'package:baraka_bozor/core/theme/app_theme.dart';
 import 'package:baraka_bozor/main.dart' show noAutomaticRetry;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -46,6 +47,12 @@ void main() {
 
   /// The sentence the screen reader reads: the one stop that is no link.
   String plain(WidgetTester tester) => tester.getSemantics(sentence()).label;
+
+  test('the sentence is painted in the app font, plain and link alike', () {
+    expect(ConsentLine.baseStyle.fontFamily, appFontFamily);
+    expect(ConsentLine.linkStyle.fontFamily, appFontFamily);
+    expect(ConsentLine.baseStyle.fontSize, 12);
+  });
 
   testWidgets('both published: one line names both documents', (
     WidgetTester tester,

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/auth/application/code_login_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../support/app_harness.dart';
@@ -361,6 +363,128 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('retry after a lost check sends the digits on screen', (
+    WidgetTester tester,
+  ) async {
+    await openCodePage(tester);
+    repository.verifyFailure = const NetworkFailure();
+    await tester.enterText(codeField, '482913');
+    await tester.pump(const Duration(milliseconds: 140));
+    await tester.pumpAndSettle();
+    expect(notice, findsOneWidget);
+
+    repository.verifyFailure = null;
+    await tester.enterText(codeField, '482914');
+    await tester.pump();
+    expect(notice, findsNothing, reason: 'a changed code drops the failure');
+
+    await tester.tap(find.byKey(const ValueKey<String>('verify-button')));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(repository.calls.last, 'verify:+998901234567:482914');
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a retry with the same digits repeats the check', (
+    WidgetTester tester,
+  ) async {
+    await openCodePage(tester);
+    repository.verifyFailure = const NetworkFailure();
+    await tester.enterText(codeField, '482913');
+    await tester.pump(const Duration(milliseconds: 140));
+    await tester.pumpAndSettle();
+
+    repository.verifyFailure = null;
+    await tester.ensureVisible(noticeAction);
+    await tester.tap(noticeAction);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      repository.calls.where((String c) => c == 'verify:+998901234567:482913'),
+      hasLength(2),
+    );
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('while locked a failed Telegram launch opens no sheet', (
+    WidgetTester tester,
+  ) async {
+    await openCodePage(tester);
+    repository.verifyFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 60,
+    );
+    await tester.enterText(codeField, '482913');
+    await tester.pump(const Duration(milliseconds: 140));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('code-lock-card')),
+      findsOneWidget,
+    );
+
+    telegram.opens = false;
+    await tester.ensureVisible(openTelegram);
+    await tester.tap(openTelegram);
+    await tester.pumpAndSettle();
+
+    expect(telegram.calls, 1);
+    expect(sheet, findsNothing);
+    await tester.pump(const Duration(seconds: 60));
+  });
+
+  testWidgets("the sheet's resend is off while locked", (
+    WidgetTester tester,
+  ) async {
+    await openCodePage(tester);
+    await tester.ensureVisible(noCode);
+    await tester.tap(noCode);
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(resendButton).onPressed, isNotNull);
+
+    repository.verifyFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 60,
+    );
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(sheet),
+    );
+    await container.read(codeLoginControllerProvider.notifier).verify('482913');
+    await tester.pump();
+
+    expect(container.read(codeLoginControllerProvider).locked, isTrue);
+    expect(tester.widget<FilledButton>(resendButton).onPressed, isNull);
+    await tester.pump(const Duration(seconds: 60));
+  });
+
+  testWidgets('closing the sheet does not announce the old notice again', (
+    WidgetTester tester,
+  ) async {
+    await openCodePage(tester);
+    repository.verifyFailure = const NetworkFailure();
+    await tester.enterText(codeField, '482913');
+    await tester.pump(const Duration(milliseconds: 140));
+    await tester.pumpAndSettle();
+    expect(notice, findsOneWidget);
+
+    await tester.ensureVisible(noCode);
+    await tester.tap(noCode);
+    await tester.pumpAndSettle();
+    expect(notice, findsNothing, reason: 'hidden while the sheet is open');
+    tester.takeAnnouncements();
+
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
+    expect(sheet, findsNothing);
+    expect(notice, findsOneWidget);
+    expect(
+      tester.takeAnnouncements().map((a) => a.message),
+      isNot(contains(l10n(tester).authNoInternet)),
+    );
   });
 
   testWidgets('an expired code offers a new one', (WidgetTester tester) async {

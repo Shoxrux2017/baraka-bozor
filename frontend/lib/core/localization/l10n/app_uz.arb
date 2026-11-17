@@ -2727,6 +2727,14 @@
       }
     }
   },
+  "phoneEnteredSpoken": "9 tadan {count} tasi kiritildi",
+  "@phoneEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "codeSentSpoken": "Kod Telegramga {phone} raqamiga yuborildi",
   "@codeSentSpoken": {
     "placeholders": {

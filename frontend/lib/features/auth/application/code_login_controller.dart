@@ -173,7 +173,11 @@ class CodeLoginController extends Notifier<CodeLoginState> {
   /// this flow is over and its state is cleared.
   Future<bool> verify(String code) async {
     final String? phone = state.phone;
-    if (phone == null || state.busy || state.accepted || !state.entryOpen) {
+    if (phone == null ||
+        !state.hasCode ||
+        state.busy ||
+        state.accepted ||
+        !state.entryOpen) {
       return false;
     }
     final int generation = ++_generation;

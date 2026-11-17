@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,8 +34,14 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   final FocusNode _focus = FocusNode();
   final GlobalKey _buttonKey = GlobalKey();
 
+  static const Duration _ownNumberDelay = Duration(milliseconds: 400);
+
   /// The own-number sheet is asked once in this page's life.
   bool _askedForOwnNumber = false;
+
+  /// The wait between the first focus and the ask, so the sheet never lands
+  /// on the launch curtain (`DL-139`).
+  Timer? _ownNumberWait;
 
   /// How many digits the last tap on the grey button said were missing; null
   /// while nothing is said.
@@ -56,17 +64,24 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
 
   @override
   void dispose() {
+    _ownNumberWait?.cancel();
     _focus.dispose();
     _phone.dispose();
     super.dispose();
   }
 
-  /// Any edit hides the words about the missing digits.
+  /// Any edit hides the words about the missing digits and a shown refusal
+  /// of the request, so «Повторить» can only repeat the number on screen.
   void _onEdit() {
     if (_phone.text == _lastText) {
       return;
     }
     _lastText = _phone.text;
+    final CodeLoginState state = ref.read(codeLoginControllerProvider);
+    if (state.failure != null &&
+        state.failedAction == CodeLoginAction.request) {
+      ref.read(codeLoginControllerProvider.notifier).clearFailure();
+    }
     if (_missing != null) {
       setState(() => _missing = null);
     }
@@ -75,11 +90,19 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   void _onFocus() {
     if (_focus.hasFocus && !_askedForOwnNumber && _phone.text.isEmpty) {
       _askedForOwnNumber = true;
-      _askForOwnNumber();
+      _ownNumberWait = Timer(_ownNumberDelay, _askForOwnNumber);
     }
   }
 
+  /// Asks only if the page is still here, current, focused and the field
+  /// still empty after the wait.
   Future<void> _askForOwnNumber() async {
+    if (!mounted ||
+        !_focus.hasFocus ||
+        _phone.text.isNotEmpty ||
+        !(ModalRoute.isCurrentOf(context) ?? true)) {
+      return;
+    }
     final String? digits = await ref.read(phoneNumberHintProvider).request();
     if (!mounted || digits == null || _phone.text.isNotEmpty) {
       return;
@@ -275,6 +298,7 @@ class _DigitsHintState extends State<_DigitsHint>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 220),
+    animationBehavior: AnimationBehavior.preserve,
   );
   bool _started = false;
 

@@ -3829,6 +3829,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String phoneEnteredSpoken(int count) {
+    return 'введено $count из 9';
+  }
+
+  @override
   String codeSentSpoken(String phone) {
     return 'Код отправлен в Telegram на номер $phone';
   }

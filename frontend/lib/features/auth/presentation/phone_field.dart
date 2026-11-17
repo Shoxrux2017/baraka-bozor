@@ -195,7 +195,19 @@ class _PhoneFieldState extends State<PhoneField> {
             ),
           ),
         ),
-        Semantics(label: '$label, $phoneCountryCode', child: field),
+        // The count rides on the field's own reader stop as its hint.
+        ListenableBuilder(
+          listenable: widget.controller,
+          builder: (BuildContext context, Widget? _) {
+            final int digits = PhoneField._digitsOf(widget.controller.text)
+                .length;
+            return Semantics(
+              label: '$label, $phoneCountryCode',
+              hint: digits == 0 ? null : l10n.phoneEnteredSpoken(digits),
+              child: field,
+            );
+          },
+        ),
       ],
     );
   }

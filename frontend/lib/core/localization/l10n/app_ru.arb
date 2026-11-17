@@ -2627,6 +2627,14 @@
       }
     }
   },
+  "phoneEnteredSpoken": "введено {count} из 9",
+  "@phoneEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "codeSentSpoken": "Код отправлен в Telegram на номер {phone}",
   "@codeSentSpoken": {
     "placeholders": {

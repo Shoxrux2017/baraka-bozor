@@ -949,6 +949,7 @@ void main() {
     ) async {
       final FakePhoneNumberHint hint = FakePhoneNumberHint('901234567');
       await openRussian(tester, hint: hint);
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(hint.calls, 1);
       expect(
@@ -976,6 +977,7 @@ void main() {
     ) async {
       final FakePhoneNumberHint hint = FakePhoneNumberHint();
       await openRussian(tester, hint: hint);
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(hint.calls, 1);
       expect(
@@ -983,6 +985,118 @@ void main() {
         isEmpty,
       );
     });
+
+    /// Opens the app with small steps and stops at the frame that gave the
+    /// phone field its focus, so the wait after it can be measured.
+    Future<void> openToFocus(
+      WidgetTester tester,
+      FakePhoneNumberHint hint,
+    ) async {
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: repository,
+          phoneHint: hint,
+          device: const Locale('ru'),
+        ),
+      );
+      for (int i = 0; i < 200; i++) {
+        await tester.pump(const Duration(milliseconds: 5));
+        if (find.byType(EditableText).evaluate().isNotEmpty &&
+            hasFocus(tester)) {
+          return;
+        }
+      }
+      fail('the phone field never got focus');
+    }
+
+    testWidgets(
+      'the own-number sheet waits 400 ms and not past a typed digit',
+      (WidgetTester tester) async {
+        final FakePhoneNumberHint hint = FakePhoneNumberHint('901234567');
+        await openToFocus(tester, hint);
+
+        await tester.pump(const Duration(milliseconds: 395));
+        expect(hint.calls, 0, reason: 'not before the 400 ms are over');
+        await tester.pump(const Duration(milliseconds: 10));
+        expect(hint.calls, 1);
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        final FakePhoneNumberHint typed = FakePhoneNumberHint('901234567');
+        await openToFocus(tester, typed);
+        await tester.enterText(phoneField, '9');
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(typed.calls, 0, reason: 'a typed digit keeps the sheet away');
+        expect(tester.widget<TextFormField>(phoneField).controller?.text, '9');
+      },
+    );
+
+    testWidgets('editing the number hides the request failure', (
+      WidgetTester tester,
+    ) async {
+      repository.requestFailure = const NetworkFailure();
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      expect(authNotice, findsOneWidget);
+
+      await tester.enterText(phoneField, '90123456');
+      await tester.pump();
+
+      expect(authNotice, findsNothing);
+      expect(repository.calls, <String>['request:+998901234567']);
+    });
+
+    testWidgets('the phone field says how many digits are in', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openRussian(tester);
+      final Finder editable = find.byType(EditableText);
+
+      expect(tester.getSemantics(editable).hint, isEmpty);
+
+      await tester.enterText(phoneField, '901234');
+      await tester.pump();
+      expect(tester.getSemantics(editable).hint, 'введено 6 из 9');
+      expect(
+        tester.getSemantics(editable).label,
+        contains('Номер телефона'),
+        reason: 'the count and the name are one reader stop',
+      );
+
+      await tester.enterText(phoneField, '');
+      await tester.pump();
+      expect(tester.getSemantics(editable).hint, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'the digits hint fades in 200 ms with reduced motion, not at 5 %',
+      (WidgetTester tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        await openRussian(tester);
+        await tester.enterText(phoneField, '901234');
+        await tester.pump();
+
+        await tester.tap(continueButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final double opacity = tester
+            .widget<Opacity>(
+              find.descendant(of: digitsHint, matching: find.byType(Opacity)),
+            )
+            .opacity;
+        expect(opacity, inExclusiveRange(0.3, 0.7));
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('the consent sits under the button', (
       WidgetTester tester,
@@ -1303,6 +1417,22 @@ void main() {
       expect(find.text(l10n(tester).codeLocked('0:35')), findsOneWidget);
       expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
       await tester.pump(const Duration(seconds: 35));
+    });
+
+    testWidgets('back within the auto-verify wait sends nothing', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await typeCode(tester, '482913');
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(phoneField, findsOneWidget);
+      expect(verifies(), 0);
     });
 
     testWidgets('back while checking does nothing', (

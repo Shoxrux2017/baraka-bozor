@@ -149,6 +149,7 @@ class _AuthNoticeState extends State<AuthNotice>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 220),
+    animationBehavior: AnimationBehavior.preserve,
   );
   bool _started = false;
 

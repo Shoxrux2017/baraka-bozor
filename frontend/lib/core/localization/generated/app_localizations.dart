@@ -6452,6 +6452,12 @@ abstract class AppLocalizations {
   /// **'Yana {count} ta raqam kiriting'**
   String phoneDigitsLeft(int count);
 
+  /// No description provided for @phoneEnteredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'9 tadan {count} tasi kiritildi'**
+  String phoneEnteredSpoken(int count);
+
   /// No description provided for @codeSentSpoken.
   ///
   /// In uz, this message translates to:

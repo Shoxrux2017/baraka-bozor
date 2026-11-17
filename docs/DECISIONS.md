@@ -2158,3 +2158,11 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
 11. **Large text with the keyboard up** drops the wordmark and keeps the main button in view.
 12. **Reproduction** on main `6036d9ed`, four tests red on their assertions: `vhod-5` — `handlePopRoute()` answered false, so back closed the app; `vhod-13` — the button's bottom was 397 against 340 at 360 × 640 with text ×2 and the keyboard 300; `vhod-14` — the phone field read as «90 123 45 67» with no name; `vhod-14` — the code read as «4815».
 13. **Looks**: the clear × and the caret use the `muted` and `primary` tokens, not the drawing's #9AA09B, for contrast.
+14. **Final review of the stage** (2026-11-17, agent; adds to the points above, none is edited):
+    (a) Point 1's reason, restated. Before, a wrong code and a missing challenge both answered a bare `code_invalid`. Now one wrong probe on verify tells that some phone has an open sign-in challenge and whether its owner has already mistyped (2 left against 1); before, that took up to three probes and a lock. No account existence is revealed, because codes go to any number. Accepted: the probe spends the owner's try either way, the window is five minutes, and the count is what the approved test asks for.
+    (b) Every `AuthScaffold` top bar puts its 40 px circles in 44 px slots, so the bar is 4 px taller everywhere, the staff and status pages too.
+    (c) «Открыть Telegram» also shows during the lock, as drawn; its fallback opens nothing then, and the sheet's resend is off unless `canResend`, so a lock that starts while the sheet is open turns it off.
+    (d) `changePhone` is refused only while the code is accepted; the code page blocks back while a call runs, a superseded answer is dropped by its generation, and `verify` refuses without a code, so a pending 140 ms auto-verify cannot send after back.
+    (e) A resend failure shown in the sheet clears when the sheet closes.
+    (f) The consent text is 12 (was 11) in the app's font.
+    (g) The sign-in caret blinks by a 530 ms timer, not a ticker, so tests settle; the checking pulse is a ticker only while a verify runs.

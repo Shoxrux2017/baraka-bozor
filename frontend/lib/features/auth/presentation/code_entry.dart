@@ -55,6 +55,9 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
   /// The wait between the sixth digit and the verify it starts.
   Timer? _pending;
 
+  /// The boxes' text when [_onCodeEdit] last looked.
+  String _lastCodeText = '';
+
   /// The wrong-code moment: the boxes are red and take no input.
   Timer? _redTimer;
   bool _red = false;
@@ -73,6 +76,21 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _checkClipboard);
     _checkClipboard();
+    _lastCodeText = _code.text;
+    _code.addListener(_onCodeEdit);
+  }
+
+  /// A failed check belongs to the digits it was sent with: once the boxes
+  /// change it is dropped, so a retry can only send what is on screen.
+  void _onCodeEdit() {
+    if (_code.text == _lastCodeText) {
+      return;
+    }
+    _lastCodeText = _code.text;
+    final CodeLoginState state = ref.read(codeLoginControllerProvider);
+    if (state.failedAction == CodeLoginAction.verify) {
+      ref.read(codeLoginControllerProvider.notifier).clearFailure();
+    }
   }
 
   Future<void> _checkClipboard() async {
@@ -98,7 +116,8 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
 
   Future<void> _openTelegram() async {
     final bool opened = await ref.read(telegramLauncherProvider).open();
-    if (!opened && mounted) {
+    // During the lock the sheet would offer a resend the lock refuses.
+    if (!opened && mounted && !ref.read(codeLoginControllerProvider).locked) {
       await _noCode();
     }
   }
@@ -125,13 +144,30 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
   void _onNoticeAction(AuthNoticeAction action) {
     switch (action) {
       case AuthNoticeAction.retry:
-        unawaited(ref.read(codeLoginControllerProvider.notifier).retry());
+        _retry();
       case AuthNoticeAction.newCode:
         unawaited(_resend());
       case AuthNoticeAction.changeNumber:
         unawaited(Navigator.of(context).maybePop());
       case AuthNoticeAction.otherNumber:
         break;
+    }
+  }
+
+  /// A failed check is sent again from the boxes as they stand; a failed
+  /// resend repeats itself. With fewer than six digits there is nothing to
+  /// send, so the failure is only dismissed.
+  void _retry() {
+    final CodeLoginController controller = ref.read(
+      codeLoginControllerProvider.notifier,
+    );
+    if (ref.read(codeLoginControllerProvider).failedAction !=
+        CodeLoginAction.verify) {
+      unawaited(controller.retry());
+    } else if (_code.text.length == loginCodeLength) {
+      unawaited(_verify());
+    } else {
+      controller.clearFailure();
     }
   }
 
@@ -168,6 +204,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
     _lifecycle.dispose();
     _pending?.cancel();
     _redTimer?.cancel();
+    _code.removeListener(_onCodeEdit);
     _code.dispose();
     super.dispose();
   }
@@ -293,16 +330,24 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
                 ),
               ),
             ),
+          // While the sheet is open a check's notice stays in the tree,
+          // hidden, so closing the sheet does not announce it again; a
+          // refused resend is the sheet's own to show.
           if (_noticeFailure(state) case final ApiFailure failure
-              when !_sheetOpen)
-            AuthNotice(
-              view: authNoticeOf(
-                l10n,
-                failure,
-                phone: state.phone ?? '',
-                place: AuthNoticePlace.code,
+              when !_sheetOpen || state.failedAction == CodeLoginAction.verify)
+            Visibility(
+              key: const ValueKey<String>('code-notice'),
+              visible: !_sheetOpen,
+              maintainState: true,
+              child: AuthNotice(
+                view: authNoticeOf(
+                  l10n,
+                  failure,
+                  phone: state.phone ?? '',
+                  place: AuthNoticePlace.code,
+                ),
+                onAction: _onNoticeAction,
               ),
-              onAction: _onNoticeAction,
             ),
           ListenableBuilder(
             listenable: _code,

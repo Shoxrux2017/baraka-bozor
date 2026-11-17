@@ -3788,6 +3788,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String phoneEnteredSpoken(int count) {
+    return '9 tadan $count tasi kiritildi';
+  }
+
+  @override
   String codeSentSpoken(String phone) {
     return 'Kod Telegramga $phone raqamiga yuborildi';
   }

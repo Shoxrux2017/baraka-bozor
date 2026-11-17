@@ -23,6 +23,7 @@ class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.duration,
+    animationBehavior: AnimationBehavior.preserve,
   );
   bool _started = false;
 
