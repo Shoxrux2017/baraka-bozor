@@ -8,7 +8,10 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
 
 /// The sign-in page a refusal is shown on (`DL-139`).
-enum AuthNoticePlace { phone, code, name }
+///
+/// [deletion] is the account deletion's code sheet and page (`DL-140`): it
+/// offers no number action and a new code as the code page does.
+enum AuthNoticePlace { phone, code, name, deletion }
 
 enum AuthNoticeTone { danger, warning }
 
@@ -72,7 +75,7 @@ AuthNoticeView authNoticeOf(
   AuthNoticeAction? numberAction() => switch (place) {
     AuthNoticePlace.phone => AuthNoticeAction.otherNumber,
     AuthNoticePlace.code => AuthNoticeAction.changeNumber,
-    AuthNoticePlace.name => null,
+    AuthNoticePlace.name || AuthNoticePlace.deletion => null,
   };
 
   if (failure is NetworkFailure) {
@@ -119,7 +122,9 @@ AuthNoticeView authNoticeOf(
       return warning(
         Icons.timer_off,
         serverText,
-        place == AuthNoticePlace.code ? AuthNoticeAction.newCode : null,
+        place == AuthNoticePlace.code || place == AuthNoticePlace.deletion
+            ? AuthNoticeAction.newCode
+            : null,
       );
     case 'provider_unavailable' || 'service_unavailable':
       return danger(Icons.cloud_off, serverText, AuthNoticeAction.retry);

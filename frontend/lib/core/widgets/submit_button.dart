@@ -31,6 +31,7 @@ class SubmitButton extends StatefulWidget {
     this.onOffTap,
     this.offHint,
     this.buttonKey,
+    this.fill = KitColors.primary,
     super.key,
   });
 
@@ -46,6 +47,10 @@ class SubmitButton extends StatefulWidget {
   final String? offHint;
 
   final Key? buttonKey;
+
+  /// The colour of the `ready`, `busy` and `done` faces (`DL-140`: red for
+  /// the account deletion); `off` stays grey.
+  final Color fill;
 
   @override
   State<SubmitButton> createState() => _SubmitButtonState();
@@ -72,11 +77,9 @@ class _SubmitButtonState extends State<SubmitButton> {
         animationDuration: reduced
             ? Duration.zero
             : const Duration(milliseconds: 250),
-        backgroundColor: KitColors.primary,
+        backgroundColor: widget.fill,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: filled
-            ? KitColors.primary
-            : KitColors.buttonOff,
+        disabledBackgroundColor: filled ? widget.fill : KitColors.buttonOff,
         disabledForegroundColor: filled ? Colors.white : KitColors.muted,
         minimumSize: const Size.fromHeight(54),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

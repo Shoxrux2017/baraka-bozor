@@ -14,11 +14,11 @@ import '../application/code_login_controller.dart';
 import '../data/clipboard_code.dart';
 import '../data/telegram_launcher.dart';
 import 'auth_notice.dart';
+import 'code_actions.dart';
 import 'code_boxes.dart';
 import 'lock_card.dart';
 import 'no_code_sheet.dart';
 import 'rise_in.dart';
-import 'telegram_mark.dart';
 
 /// Steps 3 and 4 of `docs/04-user-flows.md` section 2: the code itself and
 /// the one button under it (`DL-139`).
@@ -361,7 +361,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  if (showChip) _PasteChip(onTap: _paste),
+                  if (showChip) CodePasteChip(onTap: _paste),
                   const SizedBox(height: 28),
                   _button(l10n, state),
                 ],
@@ -371,7 +371,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
           // As drawn, also during the lock: the next code comes there too.
           if (telegram) ...<Widget>[
             const SizedBox(height: 12),
-            _TelegramButton(onTap: _openTelegram),
+            OpenTelegramButton(onTap: _openTelegram),
           ],
           if (!state.locked)
             Padding(
@@ -427,76 +427,6 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
         face: face,
         label: label,
         onPressed: onPressed,
-      ),
-    );
-  }
-}
-
-/// «Вставить код»: a green-washed chip that reads the clipboard when tapped.
-class _PasteChip extends StatelessWidget {
-  const _PasteChip({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return RiseIn(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 14),
-        child: Center(
-          child: TextButton.icon(
-            key: const ValueKey<String>('code-paste'),
-            onPressed: onTap,
-            icon: const Icon(Icons.content_paste, size: 20),
-            label: Text(l10n.codePaste),
-            style: TextButton.styleFrom(
-              foregroundColor: KitColors.primaryDark,
-              backgroundColor: KitColors.primaryWash,
-              minimumSize: const Size(0, 44),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// «Открыть Telegram»: white, a hairline edge and the Telegram mark.
-class _TelegramButton extends StatelessWidget {
-  const _TelegramButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return OutlinedButton(
-      key: const ValueKey<String>('code-open-telegram'),
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: KitColors.ink,
-        backgroundColor: Colors.white,
-        minimumSize: const Size.fromHeight(54),
-        side: const BorderSide(color: KitColors.line),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const TelegramMark(size: 24),
-          const SizedBox(width: 10),
-          Flexible(child: Text(l10n.codeOpenTelegram)),
-        ],
       ),
     );
   }
