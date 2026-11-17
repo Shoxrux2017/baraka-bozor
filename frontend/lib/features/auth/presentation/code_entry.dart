@@ -323,7 +323,8 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
               );
             },
           ),
-          if (telegram && state.entryOpen) ...<Widget>[
+          // As drawn, also during the lock: the next code comes there too.
+          if (telegram) ...<Widget>[
             const SizedBox(height: 12),
             _TelegramButton(onTap: _openTelegram),
           ],
