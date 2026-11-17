@@ -1040,7 +1040,7 @@ void main() {
         await tester.tap(phoneField);
         await tester.pumpAndSettle();
 
-        expect(tester.getBottomLeft(continueButton).dy, lessThanOrEqualTo(340));
+        expect(tester.getBottomLeft(continueButton).dy, lessThanOrEqualTo(328));
       },
     );
 

@@ -215,7 +215,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   lockOver: sameNumber && state.lockOver,
                   speaks: ModalRoute.isCurrentOf(context) ?? true,
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
                 KeyedSubtree(
                   key: _buttonKey,
                   child: SubmitButton(

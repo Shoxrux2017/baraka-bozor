@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final Rect button = tester.getRect(find.byType(FilledButton));
-    expect(button.bottom, lessThanOrEqualTo(640 - keyboard));
+    expect(button.bottom, lessThanOrEqualTo(640 - keyboard - 12));
     expect(button.top, greaterThanOrEqualTo(0));
   });
 
@@ -93,7 +93,7 @@ void main() {
 
     expect(
       tester.getRect(find.byType(FilledButton)).bottom,
-      lessThanOrEqualTo(640 - keyboard),
+      lessThanOrEqualTo(640 - keyboard - 12),
     );
   });
 

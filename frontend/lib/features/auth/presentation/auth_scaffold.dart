@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -47,9 +50,9 @@ class AuthScaffold extends StatefulWidget {
   /// The back arrow's tooltip and spoken name; by default `back`.
   final String? backLabel;
 
-  /// The key of the widget that must stay in view above the keyboard: the
-  /// main button with the 12 px below it. After the bottom inset grows, the
-  /// next frame scrolls it into view (`DL-139`).
+  /// The key of the widget that must stay in view above the keyboard, the
+  /// main button. After the bottom inset grows, the next frame scrolls it
+  /// into view with 12 px under it (`DL-139`).
   final GlobalKey? keepVisible;
 
   final bool wordmark;
@@ -73,6 +76,9 @@ class AuthScaffold extends StatefulWidget {
 class _AuthScaffoldState extends State<AuthScaffold> {
   static const Curve _curve = Cubic(0.2, 0.8, 0.2, 1);
 
+  /// The room kept between the kept-in-view widget and the keyboard.
+  static const double _keyboardGap = 12;
+
   double _inset = 0;
 
   @override
@@ -86,17 +92,33 @@ class _AuthScaffoldState extends State<AuthScaffold> {
     }
   }
 
+  /// Scrolls down only as far as it takes to show the kept widget with
+  /// [_keyboardGap] under it, never past the end of the page.
   void _showButton() {
     final BuildContext? target = widget.keepVisible?.currentContext;
     if (!mounted || target == null || !target.mounted) {
       return;
     }
-    Scrollable.ensureVisible(
-      target,
-      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 200),
+    final RenderObject? box = target.findRenderObject();
+    final ScrollableState? scrollable = Scrollable.maybeOf(target);
+    if (box == null || scrollable == null) {
+      return;
+    }
+    final ScrollPosition position = scrollable.position;
+    final double revealed =
+        RenderAbstractViewport.of(box).getOffsetToReveal(box, 1).offset +
+        _keyboardGap;
+    final double to = math.min(revealed, position.maxScrollExtent);
+    if (to <= position.pixels) {
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      position.jumpTo(to);
+      return;
+    }
+    position.animateTo(
+      to,
+      duration: const Duration(milliseconds: 200),
       curve: _curve,
     );
   }
