@@ -391,12 +391,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   /// (`DL-138`).
   Future<void> _showGap(String key, AppLocalizations l10n) async {
     final String label = _labelText(key, l10n);
-    unawaited(
-      SystemChannels.platform.invokeMethod<void>(
-        'HapticFeedback.vibrate',
-        'HapticFeedbackType.warningNotification',
-      ),
-    );
+    unawaited(HapticFeedback.warningNotification());
     announce(
       context,
       key == 'street' || key == 'house'
@@ -404,6 +399,11 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
           : _problem(key, l10n) ?? l10n.addressFieldMissingSpoken(label),
     );
     final bool still = MediaQuery.disableAnimationsOf(context);
+    // The error lines lengthen the list: measure once they are laid out.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
     final RenderObject? box = _labelKeys[key]!.currentContext
         ?.findRenderObject();
     if (_scroll.hasClients) {

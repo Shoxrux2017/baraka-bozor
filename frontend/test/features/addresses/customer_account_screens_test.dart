@@ -1209,6 +1209,8 @@ void main() {
         tester.takeAnnouncements();
 
         await tester.tap(byKey('address-save'));
+        // One frame lays the error lines out, the next starts the scroll.
+        await tester.pump();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(
