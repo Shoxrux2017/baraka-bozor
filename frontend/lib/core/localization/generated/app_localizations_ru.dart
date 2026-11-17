@@ -6024,4 +6024,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String waitSeconds(int count) {
     return '$count с';
   }
+
+  @override
+  String codeEnteredSpoken(int count, String digits) {
+    return 'введено $count из 6: $digits';
+  }
+
+  @override
+  String get codeEmptySpoken => 'пусто';
 }

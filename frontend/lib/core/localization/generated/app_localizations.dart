@@ -9547,6 +9547,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{count} soniya'**
   String waitSeconds(int count);
+
+  /// No description provided for @codeEnteredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'6 tadan {count} tasi kiritildi: {digits}'**
+  String codeEnteredSpoken(int count, String digits);
+
+  /// No description provided for @codeEmptySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'bo\'sh'**
+  String get codeEmptySpoken;
 }
 
 class _AppLocalizationsDelegate

@@ -3935,5 +3935,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "codeEnteredSpoken": "введено {count} из 6: {digits}",
+  "@codeEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "digits": {
+        "type": "String"
+      }
+    }
+  },
+  "codeEmptySpoken": "пусто"
 }

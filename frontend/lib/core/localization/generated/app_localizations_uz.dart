@@ -5924,4 +5924,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String waitSeconds(int count) {
     return '$count soniya';
   }
+
+  @override
+  String codeEnteredSpoken(int count, String digits) {
+    return '6 tadan $count tasi kiritildi: $digits';
+  }
+
+  @override
+  String get codeEmptySpoken => 'bo\'sh';
 }

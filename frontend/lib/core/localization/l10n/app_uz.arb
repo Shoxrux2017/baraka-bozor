@@ -4669,5 +4669,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "codeEnteredSpoken": "6 tadan {count} tasi kiritildi: {digits}",
+  "@codeEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "digits": {
+        "type": "String"
+      }
+    }
+  },
+  "codeEmptySpoken": "bo'sh"
 }
