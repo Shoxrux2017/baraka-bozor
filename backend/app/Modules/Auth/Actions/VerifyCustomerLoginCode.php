@@ -51,7 +51,7 @@ final class VerifyCustomerLoginCode
         } catch (LoginCodeRefused $refusal) {
             throw $refusal->apiCode === 'code_locked'
                 ? ApiException::tooManyRequests('code_locked', $refusal->retryAfterSeconds ?? LoginCodePolicy::LOCK_SECONDS)
-                : ApiException::unauthenticated($refusal->apiCode);
+                : ApiException::unauthenticated($refusal->apiCode, $refusal->attemptsLeft === null ? [] : ['attempts_left' => $refusal->attemptsLeft]);
         }
 
         // The code is consumed and committed above, so a blocked account's

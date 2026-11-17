@@ -1,5 +1,6 @@
+import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/features/auth/presentation/phone_field.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -79,5 +80,114 @@ void main() {
 
     expect(result.text, '91 23');
     expect(result.selection.baseOffset, 1);
+  });
+
+  group('the field itself', () {
+    Future<TextEditingController> pump(
+      WidgetTester tester, {
+      String? label,
+      bool clearable = false,
+      bool strong = false,
+      bool validate = true,
+    }) async {
+      final TextEditingController controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Form(
+              child: PhoneField(
+                controller: controller,
+                label: label,
+                clearable: clearable,
+                strong: strong,
+                validate: validate,
+              ),
+            ),
+          ),
+        ),
+      );
+      return controller;
+    }
+
+    testWidgets('offers both telephone autofill hints', (
+      WidgetTester tester,
+    ) async {
+      await pump(tester);
+
+      expect(
+        tester.widget<EditableText>(find.byType(EditableText)).autofillHints,
+        <String>[
+          AutofillHints.telephoneNumber,
+          AutofillHints.telephoneNumberNational,
+        ],
+      );
+    });
+
+    testWidgets('without a label it stays the plain staff field', (
+      WidgetTester tester,
+    ) async {
+      final TextEditingController controller = await pump(tester);
+      controller.text = '90';
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey<String>('phone-clear')), findsNothing);
+      expect(find.text('Номер телефона'), findsNothing);
+    });
+
+    testWidgets('a clearable field shows the × only while it has text', (
+      WidgetTester tester,
+    ) async {
+      final TextEditingController controller = await pump(
+        tester,
+        label: 'Номер телефона',
+        clearable: true,
+        strong: true,
+        validate: false,
+      );
+      final Finder clear = find.byKey(const ValueKey<String>('phone-clear'));
+      expect(clear, findsNothing);
+
+      controller.text = '90';
+      await tester.pump();
+      expect(clear, findsOneWidget);
+
+      await tester.tap(clear);
+      await tester.pump();
+      expect(controller.text, isEmpty);
+      expect(clear, findsNothing);
+    });
+
+    testWidgets('validate off lets a short number pass the form', (
+      WidgetTester tester,
+    ) async {
+      final TextEditingController controller = await pump(
+        tester,
+        validate: false,
+      );
+      controller.text = '90';
+      await tester.pump();
+
+      expect(
+        Form.of(tester.element(find.byType(PhoneField))).validate(),
+        isTrue,
+      );
+    });
+
+    testWidgets('validate on refuses a short number', (
+      WidgetTester tester,
+    ) async {
+      final TextEditingController controller = await pump(tester);
+      controller.text = '90';
+      await tester.pump();
+
+      expect(
+        Form.of(tester.element(find.byType(PhoneField))).validate(),
+        isFalse,
+      );
+    });
   });
 }

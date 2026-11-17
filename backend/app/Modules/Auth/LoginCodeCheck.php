@@ -84,7 +84,7 @@ final class LoginCodeCheck
                 throw new LoginCodeRefused('code_locked', LoginCodePolicy::LOCK_SECONDS);
             }
 
-            throw new LoginCodeRefused('code_invalid');
+            throw new LoginCodeRefused('code_invalid', null, LoginCodePolicy::MAX_FAILED_ATTEMPTS - $challenge->failed_attempts);
         }
 
         // Consumed before the caller looks at any account, so a valid code

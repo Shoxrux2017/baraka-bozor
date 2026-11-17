@@ -57,10 +57,12 @@ final class ApiException extends RuntimeException implements ShouldntReport
 
     /**
      * A `401` refusal with a specific code, such as `account_blocked`.
+     *
+     * @param  array<string, mixed>  $details
      */
-    public static function unauthenticated(string $apiCode, string $message = ''): self
+    public static function unauthenticated(string $apiCode, array $details = [], string $message = ''): self
     {
-        return new self(401, $apiCode, [], $message);
+        return new self(401, $apiCode, $details, $message);
     }
 
     /**
@@ -109,15 +111,17 @@ final class ApiException extends RuntimeException implements ShouldntReport
      */
     public static function rateLimited(int $retryAfterSeconds, string $message = ''): self
     {
-        return self::tooManyRequests('rate_limited', $retryAfterSeconds, $message);
+        return self::tooManyRequests('rate_limited', $retryAfterSeconds, [], $message);
     }
 
     /**
      * A `429` refusal with a specific code, such as `code_locked`.
+     *
+     * @param  array<string, mixed>  $details
      */
-    public static function tooManyRequests(string $apiCode, int $retryAfterSeconds, string $message = ''): self
+    public static function tooManyRequests(string $apiCode, int $retryAfterSeconds, array $details = [], string $message = ''): self
     {
-        return new self(429, $apiCode, [], $message, ['Retry-After' => (string) max(1, $retryAfterSeconds)]);
+        return new self(429, $apiCode, $details, $message, ['Retry-After' => (string) max(1, $retryAfterSeconds)]);
     }
 
     /**

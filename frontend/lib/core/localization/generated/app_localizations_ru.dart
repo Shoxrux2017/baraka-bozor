@@ -24,7 +24,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get customerLoginIntro =>
-      'Введите номер телефона — пришлём код для входа';
+      'Введите номер телефона — пришлём код в Telegram';
 
   @override
   String get phoneLabel => 'Номер телефона';
@@ -3817,10 +3817,45 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сумма не совпадает с суммой к получению.';
 
   @override
-  String get getCodeButton => 'Получить код';
+  String phoneDigitsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count цифр',
+      few: '$count цифры',
+      one: '$count цифру',
+    );
+    return 'Введите ещё $_temp0';
+  }
 
   @override
-  String get codeComesInTelegram => 'Код придёт в Telegram';
+  String phoneEnteredSpoken(int count) {
+    return 'введено $count из 9';
+  }
+
+  @override
+  String codeSentSpoken(String phone) {
+    return 'Код отправлен в Telegram на номер $phone';
+  }
+
+  @override
+  String codeSentSmsSpoken(String phone) {
+    return 'Код отправлен в SMS на номер $phone';
+  }
+
+  @override
+  String codeSentOtherSpoken(String phone) {
+    return 'Код отправлен на номер $phone';
+  }
+
+  @override
+  String get phoneClear => 'Стереть номер';
+
+  @override
+  String get sendingCode => 'Отправляем код…';
+
+  @override
+  String get getCodeButton => 'Получить код';
 
   @override
   String legalEdition(String date) {
@@ -3925,16 +3960,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get consentPrivacyLink => 'Политику конфиденциальности';
 
   @override
-  String get confirmPhoneTitle => 'Проверьте номер';
-
-  @override
-  String get confirmPhoneBody => 'Отправим на него код в Telegram';
-
-  @override
   String get editButton => 'Изменить';
-
-  @override
-  String get sendButton => 'Отправить';
 
   @override
   String get codeTitle => 'Введите код';
@@ -3954,7 +3980,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get welcomeBody => 'Свежие продукты с базара уже ждут вас';
 
   @override
-  String get welcomeButton => 'К покупкам';
+  String get nameLabel => 'Имя';
+
+  @override
+  String get nameExample => 'Например, Азиза';
+
+  @override
+  String get nameSaving => 'Сохраняем…';
+
+  @override
+  String get nameSaved => 'Готово';
+
+  @override
+  String get nameOtherNumber => 'Войти с другим номером';
+
+  @override
+  String get nameOffHint => 'введите имя';
 
   @override
   String get staffPasswordTitle => 'Вход для сотрудника';
@@ -5964,4 +6005,125 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get wrongSurfaceOtherAccount => 'Войти другим аккаунтом';
+
+  @override
+  String get authOtherNumber => 'Ввести другой номер';
+
+  @override
+  String get codeNewCode => 'Получить новый код';
+
+  @override
+  String get authNoInternet => 'Нет интернета. Проверьте связь и повторите.';
+
+  @override
+  String authNotInTelegram(String phone) {
+    return 'Номер $phone не найден в Telegram. Код приходит только туда: зарегистрируйтесь в Telegram с этим номером или введите другой.';
+  }
+
+  @override
+  String authHourLimit(int max, String wait) {
+    return 'На этот номер уже отправили $max кодов за час. Новый можно запросить через $wait.';
+  }
+
+  @override
+  String authAddressLimit(String wait) {
+    return 'Слишком много запросов с этого устройства. Повторите через $wait.';
+  }
+
+  @override
+  String authTooMany(String wait) {
+    return 'Слишком много попыток. Повторите через $wait.';
+  }
+
+  @override
+  String waitMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String waitSeconds(int count) {
+    return '$count с';
+  }
+
+  @override
+  String codeEnteredSpoken(int count, String digits) {
+    return 'введено $count из 6: $digits';
+  }
+
+  @override
+  String get codeEmptySpoken => 'пусто';
+
+  @override
+  String get codeSentLead => 'Отправили код в Telegram на номер';
+
+  @override
+  String get codeSentLeadSms => 'Отправили SMS с кодом на номер';
+
+  @override
+  String get codeSentLeadOther => 'Отправили код на номер';
+
+  @override
+  String get codeBackSpoken => 'Назад, к номеру телефона';
+
+  @override
+  String get codeFieldSpoken => 'Код из Telegram, 6 цифр';
+
+  @override
+  String get codeFieldSpokenOther => 'Код, 6 цифр';
+
+  @override
+  String get codeChecking => 'Проверяем…';
+
+  @override
+  String get codeAccepted => 'Код верный';
+
+  @override
+  String codeWrongLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Осталось $count попыток',
+      few: 'Осталось $count попытки',
+      one: 'Осталась $count попытка',
+    );
+    return 'Неверный код. $_temp0';
+  }
+
+  @override
+  String get codeLockText =>
+      'Код введён неверно 3 раза. Новый код можно будет запросить, когда отсчёт дойдёт до нуля.';
+
+  @override
+  String get codeLockDoneTime => 'Можно снова';
+
+  @override
+  String get codeLockDoneText =>
+      'Пауза кончилась. Получите новый код — прежний больше не действует.';
+
+  @override
+  String codeLockSpoken(String time) {
+    return 'Пауза $time. Код введён неверно 3 раза';
+  }
+
+  @override
+  String get codeLockDoneSpoken => 'Можно получить новый код';
+
+  @override
+  String get codePaste => 'Вставить код';
+
+  @override
+  String get codeOpenTelegram => 'Открыть Telegram';
+
+  @override
+  String get codeNotArrived => 'Не пришёл код?';
+
+  @override
+  String codeNotArrivedText(String phone) {
+    return 'Код приходит сообщением в Telegram на номер $phone. Откройте Telegram на этом телефоне: код — в самом новом сообщении. Если Telegram на другом номере — измените номер.';
+  }
+
+  @override
+  String codeNotArrivedTextOther(String phone) {
+    return 'Код приходит на номер $phone. Если номер набран с ошибкой — измените его.';
+  }
 }

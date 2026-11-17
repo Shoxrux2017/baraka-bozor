@@ -1,4 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- smart_auth (the own-number hint, DL-139) pulls androidx.credentials,
+         whose androidx.biometric declares these two for passkeys. The app
+         uses neither biometrics nor passkeys, so they are not declared. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove"/>
     <!-- "Где я" reads the device's position when the Customer taps it, and a new
          address opens at the position when the permission was already given.
          The position only moves the map's camera; the point the pin then rests

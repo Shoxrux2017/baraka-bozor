@@ -4,7 +4,7 @@
   "pushChannelName": "Заказы",
   "pushChannelDescription": "Новые заказы, вопросы и изменения статуса",
   "customerLoginTitle": "Вход",
-  "customerLoginIntro": "Введите номер телефона — пришлём код для входа",
+  "customerLoginIntro": "Введите номер телефона — пришлём код в Telegram",
   "phoneLabel": "Номер телефона",
   "phoneHint": "90 123 45 67",
   "phoneInvalid": "Введите 9 цифр номера",
@@ -2619,8 +2619,49 @@
   "courierOrderGoneHint": "Её закрыли, отменили или передали другому курьеру.",
   "errorDeliveryStateConflict": "Доставка уже изменилась, мы обновили заказ.",
   "errorCashAmountMismatch": "Сумма не совпадает с суммой к получению.",
+  "phoneDigitsLeft": "Введите ещё {count, plural, one{{count} цифру} few{{count} цифры} other{{count} цифр}}",
+  "@phoneDigitsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneEnteredSpoken": "введено {count} из 9",
+  "@phoneEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeSentSpoken": "Код отправлен в Telegram на номер {phone}",
+  "@codeSentSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentSmsSpoken": "Код отправлен в SMS на номер {phone}",
+  "@codeSentSmsSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentOtherSpoken": "Код отправлен на номер {phone}",
+  "@codeSentOtherSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneClear": "Стереть номер",
+  "sendingCode": "Отправляем код…",
   "getCodeButton": "Получить код",
-  "codeComesInTelegram": "Код придёт в Telegram",
   "legalEdition": "Редакция от {date}",
   "monthLong": "{month, select, m1{января} m2{февраля} m3{марта} m4{апреля} m5{мая} m6{июня} m7{июля} m8{августа} m9{сентября} m10{октября} m11{ноября} m12{декабря} other{}}",
   "dateLong": "{day} {month} {year}",
@@ -2642,10 +2683,7 @@
   "consentPrivacyOnly": "Продолжая, вы принимаете {privacy}",
   "consentTermsLink": "Условия использования",
   "consentPrivacyLink": "Политику конфиденциальности",
-  "confirmPhoneTitle": "Проверьте номер",
-  "confirmPhoneBody": "Отправим на него код в Telegram",
   "editButton": "Изменить",
-  "sendButton": "Отправить",
   "codeTitle": "Введите код",
   "nameTitle": "Как вас зовут?",
   "nameSubtitle": "Имя нужно сборщику и курьеру",
@@ -2658,7 +2696,12 @@
     }
   },
   "welcomeBody": "Свежие продукты с базара уже ждут вас",
-  "welcomeButton": "К покупкам",
+  "nameLabel": "Имя",
+  "nameExample": "Например, Азиза",
+  "nameSaving": "Сохраняем…",
+  "nameSaved": "Готово",
+  "nameOtherNumber": "Войти с другим номером",
+  "nameOffHint": "введите имя",
   "staffPasswordTitle": "Вход для сотрудника",
   "staffPasswordSubtitle": "Номер подтверждён. Введите пароль сотрудника",
   "panelTagline": "Панель управления",
@@ -3851,5 +3894,118 @@
       }
     }
   },
-  "wrongSurfaceOtherAccount": "Войти другим аккаунтом"
+  "wrongSurfaceOtherAccount": "Войти другим аккаунтом",
+  "authOtherNumber": "Ввести другой номер",
+  "codeNewCode": "Получить новый код",
+  "authNoInternet": "Нет интернета. Проверьте связь и повторите.",
+  "authNotInTelegram": "Номер {phone} не найден в Telegram. Код приходит только туда: зарегистрируйтесь в Telegram с этим номером или введите другой.",
+  "@authNotInTelegram": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "authHourLimit": "На этот номер уже отправили {max} кодов за час. Новый можно запросить через {wait}.",
+  "@authHourLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authAddressLimit": "Слишком много запросов с этого устройства. Повторите через {wait}.",
+  "@authAddressLimit": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authTooMany": "Слишком много попыток. Повторите через {wait}.",
+  "@authTooMany": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "waitMinutes": "{count} мин",
+  "@waitMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitSeconds": "{count} с",
+  "@waitSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeEnteredSpoken": "введено {count} из 6: {digits}",
+  "@codeEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "digits": {
+        "type": "String"
+      }
+    }
+  },
+  "codeEmptySpoken": "пусто",
+  "codeSentLead": "Отправили код в Telegram на номер",
+  "codeSentLeadSms": "Отправили SMS с кодом на номер",
+  "codeSentLeadOther": "Отправили код на номер",
+  "codeBackSpoken": "Назад, к номеру телефона",
+  "codeFieldSpoken": "Код из Telegram, 6 цифр",
+  "codeFieldSpokenOther": "Код, 6 цифр",
+  "codeChecking": "Проверяем…",
+  "codeAccepted": "Код верный",
+  "codeWrongLeft": "Неверный код. {count, plural, one{Осталась {count} попытка} few{Осталось {count} попытки} other{Осталось {count} попыток}}",
+  "@codeWrongLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeLockText": "Код введён неверно 3 раза. Новый код можно будет запросить, когда отсчёт дойдёт до нуля.",
+  "codeLockDoneTime": "Можно снова",
+  "codeLockDoneText": "Пауза кончилась. Получите новый код — прежний больше не действует.",
+  "codeLockSpoken": "Пауза {time}. Код введён неверно 3 раза",
+  "@codeLockSpoken": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLockDoneSpoken": "Можно получить новый код",
+  "codePaste": "Вставить код",
+  "codeOpenTelegram": "Открыть Telegram",
+  "codeNotArrived": "Не пришёл код?",
+  "codeNotArrivedText": "Код приходит сообщением в Telegram на номер {phone}. Откройте Telegram на этом телефоне: код — в самом новом сообщении. Если Telegram на другом номере — измените номер.",
+  "@codeNotArrivedText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeNotArrivedTextOther": "Код приходит на номер {phone}. Если номер набран с ошибкой — измените его.",
+  "@codeNotArrivedTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  }
 }

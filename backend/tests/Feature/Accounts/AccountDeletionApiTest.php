@@ -250,6 +250,16 @@ final class AccountDeletionApiTest extends TestCase
         $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertStatus(429)->assertJsonPath('code', 'code_locked');
     }
 
+    public function test_a_wrong_deletion_code_says_how_many_tries_are_left(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        $this->withToken($token)->postJson('/api/v1/customer/account/deletion-code')->assertOk();
+
+        $this->deleteWith($token, '111111')->assertStatus(422)->assertJsonPath('details.attempts_left', 2);
+        $this->deleteWith($token, '111111')->assertStatus(422)->assertJsonPath('details.attempts_left', 1);
+    }
+
     public function test_an_expired_code_and_an_exhausted_code_answer_422(): void
     {
         $customer = $this->customer();

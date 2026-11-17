@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @customerLoginIntro.
   ///
   /// In uz, this message translates to:
-  /// **'Telefon raqamingizni kiriting — kirish kodini yuboramiz'**
+  /// **'Telefon raqamingizni kiriting — kodni Telegramga yuboramiz'**
   String get customerLoginIntro;
 
   /// No description provided for @phoneLabel.
@@ -6446,17 +6446,53 @@ abstract class AppLocalizations {
   /// **'Summa olinishi kerak bo\'lgan summaga mos emas.'**
   String get errorCashAmountMismatch;
 
+  /// No description provided for @phoneDigitsLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana {count} ta raqam kiriting'**
+  String phoneDigitsLeft(int count);
+
+  /// No description provided for @phoneEnteredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'9 tadan {count} tasi kiritildi'**
+  String phoneEnteredSpoken(int count);
+
+  /// No description provided for @codeSentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga {phone} raqamiga yuborildi'**
+  String codeSentSpoken(String phone);
+
+  /// No description provided for @codeSentSmsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod SMS orqali {phone} raqamiga yuborildi'**
+  String codeSentSmsSpoken(String phone);
+
+  /// No description provided for @codeSentOtherSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod {phone} raqamiga yuborildi'**
+  String codeSentOtherSpoken(String phone);
+
+  /// No description provided for @phoneClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni o\'chirish'**
+  String get phoneClear;
+
+  /// No description provided for @sendingCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod yuborilmoqda…'**
+  String get sendingCode;
+
   /// No description provided for @getCodeButton.
   ///
   /// In uz, this message translates to:
   /// **'Kod olish'**
   String get getCodeButton;
-
-  /// No description provided for @codeComesInTelegram.
-  ///
-  /// In uz, this message translates to:
-  /// **'Kod Telegramga keladi'**
-  String get codeComesInTelegram;
 
   /// No description provided for @legalEdition.
   ///
@@ -6584,29 +6620,11 @@ abstract class AppLocalizations {
   /// **'Maxfiylik siyosati'**
   String get consentPrivacyLink;
 
-  /// No description provided for @confirmPhoneTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Raqamni tekshiring'**
-  String get confirmPhoneTitle;
-
-  /// No description provided for @confirmPhoneBody.
-  ///
-  /// In uz, this message translates to:
-  /// **'Unga Telegramda kod yuboramiz'**
-  String get confirmPhoneBody;
-
   /// No description provided for @editButton.
   ///
   /// In uz, this message translates to:
   /// **'O\'zgartirish'**
   String get editButton;
-
-  /// No description provided for @sendButton.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yuborish'**
-  String get sendButton;
 
   /// No description provided for @codeTitle.
   ///
@@ -6638,11 +6656,41 @@ abstract class AppLocalizations {
   /// **'Bozordan yangi mahsulotlar sizni kutmoqda'**
   String get welcomeBody;
 
-  /// No description provided for @welcomeButton.
+  /// No description provided for @nameLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Xaridlarga'**
-  String get welcomeButton;
+  /// **'Ism'**
+  String get nameLabel;
+
+  /// No description provided for @nameExample.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan, Aziza'**
+  String get nameExample;
+
+  /// No description provided for @nameSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda…'**
+  String get nameSaving;
+
+  /// No description provided for @nameSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get nameSaved;
+
+  /// No description provided for @nameOtherNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa raqam bilan kirish'**
+  String get nameOtherNumber;
+
+  /// No description provided for @nameOffHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'ismingizni kiriting'**
+  String get nameOffHint;
 
   /// No description provided for @staffPasswordTitle.
   ///
@@ -9481,6 +9529,186 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Boshqa akkaunt bilan kirish'**
   String get wrongSurfaceOtherAccount;
+
+  /// No description provided for @authOtherNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa raqam kiritish'**
+  String get authOtherNumber;
+
+  /// No description provided for @codeNewCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kod olish'**
+  String get codeNewCode;
+
+  /// No description provided for @authNoInternet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet yo\'q. Aloqani tekshirib, qayta urining.'**
+  String get authNoInternet;
+
+  /// No description provided for @authNotInTelegram.
+  ///
+  /// In uz, this message translates to:
+  /// **'{phone} raqami Telegramda topilmadi. Kod faqat u yerga keladi: shu raqam bilan Telegramdan ro\'yxatdan o\'ting yoki boshqa raqam kiriting.'**
+  String authNotInTelegram(String phone);
+
+  /// No description provided for @authHourLimit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu raqamga bir soatda {max} ta kod yuborildi. Yangisini {wait} o\'tgach so\'rash mumkin.'**
+  String authHourLimit(int max, String wait);
+
+  /// No description provided for @authAddressLimit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu qurilmadan so\'rovlar juda ko\'p. {wait} o\'tgach qayta urining.'**
+  String authAddressLimit(String wait);
+
+  /// No description provided for @authTooMany.
+  ///
+  /// In uz, this message translates to:
+  /// **'Urinishlar juda ko\'p. {wait} o\'tgach qayta urining.'**
+  String authTooMany(String wait);
+
+  /// No description provided for @waitMinutes.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} daqiqa'**
+  String waitMinutes(int count);
+
+  /// No description provided for @waitSeconds.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} soniya'**
+  String waitSeconds(int count);
+
+  /// No description provided for @codeEnteredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'6 tadan {count} tasi kiritildi: {digits}'**
+  String codeEnteredSpoken(int count, String digits);
+
+  /// No description provided for @codeEmptySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'bo\'sh'**
+  String get codeEmptySpoken;
+
+  /// No description provided for @codeSentLead.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni Telegramga shu raqamga yubordik'**
+  String get codeSentLead;
+
+  /// No description provided for @codeSentLeadSms.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni SMS orqali shu raqamga yubordik'**
+  String get codeSentLeadSms;
+
+  /// No description provided for @codeSentLeadOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni shu raqamga yubordik'**
+  String get codeSentLeadOther;
+
+  /// No description provided for @codeBackSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Orqaga, telefon raqamiga'**
+  String get codeBackSpoken;
+
+  /// No description provided for @codeFieldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telegramdagi kod, 6 ta raqam'**
+  String get codeFieldSpoken;
+
+  /// No description provided for @codeFieldSpokenOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod, 6 ta raqam'**
+  String get codeFieldSpokenOther;
+
+  /// No description provided for @codeChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirilmoqda…'**
+  String get codeChecking;
+
+  /// No description provided for @codeAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod to\'g\'ri'**
+  String get codeAccepted;
+
+  /// No description provided for @codeWrongLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod noto\'g\'ri. Yana {count} ta urinish qoldi'**
+  String codeWrongLeft(int count);
+
+  /// No description provided for @codeLockText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod 3 marta noto\'g\'ri kiritildi. Hisob nolga yetganda yangi kod so\'rash mumkin bo\'ladi.'**
+  String get codeLockText;
+
+  /// No description provided for @codeLockDoneTime.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana mumkin'**
+  String get codeLockDoneTime;
+
+  /// No description provided for @codeLockDoneText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanaffus tugadi. Yangi kod oling — avvalgisi endi ishlamaydi.'**
+  String get codeLockDoneText;
+
+  /// No description provided for @codeLockSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanaffus {time}. Kod 3 marta noto\'g\'ri kiritildi'**
+  String codeLockSpoken(String time);
+
+  /// No description provided for @codeLockDoneSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kod olish mumkin'**
+  String get codeLockDoneSpoken;
+
+  /// No description provided for @codePaste.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni qo\'yish'**
+  String get codePaste;
+
+  /// No description provided for @codeOpenTelegram.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telegramni ochish'**
+  String get codeOpenTelegram;
+
+  /// No description provided for @codeNotArrived.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod kelmadimi?'**
+  String get codeNotArrived;
+
+  /// No description provided for @codeNotArrivedText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga {phone} raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda. Telegram boshqa raqamda bo\'lsa, raqamni o\'zgartiring.'**
+  String codeNotArrivedText(String phone);
+
+  /// No description provided for @codeNotArrivedTextOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod {phone} raqamiga keladi. Raqam xato terilgan bo\'lsa, uni o\'zgartiring.'**
+  String codeNotArrivedTextOther(String phone);
 }
 
 class _AppLocalizationsDelegate

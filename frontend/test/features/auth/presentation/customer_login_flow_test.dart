@@ -6,16 +6,25 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/app_theme.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/auth/application/code_login_controller.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/auth/presentation/lock_message.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
+import '../../../support/fake_legal_repository.dart';
+import '../../../support/fake_sign_in_device.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 import '../../../support/in_memory_stores.dart';
 
 /// `docs/04-user-flows.md` section 2 through the real router, session
@@ -32,17 +41,16 @@ void main() {
   final Finder verifyButton = find.byKey(
     const ValueKey<String>('verify-button'),
   );
-  final Finder resendButton = find.byKey(
-    const ValueKey<String>('resend-button'),
-  );
   final Finder failure = find.byKey(const ValueKey<String>('failure-message'));
   final Finder lockMessage = find.byKey(const ValueKey<String>('lock-message'));
-  final Finder confirmSend = find.byKey(
-    const ValueKey<String>('confirm-phone-send'),
+  final Finder authNotice = find.byKey(const ValueKey<String>('auth-notice'));
+  final Finder noticeAction = find.byKey(
+    const ValueKey<String>('auth-notice-action'),
   );
-  final Finder confirmEdit = find.byKey(
-    const ValueKey<String>('confirm-phone-edit'),
+  final Finder digitsHint = find.byKey(
+    const ValueKey<String>('phone-digits-hint'),
   );
+  final Finder phoneClear = find.byKey(const ValueKey<String>('phone-clear'));
 
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -70,12 +78,9 @@ void main() {
 
   Future<void> requestCode(WidgetTester tester, String digits) async {
     await tester.enterText(phoneField, digits);
+    await tester.pump();
     await tester.tap(continueButton);
     await tester.pumpAndSettle();
-    if (confirmSend.evaluate().isNotEmpty) {
-      await tester.tap(confirmSend);
-      await tester.pumpAndSettle();
-    }
   }
 
   testWidgets('an incomplete phone is refused before anything is sent', (
@@ -85,55 +90,47 @@ void main() {
 
     await requestCode(tester, '9012345');
 
-    expect(find.text(l10n(tester).phoneInvalid), findsOneWidget);
+    expect(find.text(l10n(tester).phoneDigitsLeft(2)), findsOneWidget);
+    expect(find.text(l10n(tester).phoneInvalid), findsNothing);
     expect(repository.calls, isEmpty);
     expect(codeField, findsNothing);
-    expect(confirmSend, findsNothing, reason: 'nothing to confirm yet');
   });
 
   testWidgets(
-    'the number is shown formatted in a confirmation, and Edit closes it without a request',
+    'getting a code sends at once and opens the code page: no confirmation',
     (WidgetTester tester) async {
       await openApp(tester);
 
       await tester.enterText(phoneField, '901234567');
+      await tester.pump();
       await tester.tap(continueButton);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).confirmPhoneTitle), findsOneWidget);
-      expect(find.text('+998 90 123 45 67'), findsOneWidget);
-      expect(repository.calls, isEmpty);
-
-      await tester.tap(confirmEdit);
-      await tester.pumpAndSettle();
-
-      expect(confirmSend, findsNothing);
-      expect(phoneField, findsOneWidget);
-      expect(repository.calls, isEmpty);
+      expect(find.byType(Dialog), findsNothing);
+      expect(repository.calls, <String>['request:+998901234567']);
+      expect(codeField, findsOneWidget);
     },
   );
 
   testWidgets(
-    'while the confirmed request runs the dialog cannot be left, then the code screen opens',
+    'while the request runs the button says so and a second tap sends nothing, then the code page opens',
     (WidgetTester tester) async {
       repository.holdAnswers = Completer<void>();
       await openApp(tester);
 
       await tester.enterText(phoneField, '901234567');
+      await tester.pump();
       await tester.tap(continueButton);
-      await tester.pumpAndSettle();
-      await tester.tap(confirmSend);
       await tester.pump();
 
-      expect(tester.widget<FilledButton>(confirmSend).onPressed, isNull);
-      expect(tester.widget<OutlinedButton>(confirmEdit).onPressed, isNull);
-      await tester.tapAt(const Offset(2, 2));
+      expect(find.text(l10n(tester).sendingCode), findsOneWidget);
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+      await tester.tap(continueButton, warnIfMissed: false);
       await tester.pump();
-      expect(confirmSend, findsOneWidget, reason: 'the barrier is inert');
+      expect(repository.calls, <String>['request:+998901234567']);
 
       repository.holdAnswers!.complete();
       await tester.pumpAndSettle();
-      expect(confirmSend, findsNothing);
       expect(codeField, findsOneWidget);
     },
   );
@@ -147,9 +144,12 @@ void main() {
 
       expect(repository.calls, <String>['request:+998901234567']);
       expect(codeField, findsOneWidget);
+      expect(find.text(l10n(tester).codeSentLead), findsOneWidget);
       expect(
-        find.text(l10n(tester).codeSentToPhone('+998 90 123 45 67')),
-        findsOneWidget,
+        tester
+            .widget<Text>(find.byKey(const ValueKey<String>('code-phone')))
+            .data,
+        '+998 90 123 45 67',
       );
     },
   );
@@ -162,9 +162,9 @@ void main() {
 
     await requestCode(tester, '901234567');
 
-    expect(failure, findsOneWidget);
+    expect(authNotice, findsOneWidget);
+    expect(failure, findsNothing);
     expect(find.text(l10n(tester).errorRateLimited), findsOneWidget);
-    expect(confirmSend, findsNothing, reason: 'the dialog closed');
     expect(codeField, findsNothing);
     expect(
       tester.widget<FilledButton>(continueButton).onPressed,
@@ -181,15 +181,18 @@ void main() {
       await requestCode(tester, '901234567');
 
       await tester.enterText(codeField, '000000');
-      await tester.tap(verifyButton);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 160));
+      await tester.pump();
 
       expect(find.text(l10n(tester).errorCodeInvalid), findsOneWidget);
       expect(codeField, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 520));
 
       repository.verifyFailure = null;
       await tester.enterText(codeField, '482913');
-      await tester.tap(verifyButton);
+      await tester.pump(const Duration(milliseconds: 160));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
 
       expect(repository.calls.last, 'verify:+998901234567:482913');
@@ -202,76 +205,81 @@ void main() {
     },
   );
 
-  testWidgets('a code that cannot be delivered shows its Russian text', (
+  testWidgets('a number not in Telegram offers another number', (
     WidgetTester tester,
   ) async {
     repository.requestFailure = refusal(409, 'code_delivery_unavailable');
     await openApp(tester);
-    await tester.tap(find.byIcon(Icons.language));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(CheckedPopupMenuItem<AppLanguage>).last);
-    await tester.pumpAndSettle();
 
     await requestCode(tester, '901234567');
 
-    expect(failure, findsOneWidget);
+    expect(authNotice, findsOneWidget);
     expect(
-      find.text(
-        'Код отправляется в Telegram, но этот номер в Telegram не найден. '
-        'Пока без Telegram код получить нельзя',
-      ),
+      find.text(l10n(tester).authNotInTelegram('+998 90 123 45 67')),
       findsOneWidget,
     );
     expect(codeField, findsNothing);
-    expect(phoneField, findsOneWidget);
-  });
 
-  testWidgets('a resend waits for the server timer, then sends again', (
-    WidgetTester tester,
-  ) async {
-    await openApp(tester);
-    await requestCode(tester, '901234567');
-
-    expect(tester.widget<TextButton>(resendButton).onPressed, isNull);
-    expect(find.text(l10n(tester).resendIn('0:45')), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 44));
-    expect(find.text(l10n(tester).resendIn('0:01')), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.text(l10n(tester).resendCode), findsOneWidget);
-    expect(tester.widget<TextButton>(resendButton).onPressed, isNotNull);
-
-    await tester.tap(resendButton);
+    await tester.tap(noticeAction);
     await tester.pumpAndSettle();
 
+    expect(authNotice, findsNothing);
+    expect(tester.widget<TextFormField>(phoneField).controller?.text, isEmpty);
     expect(
-      repository.calls.where((String c) => c.startsWith('request:')),
-      hasLength(2),
+      tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+      isTrue,
     );
-    expect(find.text(l10n(tester).resendIn('0:45')), findsOneWidget);
-
-    // Leave no timer behind.
-    await tester.pump(const Duration(seconds: 45));
   });
 
-  testWidgets('a resend is open at once when the server sets no wait', (
+  testWidgets('a lost connection retries the same number', (
     WidgetTester tester,
   ) async {
-    repository.requestResult = const RequestedCode(
-      channel: 'telegram',
-      expiresInSeconds: 300,
-      resendAvailableInSeconds: 0,
-    );
+    repository.requestFailure = const NetworkFailure();
     await openApp(tester);
+
     await requestCode(tester, '901234567');
 
-    expect(find.text(l10n(tester).resendCode), findsOneWidget);
-    expect(tester.widget<TextButton>(resendButton).onPressed, isNotNull);
+    expect(find.text(l10n(tester).authNoInternet), findsOneWidget);
+
+    repository.requestFailure = null;
+    await tester.tap(noticeAction);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, <String>[
+      'request:+998901234567',
+      'request:+998901234567',
+    ]);
+    expect(authNotice, findsNothing);
+    expect(codeField, findsOneWidget);
   });
 
   testWidgets(
-    'three wrong codes lock the screen: the sentence counts down, the boxes empty, the buttons wait, then a new code is asked for',
+    'the code page carries no resend link; the server wait is kept for the sheet',
+    (WidgetTester tester) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+
+      expect(find.byKey(const ValueKey<String>('resend-button')), findsNothing);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).first),
+      );
+      expect(
+        container.read(codeLoginControllerProvider).resendInSeconds,
+        45,
+        reason: 'the server timer, not a constant',
+      );
+
+      await tester.pump(const Duration(seconds: 45));
+      expect(
+        container.read(codeLoginControllerProvider).canResend,
+        isTrue,
+        reason: 'a resend opens when the server wait ends',
+      );
+    },
+  );
+
+  testWidgets(
+    'three wrong codes lock the screen: the card counts down, the boxes go, the button waits, then a new code is asked for',
     (WidgetTester tester) async {
       repository.requestResult = const RequestedCode(
         channel: 'telegram',
@@ -286,39 +294,36 @@ void main() {
       await requestCode(tester, '901234567');
 
       await tester.enterText(codeField, '000000');
-      await tester.tap(verifyButton);
+      await tester.pump(const Duration(milliseconds: 160));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).codeLocked('1:00')), findsOneWidget);
+      expect(find.text('1:00'), findsOneWidget);
       expect(failure, findsNothing, reason: 'the lock is not printed twice');
-      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
+      expect(codeField, findsNothing);
       expect(tester.widget<FilledButton>(verifyButton).onPressed, isNull);
-      expect(tester.widget<TextButton>(resendButton).onPressed, isNull);
 
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text(l10n(tester).codeLocked('0:59')), findsOneWidget);
+      expect(find.text('0:59'), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 59));
-      expect(lockMessage, findsNothing);
-      expect(find.text(l10n(tester).codeLockOver), findsOneWidget);
-      expect(
-        tester.widget<FilledButton>(verifyButton).onPressed,
-        isNull,
-        reason: 'the spent code is not confirmed again',
-      );
-      expect(tester.widget<TextField>(codeField).enabled, isFalse);
-      expect(tester.widget<TextButton>(resendButton).onPressed, isNotNull);
-
-      await tester.tap(resendButton);
-      await tester.pumpAndSettle();
-      expect(find.text(l10n(tester).codeLockOver), findsNothing);
-      expect(tester.widget<TextField>(codeField).enabled, isTrue);
+      expect(find.text(l10n(tester).codeLockDoneTime), findsOneWidget);
+      expect(codeField, findsNothing, reason: 'the spent code is not typed');
+      expect(find.text(l10n(tester).codeNewCode), findsOneWidget);
       expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).codeLockDoneTime), findsNothing);
+      expect(codeField, findsOneWidget);
+      expect(
+        repository.calls.where((String c) => c.startsWith('request:')),
+        hasLength(2),
+      );
     },
   );
 
   testWidgets(
-    'during the lock the code field is off: typing and the keyboard action send no verify',
+    'during the lock there are no boxes: the keyboard action sends no verify',
     (WidgetTester tester) async {
       repository.verifyFailure = ApiRefusal(
         const ApiError(status: 429, code: 'code_locked'),
@@ -327,19 +332,18 @@ void main() {
       await openApp(tester);
       await requestCode(tester, '901234567');
       await tester.enterText(codeField, '000000');
-      await tester.tap(verifyButton);
+      await tester.pump(const Duration(milliseconds: 160));
       await tester.pumpAndSettle();
       int verifyCalls() => repository.calls
           .where((String call) => call.startsWith('verify:'))
           .length;
       expect(verifyCalls(), 1);
 
-      expect(tester.widget<TextField>(codeField).enabled, isFalse);
+      expect(codeField, findsNothing, reason: 'the card replaces the boxes');
       expect(tester.testTextInput.isVisible, isFalse);
-      await tester.tap(codeField, warnIfMissed: false);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
       expect(tester.testTextInput.isVisible, isFalse);
-      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
       expect(verifyCalls(), 1);
 
       await tester.pump(const Duration(seconds: 60));
@@ -416,7 +420,7 @@ void main() {
   );
 
   testWidgets(
-    'the lock is announced once, and its ticking text is not a live region',
+    'the lock is announced once, and its ticking card is not a live region',
     (WidgetTester tester) async {
       repository.verifyFailure = ApiRefusal(
         const ApiError(status: 429, code: 'code_locked'),
@@ -425,12 +429,14 @@ void main() {
       await openApp(tester);
       await requestCode(tester, '901234567');
       await tester.enterText(codeField, '000000');
-      await tester.tap(verifyButton);
+      await tester.pump(const Duration(milliseconds: 160));
       await tester.pumpAndSettle();
 
       final SemanticsHandle handle = tester.ensureSemantics();
       await tester.pump(const Duration(seconds: 5));
-      final SemanticsNode node = tester.getSemantics(lockMessage);
+      final SemanticsNode node = tester.getSemantics(
+        find.byKey(const ValueKey<String>('code-lock-card')),
+      );
       expect(node.getSemanticsData().flagsCollection.isLiveRegion, isFalse);
       handle.dispose();
 
@@ -450,7 +456,7 @@ void main() {
           .takeAnnouncements()
           .map((CapturedAccessibilityAnnouncement a) => a.message)
           .toList();
-      expect(atTheEnd, <String>[l10n(tester).codeLockOver]);
+      expect(atTheEnd, <String>[l10n(tester).codeLockDoneSpoken]);
     },
   );
 
@@ -464,11 +470,11 @@ void main() {
       await openApp(tester);
       await requestCode(tester, '901234567');
       await tester.enterText(codeField, '000000');
-      await tester.tap(verifyButton);
+      await tester.pump(const Duration(milliseconds: 160));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 25));
 
-      await tester.tap(find.byKey(const ValueKey<String>('change-phone-link')));
+      await tester.tap(find.byKey(const ValueKey<String>('code-change-phone')));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n(tester).codeLocked('0:35')), findsOneWidget);
@@ -499,27 +505,20 @@ void main() {
       );
       await openApp(tester);
       await requestCode(tester, '901234567');
-      expect(find.textContaining(l10n(tester).codeSentSms), findsOneWidget);
-      expect(find.textContaining('+998 90 123 45 67'), findsOneWidget);
+      expect(find.text(l10n(tester).codeSentLeadSms), findsOneWidget);
+      expect(find.text('+998 90 123 45 67'), findsOneWidget);
 
       repository.requestResult = const RequestedCode(
         channel: 'test',
         expiresInSeconds: 300,
         resendAvailableInSeconds: 0,
       );
-      await tester.tap(find.byKey(const ValueKey<String>('change-phone-link')));
+      await tester.tap(find.byKey(const ValueKey<String>('code-change-phone')));
       await tester.pumpAndSettle();
       await requestCode(tester, '901234567');
 
-      expect(
-        find.text(l10n(tester).codeSentOnPhone('+998 90 123 45 67')),
-        findsOneWidget,
-      );
-      expect(
-        tester.widget<TextButton>(resendButton).onPressed,
-        isNotNull,
-        reason: 'a zero timer allows a resend at once',
-      );
+      expect(find.text(l10n(tester).codeSentLeadOther), findsOneWidget);
+      expect(find.text('+998 90 123 45 67'), findsOneWidget);
     },
   );
 
@@ -530,7 +529,9 @@ void main() {
       await requestCode(tester, '901234567');
 
       await tester.enterText(codeField, '12345');
-      await tester.tap(verifyButton);
+      await tester.pump();
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNull);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
 
       expect(find.text(l10n(tester).codeInvalidFormat), findsOneWidget);
@@ -571,7 +572,7 @@ void main() {
       await openApp(tester);
       await requestCode(tester, '901234567');
 
-      await tester.tap(find.byKey(const ValueKey<String>('change-phone-link')));
+      await tester.tap(find.byKey(const ValueKey<String>('code-change-phone')));
       await tester.pumpAndSettle();
 
       expect(phoneField, findsOneWidget);
@@ -596,8 +597,6 @@ void main() {
     );
 
     await tester.tap(continueButton);
-    await tester.pumpAndSettle();
-    await tester.tap(confirmSend);
     await tester.pumpAndSettle();
 
     expect(repository.calls, <String>['request:+998900000031']);
@@ -664,21 +663,21 @@ void main() {
     },
   );
 
-  testWidgets('the resend countdown is set in the interface font', (
+  testWidgets('the code page button is set in the interface font', (
     WidgetTester tester,
   ) async {
     await openApp(tester);
     await requestCode(tester, '901234567');
 
     final Finder text = find.descendant(
-      of: resendButton,
+      of: verifyButton,
       matching: find.byType(Text),
     );
     expect(
       DefaultTextStyle.of(tester.element(text)).style.fontFamily,
       appFontFamily,
     );
-    expect(tester.widget<Text>(text).data, contains('0:45'));
+    expect(tester.widget<Text>(text).data, l10n(tester).verifyButton);
 
     // Leave no timer behind.
     await tester.pump(const Duration(seconds: 61));
@@ -697,7 +696,7 @@ void main() {
   });
 
   testWidgets(
-    'a new customer gives a name, is welcomed, and lands on the catalog',
+    'a new customer gives a name and lands on the catalog under a welcome strip',
     (WidgetTester tester) async {
       repository.verifyResult = IssuedSession(
         token: 'c',
@@ -715,7 +714,9 @@ void main() {
       await requestCode(tester, '901234567');
 
       await tester.enterText(codeField, '482913');
-      await tester.tap(verifyButton);
+      await tester.pump(const Duration(milliseconds: 160));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
 
       final Finder nameField = find.byKey(
@@ -726,31 +727,26 @@ void main() {
       );
       expect(nameField, findsOneWidget);
       expect(find.text(l10n(tester).nameTitle), findsOneWidget);
-
-      await tester.tap(nameContinue);
-      await tester.pumpAndSettle();
-      expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
-      expect(profiles.renames, isEmpty);
+      expect(tester.widget<FilledButton>(nameContinue).onPressed, isNull);
 
       await tester.enterText(nameField, 'Aziza');
+      await tester.pump();
       await tester.tap(nameContinue);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      await tester.pump();
 
       expect(profiles.renames, <String>['Aziza']);
-      expect(find.text(l10n(tester).welcomeTitle('Aziza')), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey<String>('catalog-search')),
-        findsNothing,
-        reason: 'the welcome waits for the button',
-      );
-
-      await tester.tap(find.byKey(const ValueKey<String>('welcome-button')));
-      await tester.pumpAndSettle();
-
+      expect(find.byType(Dialog), findsNothing);
       expect(
         find.byKey(const ValueKey<String>('catalog-search')),
         findsOneWidget,
       );
+      expect(find.text(l10n(tester).welcomeTitle('Aziza')), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 4400));
       expect(find.text(l10n(tester).welcomeTitle('Aziza')), findsNothing);
     },
   );
@@ -775,12 +771,14 @@ void main() {
       find.byKey(const ValueKey<String>('customer-name-field')),
       'Aziza',
     );
+    await tester.pump();
     await tester.tap(
       find.byKey(const ValueKey<String>('customer-name-continue')),
     );
     await tester.pumpAndSettle();
 
-    expect(failure, findsOneWidget);
+    expect(authNotice, findsOneWidget);
+    expect(failure, findsNothing);
     expect(
       find.byKey(const ValueKey<String>('customer-name-field')),
       findsOneWidget,
@@ -794,7 +792,9 @@ void main() {
     await requestCode(tester, '901234567');
 
     await tester.enterText(codeField, '482913');
-    await tester.tap(verifyButton);
+    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
     expect(
@@ -833,4 +833,997 @@ void main() {
     expect(find.text(l10n(tester).customerLoginTitle), findsOneWidget);
     expect(l10n(tester).localeName, 'ru');
   });
+
+  group('the phone page (DL-139)', () {
+    Future<void> openRussian(
+      WidgetTester tester, {
+      FakePhoneNumberHint? hint,
+      FakeLegalRepository? legal,
+      List<Override> extra = const <Override>[],
+    }) async {
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: repository,
+          legal: legal,
+          phoneHint: hint,
+          device: const Locale('ru'),
+          overrides: extra,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    bool hasFocus(WidgetTester tester) => tester
+        .widget<EditableText>(find.byType(EditableText))
+        .focusNode
+        .hasFocus;
+
+    testWidgets('the phone field is named and the example is not read', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openRussian(tester);
+
+      final String label = tester.getSemantics(phoneField).label;
+      expect(label, contains('Номер телефона'));
+      expect(label, contains('+998'));
+      expect(find.bySemanticsLabel(RegExp('90 123 45 67')), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'the button is grey until nine digits and says how many are missing',
+      (WidgetTester tester) async {
+        await openRussian(tester);
+        expect(digitsHint, findsNothing);
+
+        await tester.enterText(phoneField, '901234');
+        await tester.pump();
+        expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+        expect(digitsHint, findsNothing);
+        tester.takeAnnouncements();
+
+        await tester.tap(continueButton);
+        await tester.pump();
+
+        expect(find.text('Введите ещё 3 цифры'), findsOneWidget);
+        expect(
+          tester.takeAnnouncements().map(
+            (CapturedAccessibilityAnnouncement a) => a.message,
+          ),
+          contains('Введите ещё 3 цифры'),
+        );
+        expect(repository.calls, isEmpty);
+
+        await tester.enterText(phoneField, '9012345');
+        await tester.pump();
+        expect(digitsHint, findsNothing, reason: 'any edit hides it');
+
+        await tester.enterText(phoneField, '901234567');
+        await tester.pump();
+        expect(
+          tester.widget<FilledButton>(continueButton).onPressed,
+          isNotNull,
+        );
+      },
+    );
+
+    testWidgets('the keyboard Done with fewer digits says the same', (
+      WidgetTester tester,
+    ) async {
+      await openRussian(tester);
+
+      await tester.enterText(phoneField, '90123456');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(find.text('Введите ещё 1 цифру'), findsOneWidget);
+      expect(repository.calls, isEmpty);
+    });
+
+    testWidgets('the clear button empties the field and keeps focus', (
+      WidgetTester tester,
+    ) async {
+      await openRussian(tester);
+      expect(phoneClear, findsNothing);
+
+      await tester.enterText(phoneField, '901234567');
+      await tester.pump();
+      expect(phoneClear, findsOneWidget);
+      expect(tester.getSize(phoneClear), const Size(44, 44));
+
+      await tester.tap(phoneClear);
+      await tester.pump();
+
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        isEmpty,
+      );
+      expect(phoneClear, findsNothing);
+      expect(hasFocus(tester), isTrue);
+    });
+
+    testWidgets('the own-number sheet fills the field once', (
+      WidgetTester tester,
+    ) async {
+      final FakePhoneNumberHint hint = FakePhoneNumberHint('901234567');
+      await openRussian(tester, hint: hint);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(hint.calls, 1);
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        '90 123 45 67',
+      );
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+
+      await tester.tap(phoneClear);
+      await tester.pump();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.tap(phoneField);
+      await tester.pump();
+
+      expect(hint.calls, 1, reason: 'a second focus asks nothing');
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        isEmpty,
+      );
+    });
+
+    testWidgets('a cancelled own-number sheet leaves the field empty', (
+      WidgetTester tester,
+    ) async {
+      final FakePhoneNumberHint hint = FakePhoneNumberHint();
+      await openRussian(tester, hint: hint);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(hint.calls, 1);
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        isEmpty,
+      );
+    });
+
+    /// Opens the app with small steps and stops at the frame that gave the
+    /// phone field its focus, so the wait after it can be measured.
+    Future<void> openToFocus(
+      WidgetTester tester,
+      FakePhoneNumberHint hint,
+    ) async {
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: repository,
+          phoneHint: hint,
+          device: const Locale('ru'),
+        ),
+      );
+      for (int i = 0; i < 200; i++) {
+        await tester.pump(const Duration(milliseconds: 5));
+        if (find.byType(EditableText).evaluate().isNotEmpty &&
+            hasFocus(tester)) {
+          return;
+        }
+      }
+      fail('the phone field never got focus');
+    }
+
+    testWidgets(
+      'the own-number sheet waits 400 ms and not past a typed digit',
+      (WidgetTester tester) async {
+        final FakePhoneNumberHint hint = FakePhoneNumberHint('901234567');
+        await openToFocus(tester, hint);
+
+        await tester.pump(const Duration(milliseconds: 395));
+        expect(hint.calls, 0, reason: 'not before the 400 ms are over');
+        await tester.pump(const Duration(milliseconds: 10));
+        expect(hint.calls, 1);
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        final FakePhoneNumberHint typed = FakePhoneNumberHint('901234567');
+        await openToFocus(tester, typed);
+        await tester.enterText(phoneField, '9');
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(typed.calls, 0, reason: 'a typed digit keeps the sheet away');
+        expect(tester.widget<TextFormField>(phoneField).controller?.text, '9');
+      },
+    );
+
+    testWidgets('editing the number hides the request failure', (
+      WidgetTester tester,
+    ) async {
+      repository.requestFailure = const NetworkFailure();
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      expect(authNotice, findsOneWidget);
+
+      await tester.enterText(phoneField, '90123456');
+      await tester.pump();
+
+      expect(authNotice, findsNothing);
+      expect(repository.calls, <String>['request:+998901234567']);
+    });
+
+    testWidgets('the phone field says how many digits are in', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openRussian(tester);
+      final Finder editable = find.byType(EditableText);
+
+      expect(tester.getSemantics(editable).hint, isEmpty);
+
+      await tester.enterText(phoneField, '901234');
+      await tester.pump();
+      expect(tester.getSemantics(editable).hint, 'введено 6 из 9');
+      expect(
+        tester.getSemantics(editable).label,
+        contains('Номер телефона'),
+        reason: 'the count and the name are one reader stop',
+      );
+
+      await tester.enterText(phoneField, '');
+      await tester.pump();
+      expect(tester.getSemantics(editable).hint, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'the digits hint fades in 200 ms with reduced motion, not at 5 %',
+      (WidgetTester tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        await openRussian(tester);
+        await tester.enterText(phoneField, '901234');
+        await tester.pump();
+
+        await tester.tap(continueButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final double opacity = tester
+            .widget<Opacity>(
+              find.descendant(of: digitsHint, matching: find.byType(Opacity)),
+            )
+            .opacity;
+        expect(opacity, inExclusiveRange(0.3, 0.7));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('the consent sits under the button', (
+      WidgetTester tester,
+    ) async {
+      await openRussian(tester, legal: FakeLegalRepository()..publishBoth());
+
+      final Finder consent = find.byKey(const ValueKey<String>('consent-line'));
+      expect(consent, findsOneWidget);
+      // The line's box keeps 13 above its text for the 44 tall link targets,
+      // so the text stands 14 below the button.
+      expect(
+        tester.getTopLeft(consent).dy - tester.getBottomLeft(continueButton).dy,
+        closeTo(1, 0.5),
+      );
+    });
+
+    testWidgets(
+      'large text with the keyboard up keeps «Получить код» in view',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: repository,
+            device: const Locale('ru'),
+            textScaler: const NonlinearTextScaler(2),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.tap(phoneField);
+        await tester.pumpAndSettle();
+
+        expect(tester.getBottomLeft(continueButton).dy, lessThanOrEqualTo(328));
+      },
+    );
+
+    for (final double scale in <double>[1, 2]) {
+      testWidgets('every tap target holds at text x$scale, empty and with a '
+          'notice', (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: repository,
+            device: const Locale('ru'),
+            textScaler: scale == 1 ? null : NonlinearTextScaler(scale),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        repository.requestFailure = refusal(409, 'code_delivery_unavailable');
+        await tester.enterText(phoneField, '901234567');
+        await tester.ensureVisible(continueButton);
+        await tester.pump();
+        await tester.tap(continueButton);
+        await tester.pumpAndSettle();
+        expect(authNotice, findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    }
+
+    testWidgets('a failure of another call never shows on the phone page', (
+      WidgetTester tester,
+    ) async {
+      await openRussian(
+        tester,
+        extra: [codeLoginControllerProvider.overrideWith(_SettableLogin.new)],
+      );
+      final _SettableLogin login = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).first),
+      ).read(codeLoginControllerProvider.notifier) as _SettableLogin;
+
+      login.put(
+        const CodeLoginState(
+          phone: '+998901234567',
+          failure: NetworkFailure(),
+          failedAction: CodeLoginAction.resend,
+        ),
+      );
+      await tester.pump();
+      expect(authNotice, findsNothing);
+
+      login.put(
+        const CodeLoginState(
+          phone: '+998901234567',
+          failure: NetworkFailure(),
+          failedAction: CodeLoginAction.request,
+        ),
+      );
+      await tester.pump();
+      expect(authNotice, findsOneWidget);
+    });
+
+    testWidgets(
+      'a page under another route tells its lock message not to speak',
+      (WidgetTester tester) async {
+        await openRussian(tester);
+        final BuildContext context = tester.element(
+          find.byType(Scaffold).first,
+        );
+        final Finder lock = find.byType(LockMessage, skipOffstage: false);
+        expect(tester.widget<LockMessage>(lock).speaks, isTrue);
+
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (BuildContext context) => const Scaffold(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.widget<LockMessage>(lock).speaks, isFalse);
+      },
+    );
+
+    testWidgets('a lock message told not to speak announces nothing', (
+      WidgetTester tester,
+    ) async {
+      Future<void> show({required bool speaks, required int seconds}) =>
+          tester.pumpWidget(
+            MaterialApp(
+              locale: const Locale('ru'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: LockMessage(
+                  lockedSeconds: seconds,
+                  lockOver: seconds == 0,
+                  speaks: speaks,
+                ),
+              ),
+            ),
+          );
+
+      await show(speaks: false, seconds: 0);
+      await show(speaks: false, seconds: 5);
+      await show(speaks: false, seconds: 0);
+      expect(tester.takeAnnouncements(), isEmpty);
+
+      await show(speaks: true, seconds: 5);
+      expect(tester.takeAnnouncements(), hasLength(1));
+    });
+  });
+
+  group('the code page (DL-139)', () {
+    final Finder attempts = find.byKey(const ValueKey<String>('code-attempts'));
+    final Finder lockCard = find.byKey(
+      const ValueKey<String>('code-lock-card'),
+    );
+    final Finder backArrow = find.byKey(
+      const ValueKey<String>('auth-back-button'),
+    );
+    final Finder changeNumber = find.byKey(
+      const ValueKey<String>('code-change-phone'),
+    );
+    final Finder catalog = find.byKey(const ValueKey<String>('catalog-search'));
+
+    ApiRefusal wrong({int? left}) => ApiRefusal(
+      ApiError(
+        status: 422,
+        code: 'code_invalid',
+        details: <String, Object?>{'attempts_left': ?left},
+      ),
+    );
+
+    ApiRefusal locked(int seconds) => ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: seconds,
+    );
+
+    Future<void> openRussian(WidgetTester tester) async {
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: repository,
+          device: const Locale('ru'),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    List<String> haptics(WidgetTester tester) {
+      final List<String> calls = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            calls.add(call.arguments as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      return calls;
+    }
+
+    List<String> spoken(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .map((CapturedAccessibilityAnnouncement a) => a.message)
+        .toList();
+
+    int verifies() => repository.calls
+        .where((String call) => call.startsWith('verify:'))
+        .length;
+
+    /// Types the sixth digit last, after the first five, as a person does.
+    Future<void> typeCode(WidgetTester tester, String code) async {
+      await tester.enterText(codeField, code.substring(0, code.length - 1));
+      await tester.pump();
+      await tester.enterText(codeField, code);
+      await tester.pump();
+    }
+
+    const Duration typedWait = Duration(milliseconds: 140);
+
+    testWidgets('system back from the code returns to the number, kept', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      expect(codeField, findsOneWidget);
+
+      final bool handled = await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(handled, isTrue);
+      expect(codeField, findsNothing);
+      expect(phoneField, findsOneWidget);
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        '90 123 45 67',
+      );
+    });
+
+    testWidgets('the arrow and Изменить return to the number', (
+      WidgetTester tester,
+    ) async {
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      expect(find.text('Изменить'), findsOneWidget);
+
+      await tester.tap(backArrow);
+      await tester.pumpAndSettle();
+      expect(codeField, findsNothing);
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        '90 123 45 67',
+      );
+
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+      expect(codeField, findsOneWidget);
+
+      await tester.tap(changeNumber);
+      await tester.pumpAndSettle();
+      expect(codeField, findsNothing);
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        '90 123 45 67',
+      );
+    });
+
+    testWidgets('the header names the channel and shows the number big', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+
+      expect(find.text('Отправили код в Telegram на номер'), findsOneWidget);
+      final Text number = tester.widget<Text>(
+        find.byKey(const ValueKey<String>('code-phone')),
+      );
+      expect(number.data, '+998 90 123 45 67');
+      expect(number.style?.fontSize, 17);
+      expect(number.style?.fontWeight, FontWeight.w700);
+      expect(
+        tester.getSemantics(changeNumber).label,
+        contains('Изменить номер'),
+      );
+      expect(
+        tester.getSemantics(backArrow).tooltip,
+        'Назад, к номеру телефона',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('back keeps the number and the lock', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyFailure = locked(60);
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 25));
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(phoneField, findsOneWidget);
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        '90 123 45 67',
+      );
+      expect(find.text(l10n(tester).codeLocked('0:35')), findsOneWidget);
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+      await tester.pump(const Duration(seconds: 35));
+    });
+
+    testWidgets('back within the auto-verify wait sends nothing', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await typeCode(tester, '482913');
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(phoneField, findsOneWidget);
+      expect(verifies(), 0);
+    });
+
+    testWidgets('back while checking does nothing', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      repository.holdAnswers = Completer<void>();
+      await typeCode(tester, '482913');
+      await tester.pump(typedWait);
+      await tester.pump();
+      expect(verifies(), 1);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(backArrow, warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(codeField, findsOneWidget);
+
+      repository.holdAnswers!.complete();
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(codeField, findsOneWidget, reason: 'nor during the check mark');
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+      expect(catalog, findsOneWidget);
+    });
+
+    testWidgets('the code page slides in over the number', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await tester.enterText(phoneField, '901234567');
+      await tester.pump();
+      await tester.tap(continueButton);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.byKey(const ValueKey<String>('phone-field'), skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(codeField, findsOneWidget);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the sixth digit verifies by itself', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await tester.enterText(codeField, '48291');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNull);
+      expect(find.text(l10n(tester).verifyButton), findsOneWidget);
+
+      await tester.enterText(codeField, '482913');
+      await tester.pump(const Duration(milliseconds: 139));
+      expect(verifies(), 0);
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump();
+
+      expect(repository.calls.last, 'verify:+998901234567:482913');
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+      expect(catalog, findsOneWidget);
+    });
+
+    testWidgets('six digits and a tap send one verify', (
+      WidgetTester tester,
+    ) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      repository.holdAnswers = Completer<void>();
+
+      await typeCode(tester, '482913');
+      await tester.tap(verifyButton);
+      await tester.pump();
+      expect(verifies(), 1);
+      expect(find.text(l10n(tester).codeChecking), findsOneWidget);
+
+      await tester.pump(typedWait);
+      await tester.tap(verifyButton, warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(verifies(), 1);
+
+      repository.holdAnswers!.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+      expect(verifies(), 1);
+    });
+
+    testWidgets('a right code shows ✓ before the home', (
+      WidgetTester tester,
+    ) async {
+      final List<String> buzzes = haptics(tester);
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      repository.holdAnswers = Completer<void>();
+      await typeCode(tester, '482913');
+      await tester.pump(typedWait);
+      await tester.pump();
+      expect(find.text('Проверяем…'), findsOneWidget);
+      expect(buzzes, isEmpty);
+      tester.takeAnnouncements();
+
+      repository.holdAnswers!.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Код верный'), findsOneWidget);
+      expect(buzzes, <String>['HapticFeedbackType.successNotification']);
+      expect(spoken(tester), contains('Код верный'));
+      expect(codeField, findsOneWidget);
+      expect(catalog, findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 650));
+      await tester.pumpAndSettle();
+      expect(catalog, findsOneWidget);
+    });
+
+    testWidgets('a wrong code shakes red, says the tries left and clears', (
+      WidgetTester tester,
+    ) async {
+      final List<String> buzzes = haptics(tester);
+      repository.verifyFailure = wrong(left: 2);
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      tester.takeAnnouncements();
+
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pump();
+
+      expect(find.text('Неверный код. Осталось 2 попытки'), findsOneWidget);
+      expect(buzzes, <String>['HapticFeedbackType.errorNotification']);
+      expect(spoken(tester), contains('Неверный код. Осталось 2 попытки'));
+      expect(
+        tester.widget<TextField>(codeField).controller?.text,
+        '000000',
+        reason: 'the digits stay while the boxes are red',
+      );
+      final BoxDecoration box =
+          tester
+                  .widget<Container>(
+                    find
+                        .descendant(
+                          of: find.byKey(const ValueKey<String>('code-box-0')),
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect((box.border! as Border).top.color, KitColors.danger);
+
+      await tester.pump(const Duration(milliseconds: 519));
+      expect(tester.widget<TextField>(codeField).controller?.text, '000000');
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
+      expect(attempts, findsOneWidget);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a wrong code without a count says only that it is wrong', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyFailure = wrong();
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pump();
+
+      expect(
+        find.descendant(of: attempts, matching: find.text('Неверный код')),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(milliseconds: 520));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('input during the red shake is refused, then the boxes clear', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyFailure = wrong(left: 1);
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.enterText(codeField, '00000');
+      await tester.pump();
+      expect(tester.widget<TextField>(codeField).controller?.text, '000000');
+      expect(verifies(), 1);
+
+      await tester.pump(const Duration(milliseconds: 320));
+      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
+      await tester.pumpAndSettle();
+      expect(verifies(), 1);
+    });
+
+    testWidgets('the third wrong code shows the countdown card', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      repository.verifyFailure = locked(60);
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      tester.takeAnnouncements();
+
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pumpAndSettle();
+
+      expect(lockCard, findsOneWidget);
+      expect(
+        find.descendant(of: lockCard, matching: find.text('1:00')),
+        findsOneWidget,
+      );
+      expect(codeField, findsNothing);
+      expect(spoken(tester), contains(l10n(tester).codeLocked('1:00')));
+      expect(
+        tester.getSemantics(lockCard).label,
+        contains('Пауза 1:00. Код введён неверно 3 раза'),
+      );
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(
+        find.descendant(of: lockCard, matching: find.text('0:01')),
+        findsOneWidget,
+      );
+      expect(spoken(tester), isEmpty, reason: 'nothing ticks aloud');
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Можно снова'), findsOneWidget);
+      expect(
+        tester.getSemantics(lockCard).label,
+        contains('Можно получить новый код'),
+      );
+      expect(spoken(tester), <String>['Можно получить новый код']);
+      expect(
+        find.descendant(
+          of: verifyButton,
+          matching: find.text('Получить новый код'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+      handle.dispose();
+    });
+
+    testWidgets('a new code after the lock opens the boxes again', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyFailure = locked(3);
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
+      tester.takeAnnouncements();
+
+      repository.verifyFailure = null;
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        repository.calls.where((String c) => c.startsWith('request:')),
+        hasLength(2),
+      );
+      expect(lockCard, findsNothing);
+      expect(codeField, findsOneWidget);
+      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNull);
+      expect(spoken(tester), <String>[
+        l10n(tester).codeSentSpoken('+998 90 123 45 67'),
+      ]);
+    });
+
+    testWidgets('a Shopper\'s code also shows ✓ before the password', (
+      WidgetTester tester,
+    ) async {
+      repository
+        ..verifyResult = IssuedSession(
+          token: 'c',
+          user: user(id: 'c', phone: '+998902222222'),
+        )
+        ..staffSteps['+998902222222'] = StaffStep(
+          token: 't' * 64,
+          expiresAt: DateTime.utc(2100),
+        );
+      await openRussian(tester);
+      await requestCode(tester, '902222222');
+      await typeCode(tester, '482913');
+      await tester.pump(typedWait);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Код верный'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('staff-password-field')),
+        findsNothing,
+      );
+
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('staff-password-field')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the page under the code page stays quiet', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyFailure = locked(60);
+      await openRussian(tester);
+      await requestCode(tester, '901234567');
+      await typeCode(tester, '000000');
+      await tester.pump(typedWait);
+      await tester.pumpAndSettle();
+      tester.takeAnnouncements();
+
+      await tester.pump(const Duration(seconds: 60));
+      expect(spoken(tester), <String>[
+        'Можно получить новый код',
+      ], reason: 'only the page on top speaks');
+
+      repository.requestFailure = const NetworkFailure();
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('auth-notice'), skipOffstage: false),
+        findsOneWidget,
+        reason: 'a failed resend shows on the code page only, once',
+      );
+    });
+
+    for (final double scale in <double>[1, 2]) {
+      testWidgets('every tap target holds at text x$scale on the code page', (
+        WidgetTester tester,
+      ) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        repository.verifyFailure = wrong(left: 2);
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: repository,
+            device: const Locale('ru'),
+            textScaler: scale == 1 ? null : NonlinearTextScaler(scale),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await requestCode(tester, '901234567');
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        await typeCode(tester, '000000');
+        await tester.pump(typedWait);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await tester.pump(const Duration(milliseconds: 520));
+        await tester.pumpAndSettle();
+
+        repository.verifyFailure = locked(5);
+        await typeCode(tester, '111111');
+        await tester.pump(typedWait);
+        await tester.pumpAndSettle();
+        expect(lockCard, findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pump();
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    }
+  });
+}
+
+/// A code-login controller a test can put any state into.
+class _SettableLogin extends CodeLoginController {
+  void put(CodeLoginState next) => state = next;
 }

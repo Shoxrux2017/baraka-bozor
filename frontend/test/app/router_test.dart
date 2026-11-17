@@ -38,7 +38,8 @@ void main() {
       expect(paths(router.configuration.routes), <String>[
         AppPaths.bootstrap,
         AppPaths.auth,
-        AppPaths.customerCode,
+        // The code is a page over the phone: `/auth` plus `code`.
+        'code',
         AppPaths.staffLogin,
         AppPaths.changePassword,
         AppPaths.staffPassword,

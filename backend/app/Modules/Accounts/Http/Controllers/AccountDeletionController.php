@@ -56,7 +56,7 @@ final class AccountDeletionController extends Controller
         } catch (LoginCodeRefused $refusal) {
             throw $refusal->apiCode === 'code_locked'
                 ? ApiException::tooManyRequests('code_locked', $refusal->retryAfterSeconds ?? LoginCodePolicy::LOCK_SECONDS)
-                : ApiException::unprocessable($refusal->apiCode);
+                : ApiException::unprocessable($refusal->apiCode, $refusal->attemptsLeft === null ? [] : ['attempts_left' => $refusal->attemptsLeft]);
         }
 
         $erase->erase($customer, $customer);

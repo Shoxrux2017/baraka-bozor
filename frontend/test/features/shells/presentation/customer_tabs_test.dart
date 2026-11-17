@@ -493,14 +493,13 @@ void main() {
         user: user(id: 'c2'),
       );
       await tester.enterText(byKey('phone-field'), '901234567');
+      await tester.pump();
       await tester.tap(byKey('continue-button'));
       await tester.pumpAndSettle();
-      if (byKey('confirm-phone-send').evaluate().isNotEmpty) {
-        await tester.tap(byKey('confirm-phone-send'));
-        await tester.pumpAndSettle();
-      }
       await tester.enterText(byKey('code-field'), '482913');
-      await tester.tap(byKey('verify-button'));
+      await tester.pump(const Duration(milliseconds: 160));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
 
       expect(find.byType(CatalogHomeScreen), findsOneWidget);

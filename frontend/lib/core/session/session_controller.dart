@@ -323,15 +323,18 @@ class SessionController extends AsyncNotifier<SessionState> {
 
   /// Every sign-in starts as the Customer. A Shopper or Courier comes back
   /// with a pending staff step, which [completeStaffStep] finishes with the
-  /// password.
+  /// password. [beforeOpen] runs after the server's answer and before the
+  /// token is written and the state changes (`DL-139`).
   Future<void> verifyCustomerCode({
     required String phone,
     required String code,
+    Future<void> Function()? beforeOpen,
   }) async {
     final VerifiedLogin login = await _repository.verifyCustomerCode(
       phone: phone,
       code: code,
     );
+    await beforeOpen?.call();
     await _afterLogin(
       SessionMode.customer,
       login.customer,

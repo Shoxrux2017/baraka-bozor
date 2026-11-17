@@ -27,6 +27,10 @@ abstract final class KitColors {
   /// Hairlines and field borders.
   static const Color line = Color(0xFFEEF0EF);
 
+  /// The edge of a code box at the bright end of the checking pulse
+  /// (`DL-139`).
+  static const Color pulseEdge = Color(0xFF9ED49D);
+
   /// The outline of a white outlined button («Повторить», «Остаться»,
   /// `DL-131`).
   static const Color outline = Color(0xFFC9CDCA);

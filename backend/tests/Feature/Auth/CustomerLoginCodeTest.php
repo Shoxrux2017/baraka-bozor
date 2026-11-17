@@ -138,6 +138,69 @@ final class CustomerLoginCodeTest extends TestCase
         $this->verify(self::PHONE, $code)->assertOk();
     }
 
+    public function test_a_wrong_code_says_how_many_tries_are_left(): void
+    {
+        $this->request(self::PHONE);
+        $wrong = $this->wrongCode($this->codeFor(self::PHONE));
+
+        $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid')
+            ->assertJsonPath('details.attempts_left', 2);
+        $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid')
+            ->assertJsonPath('details.attempts_left', 1);
+
+        $third = $this->verify(self::PHONE, $wrong);
+        $third->assertStatus(429)->assertJsonPath('code', 'code_locked')->assertHeader('Retry-After', '60');
+        $third->assertJsonMissingPath('details');
+    }
+
+    public function test_a_code_without_a_challenge_says_no_tries(): void
+    {
+        $this->assertRefused($this->verify(self::PHONE, '123456'), 'code_invalid')
+            ->assertJsonMissingPath('details.attempts_left');
+    }
+
+    public function test_an_expired_code_says_no_tries(): void
+    {
+        $this->request(self::PHONE);
+        $code = $this->codeFor(self::PHONE);
+
+        $this->travel(5)->minutes();
+        $this->travel(1)->seconds();
+
+        $this->assertRefused($this->verify(self::PHONE, $code), 'code_expired')
+            ->assertJsonMissingPath('details.attempts_left');
+    }
+
+    public function test_the_sixth_send_in_an_hour_names_the_phone_limit(): void
+    {
+        for ($send = 1; $send <= 5; $send++) {
+            $this->request(self::PHONE)->assertOk();
+        }
+
+        $refused = $this->request(self::PHONE);
+        $refused->assertStatus(429)
+            ->assertJsonPath('code', 'rate_limited')
+            ->assertJsonPath('details', ['limit' => 'phone_hourly', 'max_sends' => 5]);
+        $retryAfter = (int) $refused->headers->get('Retry-After');
+        $this->assertGreaterThanOrEqual(1, $retryAfter);
+        $this->assertLessThanOrEqual(3600, $retryAfter);
+    }
+
+    public function test_the_address_limit_names_itself(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.20'])
+                ->postJson('/api/v1/auth/customer/code/request', ['phone' => sprintf('+99890%07d', $attempt)])
+                ->assertOk();
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.20'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'rate_limited')
+            ->assertJsonPath('details', ['limit' => 'address']);
+    }
+
     public function test_the_third_wrong_code_locks_the_phone(): void
     {
         $this->request(self::PHONE);
@@ -554,9 +617,11 @@ final class CustomerLoginCodeTest extends TestCase
         return $this->app->make(FakeCodeSink::class);
     }
 
-    private function assertRefused(TestResponse $response, string $code): void
+    private function assertRefused(TestResponse $response, string $code): TestResponse
     {
         $response->assertStatus(401)->assertJsonPath('code', $code);
         $this->assertStringNotContainsString('token', (string) $response->getContent());
+
+        return $response;
     }
 }

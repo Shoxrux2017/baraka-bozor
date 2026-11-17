@@ -9,12 +9,21 @@ import '../../../core/theme/kit_colors.dart';
 /// person types the nine national digits, and the value sent is the E.164
 /// form the API requires (`docs/09-api-contracts.md` section 6). Nothing
 /// else is normalized.
-class PhoneField extends StatelessWidget {
+///
+/// The Customer's page (`DL-139`) draws a [label] above the field, bold
+/// digits ([strong]), a × that clears it ([clearable]) and checks the count
+/// itself ([validate] off); the staff panel keeps the plain field.
+class PhoneField extends StatefulWidget {
   const PhoneField({
     required this.controller,
     this.autofocus = false,
     this.textInputAction = TextInputAction.next,
     this.onSubmitted,
+    this.label,
+    this.clearable = false,
+    this.strong = false,
+    this.validate = true,
+    this.focusNode,
     super.key,
   });
 
@@ -23,6 +32,22 @@ class PhoneField extends StatelessWidget {
   final TextInputAction textInputAction;
   final ValueChanged<String>? onSubmitted;
 
+  /// Drawn above the field; with the country code it is also what a screen
+  /// reader calls the field.
+  final String? label;
+
+  /// Shows a × while the field has text; it clears the field and keeps focus.
+  final bool clearable;
+
+  /// Typed digits 14 w600 with letter spacing, the example light.
+  final bool strong;
+
+  /// Whether the form refuses a number of fewer than nine digits.
+  final bool validate;
+
+  /// The field's focus, when the page needs to follow or move it.
+  final FocusNode? focusNode;
+
   /// The E.164 phone in [controller], or `null` while it is incomplete.
   static String? phoneOf(TextEditingController controller) =>
       phoneFromNationalDigits(_digitsOf(controller.text));
@@ -30,33 +55,35 @@ class PhoneField extends StatelessWidget {
   static String _digitsOf(String text) => text.replaceAll(' ', '');
 
   @override
+  State<PhoneField> createState() => _PhoneFieldState();
+}
+
+class _PhoneFieldState extends State<PhoneField> {
+  FocusNode? _ownNode;
+
+  FocusNode get _node => widget.focusNode ?? (_ownNode ??= FocusNode());
+
+  @override
+  void dispose() {
+    _ownNode?.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    widget.controller.clear();
+    _node.requestFocus();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final String? label = widget.label;
+    final bool strong = widget.strong;
 
-    return TextFormField(
-      key: const ValueKey<String>('phone-field'),
-      controller: controller,
-      autofocus: autofocus,
-      keyboardType: TextInputType.phone,
-      textInputAction: textInputAction,
-      autofillHints: const <String>[AutofillHints.telephoneNumberNational],
-      inputFormatters: <TextInputFormatter>[NationalPhoneDigitsFormatter()],
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: KitColors.ink,
-      ),
-      decoration: InputDecoration(
-        hintText: l10n.phoneHint,
-        hintStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          color: KitColors.muted,
-        ),
-        contentPadding:
-            Theme.of(context).inputDecorationTheme.contentPadding ??
-            const EdgeInsets.symmetric(vertical: 18),
-        prefixIconConstraints: const BoxConstraints(),
-        prefixIcon: Padding(
+    final Widget field = ListenableBuilder(
+      listenable: widget.controller,
+      builder: (BuildContext context, Widget? _) {
+        final Widget prefix = Padding(
           padding: const EdgeInsets.only(left: 20, right: 12),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -69,14 +96,119 @@ class PhoneField extends StatelessWidget {
               Container(width: 1, height: 22, color: KitColors.line),
             ],
           ),
+        );
+        return TextFormField(
+          key: const ValueKey<String>('phone-field'),
+          controller: widget.controller,
+          focusNode: _node,
+          autofocus: widget.autofocus,
+          keyboardType: TextInputType.phone,
+          textInputAction: widget.textInputAction,
+          autofillHints: const <String>[
+            AutofillHints.telephoneNumber,
+            AutofillHints.telephoneNumberNational,
+          ],
+          inputFormatters: <TextInputFormatter>[NationalPhoneDigitsFormatter()],
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
+            letterSpacing: strong ? 0.3 : null,
+            color: KitColors.ink,
+          ),
+          decoration: InputDecoration(
+            // The example is a hint widget, so no reader says it as if it
+            // were the number.
+            hint: ExcludeSemantics(
+              child: Text(
+                l10n.phoneHint,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: strong ? FontWeight.w400 : FontWeight.w500,
+                  color: KitColors.muted,
+                ),
+              ),
+            ),
+            contentPadding:
+                Theme.of(context).inputDecorationTheme.contentPadding ??
+                const EdgeInsets.symmetric(vertical: 18),
+            prefixIconConstraints: const BoxConstraints(),
+            // With a label the reader hears the code in the field's name.
+            prefixIcon: label == null
+                ? prefix
+                : ExcludeSemantics(child: prefix),
+            prefixIconColor: KitColors.ink,
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 44,
+              minHeight: 44,
+            ),
+            suffixIcon: widget.clearable && widget.controller.text.isNotEmpty
+                ? IconButton(
+                    key: const ValueKey<String>('phone-clear'),
+                    onPressed: _clear,
+                    tooltip: l10n.phoneClear,
+                    padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 44,
+                      height: 44,
+                    ),
+                    icon: const Icon(
+                      Icons.cancel,
+                      size: 20,
+                      color: KitColors.muted,
+                    ),
+                  )
+                : null,
+          ),
+          validator: widget.validate
+              ? (String? value) =>
+                    phoneFromNationalDigits(
+                          PhoneField._digitsOf(value ?? ''),
+                        ) ==
+                        null
+                    ? l10n.phoneInvalid
+                    : null
+              : null,
+          onFieldSubmitted: widget.onSubmitted,
+        );
+      },
+    );
+
+    if (label == null) {
+      return field;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: ExcludeSemantics(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: KitColors.ink2,
+              ),
+            ),
+          ),
         ),
-        prefixIconColor: KitColors.ink,
-      ),
-      validator: (String? value) =>
-          phoneFromNationalDigits(_digitsOf(value ?? '')) == null
-          ? l10n.phoneInvalid
-          : null,
-      onFieldSubmitted: onSubmitted,
+        // The count rides on the field's own reader stop as its hint.
+        ListenableBuilder(
+          listenable: widget.controller,
+          builder: (BuildContext context, Widget? _) {
+            final int digits = PhoneField._digitsOf(widget.controller.text)
+                .length;
+            return Semantics(
+              label: '$label, $phoneCountryCode',
+              hint: digits == 0 ? null : l10n.phoneEnteredSpoken(digits),
+              child: field,
+            );
+          },
+        ),
+      ],
     );
   }
 }

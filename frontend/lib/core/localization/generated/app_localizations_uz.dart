@@ -24,7 +24,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get customerLoginIntro =>
-      'Telefon raqamingizni kiriting — kirish kodini yuboramiz';
+      'Telefon raqamingizni kiriting — kodni Telegramga yuboramiz';
 
   @override
   String get phoneLabel => 'Telefon raqami';
@@ -3783,10 +3783,38 @@ class AppLocalizationsUz extends AppLocalizations {
       'Summa olinishi kerak bo\'lgan summaga mos emas.';
 
   @override
-  String get getCodeButton => 'Kod olish';
+  String phoneDigitsLeft(int count) {
+    return 'Yana $count ta raqam kiriting';
+  }
 
   @override
-  String get codeComesInTelegram => 'Kod Telegramga keladi';
+  String phoneEnteredSpoken(int count) {
+    return '9 tadan $count tasi kiritildi';
+  }
+
+  @override
+  String codeSentSpoken(String phone) {
+    return 'Kod Telegramga $phone raqamiga yuborildi';
+  }
+
+  @override
+  String codeSentSmsSpoken(String phone) {
+    return 'Kod SMS orqali $phone raqamiga yuborildi';
+  }
+
+  @override
+  String codeSentOtherSpoken(String phone) {
+    return 'Kod $phone raqamiga yuborildi';
+  }
+
+  @override
+  String get phoneClear => 'Raqamni o\'chirish';
+
+  @override
+  String get sendingCode => 'Kod yuborilmoqda…';
+
+  @override
+  String get getCodeButton => 'Kod olish';
 
   @override
   String legalEdition(String date) {
@@ -3891,16 +3919,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get consentPrivacyLink => 'Maxfiylik siyosati';
 
   @override
-  String get confirmPhoneTitle => 'Raqamni tekshiring';
-
-  @override
-  String get confirmPhoneBody => 'Unga Telegramda kod yuboramiz';
-
-  @override
   String get editButton => 'O\'zgartirish';
-
-  @override
-  String get sendButton => 'Yuborish';
 
   @override
   String get codeTitle => 'Kodni kiriting';
@@ -3920,7 +3939,22 @@ class AppLocalizationsUz extends AppLocalizations {
   String get welcomeBody => 'Bozordan yangi mahsulotlar sizni kutmoqda';
 
   @override
-  String get welcomeButton => 'Xaridlarga';
+  String get nameLabel => 'Ism';
+
+  @override
+  String get nameExample => 'Masalan, Aziza';
+
+  @override
+  String get nameSaving => 'Saqlanmoqda…';
+
+  @override
+  String get nameSaved => 'Tayyor';
+
+  @override
+  String get nameOtherNumber => 'Boshqa raqam bilan kirish';
+
+  @override
+  String get nameOffHint => 'ismingizni kiriting';
 
   @override
   String get staffPasswordTitle => 'Xodim sifatida kirish';
@@ -5870,4 +5904,119 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get wrongSurfaceOtherAccount => 'Boshqa akkaunt bilan kirish';
+
+  @override
+  String get authOtherNumber => 'Boshqa raqam kiritish';
+
+  @override
+  String get codeNewCode => 'Yangi kod olish';
+
+  @override
+  String get authNoInternet =>
+      'Internet yo\'q. Aloqani tekshirib, qayta urining.';
+
+  @override
+  String authNotInTelegram(String phone) {
+    return '$phone raqami Telegramda topilmadi. Kod faqat u yerga keladi: shu raqam bilan Telegramdan ro\'yxatdan o\'ting yoki boshqa raqam kiriting.';
+  }
+
+  @override
+  String authHourLimit(int max, String wait) {
+    return 'Bu raqamga bir soatda $max ta kod yuborildi. Yangisini $wait o\'tgach so\'rash mumkin.';
+  }
+
+  @override
+  String authAddressLimit(String wait) {
+    return 'Bu qurilmadan so\'rovlar juda ko\'p. $wait o\'tgach qayta urining.';
+  }
+
+  @override
+  String authTooMany(String wait) {
+    return 'Urinishlar juda ko\'p. $wait o\'tgach qayta urining.';
+  }
+
+  @override
+  String waitMinutes(int count) {
+    return '$count daqiqa';
+  }
+
+  @override
+  String waitSeconds(int count) {
+    return '$count soniya';
+  }
+
+  @override
+  String codeEnteredSpoken(int count, String digits) {
+    return '6 tadan $count tasi kiritildi: $digits';
+  }
+
+  @override
+  String get codeEmptySpoken => 'bo\'sh';
+
+  @override
+  String get codeSentLead => 'Kodni Telegramga shu raqamga yubordik';
+
+  @override
+  String get codeSentLeadSms => 'Kodni SMS orqali shu raqamga yubordik';
+
+  @override
+  String get codeSentLeadOther => 'Kodni shu raqamga yubordik';
+
+  @override
+  String get codeBackSpoken => 'Orqaga, telefon raqamiga';
+
+  @override
+  String get codeFieldSpoken => 'Telegramdagi kod, 6 ta raqam';
+
+  @override
+  String get codeFieldSpokenOther => 'Kod, 6 ta raqam';
+
+  @override
+  String get codeChecking => 'Tekshirilmoqda…';
+
+  @override
+  String get codeAccepted => 'Kod to\'g\'ri';
+
+  @override
+  String codeWrongLeft(int count) {
+    return 'Kod noto\'g\'ri. Yana $count ta urinish qoldi';
+  }
+
+  @override
+  String get codeLockText =>
+      'Kod 3 marta noto\'g\'ri kiritildi. Hisob nolga yetganda yangi kod so\'rash mumkin bo\'ladi.';
+
+  @override
+  String get codeLockDoneTime => 'Yana mumkin';
+
+  @override
+  String get codeLockDoneText =>
+      'Tanaffus tugadi. Yangi kod oling — avvalgisi endi ishlamaydi.';
+
+  @override
+  String codeLockSpoken(String time) {
+    return 'Tanaffus $time. Kod 3 marta noto\'g\'ri kiritildi';
+  }
+
+  @override
+  String get codeLockDoneSpoken => 'Yangi kod olish mumkin';
+
+  @override
+  String get codePaste => 'Kodni qo\'yish';
+
+  @override
+  String get codeOpenTelegram => 'Telegramni ochish';
+
+  @override
+  String get codeNotArrived => 'Kod kelmadimi?';
+
+  @override
+  String codeNotArrivedText(String phone) {
+    return 'Kod Telegramga $phone raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda. Telegram boshqa raqamda bo\'lsa, raqamni o\'zgartiring.';
+  }
+
+  @override
+  String codeNotArrivedTextOther(String phone) {
+    return 'Kod $phone raqamiga keladi. Raqam xato terilgan bo\'lsa, uni o\'zgartiring.';
+  }
 }

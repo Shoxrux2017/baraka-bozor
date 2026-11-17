@@ -71,16 +71,18 @@ void main() {
 
   Future<void> toCodeScreen(WidgetTester tester) async {
     await tester.enterText(find.byKey(key('phone-field')), '902222222');
+    await tester.pump();
     await tapKey(tester, 'continue-button');
-    await tester.pumpAndSettle();
-    await tapKey(tester, 'confirm-phone-send');
     await tester.pumpAndSettle();
   }
 
   Future<void> toStaffPassword(WidgetTester tester) async {
     await toCodeScreen(tester);
+    // The sixth digit verifies by itself; the ✓ shows for 700 ms.
     await tester.enterText(find.byKey(key('code-field')), '482913');
-    await tapKey(tester, 'verify-button');
+    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
   }
 
@@ -90,12 +92,24 @@ void main() {
       await open(tester, language);
       expect(find.byKey(key('continue-button')), findsOneWidget);
     },
-    'confirm dialog': (WidgetTester tester, String language) async {
+    'phone, digits missing': (WidgetTester tester, String language) async {
       await open(tester, language);
-      await tester.enterText(find.byKey(key('phone-field')), '902222222');
+      await tester.enterText(find.byKey(key('phone-field')), '90222');
+      await tester.pump();
       await tapKey(tester, 'continue-button');
       await tester.pumpAndSettle();
-      expect(find.byKey(key('confirm-phone-send')), findsOneWidget);
+      expect(find.byKey(key('phone-digits-hint')), findsOneWidget);
+    },
+    'phone, with a notice': (WidgetTester tester, String language) async {
+      repository.requestFailure = ApiRefusal(
+        const ApiError(status: 409, code: 'code_delivery_unavailable'),
+      );
+      await open(tester, language);
+      await tester.enterText(find.byKey(key('phone-field')), '902222222');
+      await tester.pump();
+      await tapKey(tester, 'continue-button');
+      await tester.pumpAndSettle();
+      expect(find.byKey(key('auth-notice')), findsOneWidget);
     },
     'code': (WidgetTester tester, String language) async {
       await open(tester, language);
@@ -115,7 +129,7 @@ void main() {
       await tester.enterText(find.byKey(key('code-field')), '000000');
       await tapKey(tester, 'verify-button');
       await tester.pumpAndSettle();
-      expect(find.byKey(key('lock-message')), findsOneWidget);
+      expect(find.byKey(key('code-lock-card')), findsOneWidget);
       await tester.pump(const Duration(seconds: 59));
     },
     'code, lock over': (WidgetTester tester, String language) async {
@@ -130,8 +144,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 59));
       await tester.pump();
-      expect(find.byKey(key('lock-over-message')), findsOneWidget);
+      expect(find.byKey(key('code-lock-card')), findsOneWidget);
       expect(find.byKey(key('lock-message')), findsNothing);
+      expect(
+        tester.widget<FilledButton>(find.byKey(key('verify-button'))).onPressed,
+        isNotNull,
+      );
     },
     'phone, locked': (WidgetTester tester, String language) async {
       repository.requestFailure = ApiRefusal(
@@ -163,9 +181,9 @@ void main() {
       await tester.enterText(find.byKey(key('customer-name-field')), 'Aziza');
       await tapKey(tester, 'customer-name-continue');
       await tester.pumpAndSettle();
-      expect(find.byKey(key('failure-message')), findsOneWidget);
+      expect(find.byKey(key('auth-notice')), findsOneWidget);
     },
-    'welcome dialog': (WidgetTester tester, String language) async {
+    'welcome strip': (WidgetTester tester, String language) async {
       tokens.tokens[SessionSlot.customer] = 'c';
       repository.identities[SessionSlot.customer] = user(
         id: 'c',
@@ -174,8 +192,11 @@ void main() {
       await open(tester, language);
       await tester.enterText(find.byKey(key('customer-name-field')), 'Aziza');
       await tapKey(tester, 'customer-name-continue');
-      await tester.pumpAndSettle();
-      expect(find.byKey(key('welcome-button')), findsOneWidget);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+      expect(find.byKey(key('welcome-banner')), findsOneWidget);
     },
     'staff password': (WidgetTester tester, String language) async {
       await open(tester, language);

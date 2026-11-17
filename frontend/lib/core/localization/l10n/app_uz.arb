@@ -4,7 +4,7 @@
   "pushChannelName": "Buyurtmalar",
   "pushChannelDescription": "Yangi buyurtmalar, savollar va holat o'zgarishlari",
   "customerLoginTitle": "Kirish",
-  "customerLoginIntro": "Telefon raqamingizni kiriting — kirish kodini yuboramiz",
+  "customerLoginIntro": "Telefon raqamingizni kiriting — kodni Telegramga yuboramiz",
   "phoneLabel": "Telefon raqami",
   "phoneHint": "90 123 45 67",
   "phoneInvalid": "Raqamning 9 ta raqamini kiriting",
@@ -2719,8 +2719,49 @@
   "courierOrderGoneHint": "U yopilgan, bekor qilingan yoki boshqa kuryerga berilgan.",
   "errorDeliveryStateConflict": "Yetkazish allaqachon o'zgargan, buyurtma yangilandi.",
   "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
+  "phoneDigitsLeft": "Yana {count} ta raqam kiriting",
+  "@phoneDigitsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneEnteredSpoken": "9 tadan {count} tasi kiritildi",
+  "@phoneEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeSentSpoken": "Kod Telegramga {phone} raqamiga yuborildi",
+  "@codeSentSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentSmsSpoken": "Kod SMS orqali {phone} raqamiga yuborildi",
+  "@codeSentSmsSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentOtherSpoken": "Kod {phone} raqamiga yuborildi",
+  "@codeSentOtherSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneClear": "Raqamni o'chirish",
+  "sendingCode": "Kod yuborilmoqda…",
   "getCodeButton": "Kod olish",
-  "codeComesInTelegram": "Kod Telegramga keladi",
   "legalEdition": "Tahrir: {date}",
   "@legalEdition": {
     "placeholders": {
@@ -2807,10 +2848,7 @@
   },
   "consentTermsLink": "Foydalanish shartlari",
   "consentPrivacyLink": "Maxfiylik siyosati",
-  "confirmPhoneTitle": "Raqamni tekshiring",
-  "confirmPhoneBody": "Unga Telegramda kod yuboramiz",
   "editButton": "O'zgartirish",
-  "sendButton": "Yuborish",
   "codeTitle": "Kodni kiriting",
   "nameTitle": "Ismingiz nima?",
   "nameSubtitle": "Ism yig'uvchi va kuryerga kerak",
@@ -2823,7 +2861,12 @@
     }
   },
   "welcomeBody": "Bozordan yangi mahsulotlar sizni kutmoqda",
-  "welcomeButton": "Xaridlarga",
+  "nameLabel": "Ism",
+  "nameExample": "Masalan, Aziza",
+  "nameSaving": "Saqlanmoqda…",
+  "nameSaved": "Tayyor",
+  "nameOtherNumber": "Boshqa raqam bilan kirish",
+  "nameOffHint": "ismingizni kiriting",
   "staffPasswordTitle": "Xodim sifatida kirish",
   "staffPasswordSubtitle": "Raqam tasdiqlandi. Xodim parolini kiriting",
   "panelTagline": "Boshqaruv paneli",
@@ -4585,5 +4628,118 @@
       }
     }
   },
-  "wrongSurfaceOtherAccount": "Boshqa akkaunt bilan kirish"
+  "wrongSurfaceOtherAccount": "Boshqa akkaunt bilan kirish",
+  "authOtherNumber": "Boshqa raqam kiritish",
+  "codeNewCode": "Yangi kod olish",
+  "authNoInternet": "Internet yo'q. Aloqani tekshirib, qayta urining.",
+  "authNotInTelegram": "{phone} raqami Telegramda topilmadi. Kod faqat u yerga keladi: shu raqam bilan Telegramdan ro'yxatdan o'ting yoki boshqa raqam kiriting.",
+  "@authNotInTelegram": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "authHourLimit": "Bu raqamga bir soatda {max} ta kod yuborildi. Yangisini {wait} o'tgach so'rash mumkin.",
+  "@authHourLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authAddressLimit": "Bu qurilmadan so'rovlar juda ko'p. {wait} o'tgach qayta urining.",
+  "@authAddressLimit": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authTooMany": "Urinishlar juda ko'p. {wait} o'tgach qayta urining.",
+  "@authTooMany": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "waitMinutes": "{count} daqiqa",
+  "@waitMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitSeconds": "{count} soniya",
+  "@waitSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeEnteredSpoken": "6 tadan {count} tasi kiritildi: {digits}",
+  "@codeEnteredSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "digits": {
+        "type": "String"
+      }
+    }
+  },
+  "codeEmptySpoken": "bo'sh",
+  "codeSentLead": "Kodni Telegramga shu raqamga yubordik",
+  "codeSentLeadSms": "Kodni SMS orqali shu raqamga yubordik",
+  "codeSentLeadOther": "Kodni shu raqamga yubordik",
+  "codeBackSpoken": "Orqaga, telefon raqamiga",
+  "codeFieldSpoken": "Telegramdagi kod, 6 ta raqam",
+  "codeFieldSpokenOther": "Kod, 6 ta raqam",
+  "codeChecking": "Tekshirilmoqda…",
+  "codeAccepted": "Kod to'g'ri",
+  "codeWrongLeft": "Kod noto'g'ri. Yana {count} ta urinish qoldi",
+  "@codeWrongLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeLockText": "Kod 3 marta noto'g'ri kiritildi. Hisob nolga yetganda yangi kod so'rash mumkin bo'ladi.",
+  "codeLockDoneTime": "Yana mumkin",
+  "codeLockDoneText": "Tanaffus tugadi. Yangi kod oling — avvalgisi endi ishlamaydi.",
+  "codeLockSpoken": "Tanaffus {time}. Kod 3 marta noto'g'ri kiritildi",
+  "@codeLockSpoken": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLockDoneSpoken": "Yangi kod olish mumkin",
+  "codePaste": "Kodni qo'yish",
+  "codeOpenTelegram": "Telegramni ochish",
+  "codeNotArrived": "Kod kelmadimi?",
+  "codeNotArrivedText": "Kod Telegramga {phone} raqamiga xabar bo'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda. Telegram boshqa raqamda bo'lsa, raqamni o'zgartiring.",
+  "@codeNotArrivedText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeNotArrivedTextOther": "Kod {phone} raqamiga keladi. Raqam xato terilgan bo'lsa, uni o'zgartiring.",
+  "@codeNotArrivedTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  }
 }

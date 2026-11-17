@@ -28,6 +28,7 @@ class SubmitButton extends StatefulWidget {
     required this.face,
     required this.label,
     required this.onPressed,
+    this.onOffTap,
     this.offHint,
     this.buttonKey,
     super.key,
@@ -36,6 +37,10 @@ class SubmitButton extends StatefulWidget {
   final SubmitFace face;
   final String label;
   final VoidCallback? onPressed;
+
+  /// Called by a tap on the button while it is [SubmitFace.off], so a grey
+  /// button can say what is missing (`DL-139`).
+  final VoidCallback? onOffTap;
 
   /// What a reader hears after «недоступна» while the button is off.
   final String? offHint;
@@ -120,10 +125,16 @@ class _SubmitButtonState extends State<SubmitButton> {
         duration: reduced ? Duration.zero : const Duration(milliseconds: 100),
         // One tree for every face, so the button keeps its element and its
         // colour change plays when it goes from off to ready.
-        child: MergeSemantics(
-          child: Semantics(
-            hint: widget.face == SubmitFace.off ? widget.offHint : null,
-            child: button,
+        child: GestureDetector(
+          // The disabled button takes no tap itself; the semantics of the
+          // button already name it as unavailable.
+          excludeFromSemantics: true,
+          onTap: widget.face == SubmitFace.off ? widget.onOffTap : null,
+          child: MergeSemantics(
+            child: Semantics(
+              hint: widget.face == SubmitFace.off ? widget.offHint : null,
+              child: button,
+            ),
           ),
         ),
       ),
