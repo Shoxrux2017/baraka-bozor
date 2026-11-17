@@ -8,12 +8,14 @@ import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dar
 import 'package:baraka_bozor/features/addresses/presentation/map/map_pin.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/point_fields_address_map.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fake_address_map.dart';
 import '../../support/fake_address_search.dart';
 import '../../support/fake_device_location.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 void main() {
   const GeoPoint start = GeoPoint(
@@ -49,6 +51,10 @@ void main() {
     AddressMap? map,
     Locale locale = const Locale('uz'),
     bool keepsWords = true,
+    bool placed = true,
+    Address? openedAt,
+    GeoPoint? initial,
+    TextScaler? scaler,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -59,11 +65,20 @@ void main() {
         ],
         child: MaterialApp(
           locale: locale,
+          builder: scaler == null
+              ? null
+              : (BuildContext context, Widget? child) => MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: scaler),
+                  child: child!,
+                ),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AddressPointStep(
-              initial: start,
+              key: UniqueKey(),
+              initial: initial ?? start,
+              placed: placed,
+              openedAt: openedAt,
               keepsWords: keepsWords,
               onConfirmed: confirmed.add,
             ),
@@ -369,6 +384,256 @@ void main() {
     expect(confirmed.single.words, isNull);
   });
 
+  List<String> haptics(WidgetTester tester) {
+    final List<String> calls = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          calls.add(call.arguments as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    return calls;
+  }
+
+  MapPin pin(WidgetTester tester) => tester.widget<MapPin>(find.byType(MapPin));
+
+  FilledButton confirmButton(WidgetTester tester) =>
+      tester.widget<FilledButton>(byKey('address-point-confirm'));
+
+  const Address home = Address(
+    id: 'a-1',
+    label: 'Дом',
+    point: GeoPoint(latitude: '41.320000', longitude: '69.260000'),
+    street: 'Navoiy',
+    house: '5',
+    apartment: null,
+    landmark: null,
+    deliveryNote: null,
+  );
+
+  testWidgets('the pin lifts while the Customer moves the map and drops with '
+      'a light tap', (WidgetTester tester) async {
+    final List<String> taps = haptics(tester);
+    await open(tester);
+    expect(pin(tester).lifted, isFalse);
+
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+    expect(pin(tester).lifted, isTrue);
+    expect(taps, isEmpty);
+
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pump();
+    expect(pin(tester).lifted, isFalse);
+    expect(pin(tester).drops, 1);
+    expect(taps, <String>['HapticFeedbackType.lightImpact']);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a search moves the pin without lifting it or tapping', (
+    WidgetTester tester,
+  ) async {
+    final List<String> taps = haptics(tester);
+    final FakeAddressMap map = FakeAddressMap();
+    search.answers['Navoiy 5'] = found;
+    await open(tester, map: map);
+    await type(tester, 'Navoiy 5');
+    await tester.pump();
+    map.emitMove(found);
+    await tester.pump();
+
+    expect(pin(tester).lifted, isFalse);
+    expect(pin(tester).drops, 0);
+    expect(taps, isEmpty);
+  });
+
+  testWidgets('the hint fades after the first move', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    double opacity() => tester
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: byKey('address-point-hint'),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+    expect(opacity(), 1);
+
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(opacity(), 0);
+
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(opacity(), 0);
+  });
+
+  testWidgets('opened without a fix the map starts at the delivery address '
+      'and confirm waits', (WidgetTester tester) async {
+    await open(
+      tester,
+      locale: const Locale('ru'),
+      placed: false,
+      openedAt: home,
+      initial: home.point,
+    );
+
+    expect(
+      tester.widget<Text>(byKey('fake-map-initial')).data,
+      '41.320000,69.260000',
+    );
+    expect(confirmButton(tester).onPressed, isNull);
+    expect(find.text('Сначала передвиньте карту к дому'), findsOneWidget);
+    expect(
+      find.text(
+        'Карта открыта у вашего адреса «Дом». Передвиньте её так, чтобы метка '
+        'встала на вход нового дома.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(byKey('address-point-confirm'), warnIfMissed: false);
+    await tester.pump();
+    expect(confirmed, isEmpty);
+
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pump();
+    expect(confirmButton(tester).onPressed, isNotNull);
+    expect(find.text('Сначала передвиньте карту к дому'), findsNothing);
+    await confirm(tester);
+    expect(confirmed.single.point, fakeDoor);
+  });
+
+  testWidgets('a search or Где я places the pin too', (
+    WidgetTester tester,
+  ) async {
+    search.answers['Navoiy 5'] = found;
+    await open(tester, placed: false);
+    expect(confirmButton(tester).onPressed, isNull);
+    await type(tester, 'Navoiy 5');
+    await tester.pump();
+    expect(confirmButton(tester).onPressed, isNotNull);
+    await confirm(tester);
+    expect(confirmed.single.point, found);
+
+    location.outcome = LocationFound(other);
+    await open(tester, placed: false);
+    expect(confirmButton(tester).onPressed, isNull);
+    await tester.tap(byKey('address-my-location'));
+    await tester.pump();
+    expect(confirmButton(tester).onPressed, isNotNull);
+    await confirm(tester);
+    expect(confirmed.last.point, other);
+  });
+
+  testWidgets('opened with the location already allowed the map starts '
+      'there', (WidgetTester tester) async {
+    location.silent = found;
+    await open(tester, placed: false, openedAt: home);
+    await tester.pump();
+
+    expect(target(tester), '41.299512,69.240146');
+    expect(confirmButton(tester).onPressed, isNotNull);
+    expect(location.calls, 0, reason: 'nothing was asked');
+    expect(location.silentCalls, 1);
+    await confirm(tester);
+    expect(confirmed.single.point, found);
+  });
+
+  testWidgets('a silent fix after a touch does not move the map', (
+    WidgetTester tester,
+  ) async {
+    location.holdSilent = true;
+    await open(tester, placed: false);
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+    location.releaseSilent(found);
+    await tester.pump();
+
+    expect(target(tester), '');
+    expect(confirmButton(tester).onPressed, isNull);
+
+    search.answers['Navoiy 5'] = other;
+    location.holdSilent = true;
+    await open(tester, placed: false);
+    await type(tester, 'Navoiy 5');
+    await tester.pump();
+    expect(target(tester), '41.280000,69.200000');
+    location.releaseSilent(found);
+    await tester.pump();
+    expect(target(tester), '41.280000,69.200000');
+  });
+
+  testWidgets('with no address the map starts at the city centre', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, placed: false, initial: defaultMapCentre);
+
+    expect(
+      tester.widget<Text>(byKey('fake-map-initial')).data,
+      '${defaultMapCentre.latitude},${defaultMapCentre.longitude}',
+    );
+    expect(confirmButton(tester).onPressed, isNull);
+    expect(find.text(l10n(tester).addressPointText), findsOneWidget);
+  });
+
+  testWidgets('an edit map and the way back from the details start placed', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+
+    expect(confirmButton(tester).onPressed, isNotNull);
+    expect(find.text(l10n(tester).addressMoveFirst), findsNothing);
+    await confirm(tester);
+    expect(confirmed.single.point, start);
+  });
+
+  testWidgets('the confirm result carries the map height', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await confirm(tester);
+
+    expect(confirmed.single.mapHeight, greaterThan(100));
+    expect(confirmed.single.place, isNull);
+  });
+
+  testWidgets('large text drops the hint and the panel says it', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await open(
+      tester,
+      locale: const Locale('ru'),
+      placed: false,
+      scaler: const NonlinearTextScaler(2),
+    );
+
+    expect(byKey('address-point-hint'), findsNothing);
+    expect(
+      find.text(
+        'Передвиньте карту, чтобы метка встала на вход в дом. Квартиру и '
+        'подъезд укажете на следующем шаге.',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets('the step holds at 320x640 with text x2 '
         '(${locale.languageCode})', (WidgetTester tester) async {
@@ -396,7 +661,11 @@ void main() {
 
       await type(tester, 'Navoiy 9');
       await tester.pump();
-      expect(find.text(l10n(tester).addressSearchFound), findsOneWidget);
+      expect(
+        find.text(l10n(tester).addressSearchFound),
+        findsNothing,
+        reason: 'large text has no hint',
+      );
       expect(byKey('address-words-kept'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

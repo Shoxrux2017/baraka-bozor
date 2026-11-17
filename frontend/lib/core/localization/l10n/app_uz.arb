@@ -655,6 +655,20 @@
   "addressMapHint": "Xaritani suring: belgi uyingiz kirish joyida tursin",
   "addressPointTitle": "Yetkazish nuqtasi",
   "addressSearchHint": "Yoki manzilni yozing: ko'cha, uy",
+  "addressStepPoint": "2 qadamdan 1-chisi · xaritadagi nuqta",
+  "addressStepDetails": "2 qadamdan 2-chisi · podyezd va xonadon",
+  "addressStepPointSpoken": "Yangi manzil, 2 qadamdan 1-chisi: xaritadagi nuqta",
+  "addressStepDetailsSpoken": "Yangi manzil, 2 qadamdan 2-chisi: podyezd va xonadon",
+  "addressPointTextLarge": "Xaritani suring: belgi uy kirish joyida tursin. Xonadon va podyezdni keyingi qadamda kiritasiz.",
+  "addressOpenedAt": "Xarita «{name}» manzilingizda ochildi. Uni suring: belgi yangi uy kirish joyida tursin.",
+  "@addressOpenedAt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressMoveFirst": "Avval xaritani uyga suring",
   "addressSearchFound": "Belgini tekshiring: kuryer aynan unga keladi",
   "addressPointText": "Kuryer belgiga keladi. Xonadon, podyezd va mo'ljalni keyingi qadamda kiritasiz.",
   "addressSearchNotFound": "Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o'zingiz qo'ying.",

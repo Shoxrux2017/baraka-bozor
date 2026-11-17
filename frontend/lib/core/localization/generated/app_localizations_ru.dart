@@ -1341,6 +1341,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressSearchHint => 'Или напишите адрес: улица, дом';
 
   @override
+  String get addressStepPoint => 'Шаг 1 из 2 · точка на карте';
+
+  @override
+  String get addressStepDetails => 'Шаг 2 из 2 · подъезд и квартира';
+
+  @override
+  String get addressStepPointSpoken =>
+      'Новый адрес, шаг 1 из 2: точка на карте';
+
+  @override
+  String get addressStepDetailsSpoken =>
+      'Новый адрес, шаг 2 из 2: подъезд и квартира';
+
+  @override
+  String get addressPointTextLarge =>
+      'Передвиньте карту, чтобы метка встала на вход в дом. Квартиру и подъезд укажете на следующем шаге.';
+
+  @override
+  String addressOpenedAt(String name) {
+    return 'Карта открыта у вашего адреса «$name». Передвиньте её так, чтобы метка встала на вход нового дома.';
+  }
+
+  @override
+  String get addressMoveFirst => 'Сначала передвиньте карту к дому';
+
+  @override
   String get addressSearchFound =>
       'Проверьте метку: курьер приедет точно к ней';
 

@@ -11,6 +11,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../application/addresses_controllers.dart';
+import '../application/delivery_address.dart';
 import '../domain/addresses.dart';
 import 'address_label_chips.dart';
 import 'address_point_step.dart';
@@ -107,7 +108,19 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   late final TextEditingController _note = TextEditingController(
     text: widget.address?.deliveryNote ?? '',
   );
-  late GeoPoint _point = widget.address?.point ?? defaultMapCentre;
+
+  /// The delivery address as the form opened; a new address' map opens there
+  /// when the phone's location is not already allowed (`DL-138`).
+  late final Address? _delivery = _isNew
+      ? ref.read(deliveryAddressProvider).value
+      : null;
+
+  late GeoPoint _point =
+      widget.address?.point ?? _delivery?.point ?? defaultMapCentre;
+
+  /// The Customer confirmed a point on this new address; going back to the
+  /// map keeps it placed.
+  bool _pointConfirmed = false;
 
   /// A new address starts on the map, an edit on the details.
   late _Step _step = _isNew ? _Step.point : _Step.details;
@@ -192,6 +205,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         _filledWords = filled;
       }
       _backToDetails = false;
+      _pointConfirmed = true;
       _step = _Step.details;
     });
   }
@@ -266,11 +280,14 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState change = ref.watch(addressFormControllerProvider);
     final bool onPoint = _step == _Step.point;
-    final String title = onPoint
+    final String title = onPoint && !_isNew
         ? l10n.addressPointTitle
         : _isNew
         ? l10n.addressNew
         : l10n.addressEdit;
+    final double barHeight = kitSubtitleBarHeight(
+      MediaQuery.textScalerOf(context),
+    );
 
     return PopScope(
       canPop:
@@ -278,12 +295,25 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       onPopInvokedWithResult: (bool didPop, Object? _) => _back(didPop),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: kitAppBar(title: title),
+        appBar: _isNew
+            ? kitAppBar(
+                title: title,
+                subtitle: onPoint
+                    ? l10n.addressStepPoint
+                    : l10n.addressStepDetails,
+                spokenTitle: onPoint
+                    ? l10n.addressStepPointSpoken
+                    : l10n.addressStepDetailsSpoken,
+                toolbarHeight: barHeight,
+              )
+            : kitAppBar(title: title),
         body: UnderActiveMode(
           child: onPoint
               ? AddressPointStep(
                   key: const ValueKey<String>('address-point-step'),
                   initial: _point,
+                  placed: !_isNew || _pointConfirmed,
+                  openedAt: _isNew && !_pointConfirmed ? _delivery : null,
                   keepsWords: _streetTakesWords,
                   onConfirmed: _confirmed,
                 )

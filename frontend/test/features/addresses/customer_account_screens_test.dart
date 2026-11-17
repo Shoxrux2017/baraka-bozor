@@ -112,9 +112,14 @@ void main() {
     expect(byKey('edit-profile'), findsOneWidget);
   }
 
-  /// The map step of a new address: the pin moved when asked, then confirmed.
+  /// The map step of a new address: the pin moved when asked or when it is
+  /// not yet placed (confirm waits for that), then confirmed.
   Future<void> confirmPoint(WidgetTester tester, {bool move = false}) async {
-    if (move) {
+    final Finder confirm = byKey('address-point-confirm');
+    final bool waiting =
+        tester.widgetList<FilledButton>(confirm).isNotEmpty &&
+        tester.widget<FilledButton>(confirm).onPressed == null;
+    if (move || waiting) {
       await tapAndSettle(tester, byKey('fake-map-move'));
     }
     await tapAndSettle(tester, byKey('address-point-confirm'));
@@ -284,6 +289,36 @@ void main() {
       );
     });
 
+    testWidgets('a new address says its step in the bar and the panel has no '
+        'heading', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+
+      final AppLocalizations strings = l10n(tester);
+      expect(find.text(strings.addressNew), findsOneWidget);
+      expect(find.text(strings.addressStepPoint), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(strings.addressStepPointSpoken),
+        findsOneWidget,
+      );
+      expect(
+        find.text(strings.addressPointTitle),
+        findsNothing,
+        reason: 'neither the bar nor the panel carries the old heading',
+      );
+      expect(
+        tester.widget<Text>(byKey('fake-map-initial')).data,
+        '41.311081,69.240562',
+        reason: 'the delivery address Uy is where the map opens',
+      );
+
+      await confirmPoint(tester, move: true);
+      expect(find.text(strings.addressStepDetails), findsOneWidget);
+      expect(find.text(strings.addressStepPoint), findsNothing);
+      handle.dispose();
+    });
+
     testWidgets('the street and the house are required', (
       WidgetTester tester,
     ) async {
@@ -322,7 +357,8 @@ void main() {
       expect(byKey('address-save'), findsOneWidget, reason: 'the form stays');
 
       await tapAndSettle(tester, byKey('address-change-point'));
-      await confirmPoint(tester, move: true);
+      await tapAndSettle(tester, byKey('fake-map-far'));
+      await confirmPoint(tester);
       expect(
         byKey('address-outside-area'),
         findsNothing,

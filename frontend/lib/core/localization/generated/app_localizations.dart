@@ -2474,6 +2474,48 @@ abstract class AppLocalizations {
   /// **'Yoki manzilni yozing: ko\'cha, uy'**
   String get addressSearchHint;
 
+  /// No description provided for @addressStepPoint.
+  ///
+  /// In uz, this message translates to:
+  /// **'2 qadamdan 1-chisi · xaritadagi nuqta'**
+  String get addressStepPoint;
+
+  /// No description provided for @addressStepDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'2 qadamdan 2-chisi · podyezd va xonadon'**
+  String get addressStepDetails;
+
+  /// No description provided for @addressStepPointSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil, 2 qadamdan 1-chisi: xaritadagi nuqta'**
+  String get addressStepPointSpoken;
+
+  /// No description provided for @addressStepDetailsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil, 2 qadamdan 2-chisi: podyezd va xonadon'**
+  String get addressStepDetailsSpoken;
+
+  /// No description provided for @addressPointTextLarge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritani suring: belgi uy kirish joyida tursin. Xonadon va podyezdni keyingi qadamda kiritasiz.'**
+  String get addressPointTextLarge;
+
+  /// No description provided for @addressOpenedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xarita «{name}» manzilingizda ochildi. Uni suring: belgi yangi uy kirish joyida tursin.'**
+  String addressOpenedAt(String name);
+
+  /// No description provided for @addressMoveFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval xaritani uyga suring'**
+  String get addressMoveFirst;
+
   /// No description provided for @addressSearchFound.
   ///
   /// In uz, this message translates to:

@@ -1326,6 +1326,32 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressSearchHint => 'Yoki manzilni yozing: ko\'cha, uy';
 
   @override
+  String get addressStepPoint => '2 qadamdan 1-chisi · xaritadagi nuqta';
+
+  @override
+  String get addressStepDetails => '2 qadamdan 2-chisi · podyezd va xonadon';
+
+  @override
+  String get addressStepPointSpoken =>
+      'Yangi manzil, 2 qadamdan 1-chisi: xaritadagi nuqta';
+
+  @override
+  String get addressStepDetailsSpoken =>
+      'Yangi manzil, 2 qadamdan 2-chisi: podyezd va xonadon';
+
+  @override
+  String get addressPointTextLarge =>
+      'Xaritani suring: belgi uy kirish joyida tursin. Xonadon va podyezdni keyingi qadamda kiritasiz.';
+
+  @override
+  String addressOpenedAt(String name) {
+    return 'Xarita «$name» manzilingizda ochildi. Uni suring: belgi yangi uy kirish joyida tursin.';
+  }
+
+  @override
+  String get addressMoveFirst => 'Avval xaritani uyga suring';
+
+  @override
   String get addressSearchFound =>
       'Belgini tekshiring: kuryer aynan unga keladi';
 

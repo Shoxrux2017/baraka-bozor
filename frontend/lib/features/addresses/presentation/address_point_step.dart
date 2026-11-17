@@ -2,36 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../application/addresses_controllers.dart';
 import '../data/device_location.dart';
+import '../domain/address_search.dart';
 import '../domain/addresses.dart';
 import 'map/address_map.dart';
 import 'map/map_pin.dart';
 
-/// What the map step hands on: the point the Customer confirmed and the
-/// address as they typed it, when they did (`DL-84` (2), `DL-86` (3)).
+/// What the map step hands on: the point the Customer confirmed, the address
+/// as they typed it, when they did (`DL-84` (2), `DL-86` (3)), the address
+/// the map named under the pin when it did, and the height of the map area
+/// the details morph from (`DL-138`).
 final class AddressPointResult {
-  const AddressPointResult({required this.point, required this.words});
+  const AddressPointResult({
+    required this.point,
+    required this.words,
+    required this.mapHeight,
+    this.place,
+  });
 
   final GeoPoint point;
   final String? words;
+  final PointAddress? place;
+  final double mapHeight;
 }
 
 /// The map step of a new address (drawings 22, 22б): the pin in the centre,
 /// the address typed in words above the map, "где я", and the confirm
-/// button. It fills the screen body; the host gives the app bar.
+/// button. It fills the screen body; the host gives the app bar. A new address
+/// opens not [placed]: the confirm button waits until the Customer, a search,
+/// "где я" or the location already allowed puts the pin down; [openedAt] is
+/// the address the map opened at when that is why it is there (`DL-138`).
 class AddressPointStep extends ConsumerStatefulWidget {
   const AddressPointStep({
     required this.initial,
+    required this.placed,
     required this.keepsWords,
     required this.onConfirmed,
+    this.openedAt,
     super.key,
   });
 
   final GeoPoint initial;
+  final bool placed;
+  final Address? openedAt;
 
   /// Whether the host will put the typed words into the street; the step
   /// promises to keep them only then.
@@ -52,11 +70,23 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   final TextEditingController _field = TextEditingController();
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
 
+  final GlobalKey _mapArea = GlobalKey();
+
   late GeoPoint _point = widget.initial;
+  late bool _placed = widget.placed;
   String? _words;
   _Search _search = _Search.start;
   bool _searching = false;
   bool _locating = false;
+
+  /// The Customer's finger is on the map and it has not come to rest.
+  bool _moving = false;
+
+  /// Counts the pin's drops; the pin plays one for each.
+  int _drops = 0;
+
+  /// The hint under the search field fades after the first move.
+  bool _hintGone = false;
 
   /// The latest search sent; an older answer is not heard.
   int _searchId = 0;
@@ -66,6 +96,31 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   /// Android sends them too when its permission windows cover the screen.
   int _touches = 0;
 
+  /// Counts what takes the pin out of the silent fix's hands: a touch, a
+  /// search, "где я".
+  int _intent = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.placed && ref.read(addressMapProvider).movable) {
+      _fixSilently();
+    }
+  }
+
+  /// The map opens where the phone is when the location is already allowed;
+  /// nothing is asked. It moves nothing the Customer has already acted on.
+  Future<void> _fixSilently() async {
+    final int intent = _intent;
+    final GeoPoint? here = await ref
+        .read(deviceLocationProvider)
+        .currentIfAllowed();
+    if (!mounted || here == null || intent != _intent) {
+      return;
+    }
+    setState(() => _moveTo(here));
+  }
+
   @override
   void dispose() {
     _mover.dispose();
@@ -73,14 +128,37 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     super.dispose();
   }
 
-  /// The Customer moved the map.
-  void _moved(GeoPoint point) {
-    setState(() => _point = point);
+  /// The Customer put a finger to move the map: the pin lifts.
+  void _moveStarted() {
+    _intent++;
+    setState(() {
+      _moving = true;
+      _hintGone = true;
+    });
   }
 
-  /// An answer moves the map.
+  /// The map came to rest at [point]. After the Customer's own move the pin
+  /// drops with a light tap and is placed; any other report only follows the
+  /// camera.
+  void _moved(GeoPoint point) {
+    final bool own = _moving;
+    setState(() {
+      _point = point;
+      if (own) {
+        _moving = false;
+        _placed = true;
+        _drops++;
+      }
+    });
+    if (own) {
+      HapticFeedback.lightImpact();
+    }
+  }
+
+  /// An answer moves the map and places the pin.
   void _moveTo(GeoPoint point) {
     _point = point;
+    _placed = true;
     _mover.moveTo(point);
   }
 
@@ -90,6 +168,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       return;
     }
     final int id = ++_searchId;
+    _intent++;
     final int touches = _touches;
     setState(() {
       _words = query;
@@ -132,6 +211,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   }
 
   Future<void> _whereAmI() async {
+    _intent++;
     final int touches = _touches;
     setState(() => _locating = true);
     final LocationOutcome outcome = await ref
@@ -154,11 +234,24 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     }
   }
 
+  /// Whether the pin is put down: a map without movement takes typed fields
+  /// and counts as placed.
+  bool _isPlaced(bool movable) => _placed || !movable;
+
   void _confirm(bool movable) {
+    if (!_isPlaced(movable) || _moving || _locating) {
+      return;
+    }
     if (!movable && !(_form.currentState?.validate() ?? false)) {
       return;
     }
-    widget.onConfirmed(AddressPointResult(point: _point, words: _words));
+    widget.onConfirmed(
+      AddressPointResult(
+        point: _point,
+        words: _words,
+        mapHeight: _mapArea.currentContext?.size?.height ?? 0,
+      ),
+    );
   }
 
   @override
@@ -168,7 +261,10 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       builder: (BuildContext context, BoxConstraints box) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(child: map.movable ? _movableMap(map) : _fields(map)),
+          Expanded(
+            key: _mapArea,
+            child: map.movable ? _movableMap(map) : _fields(map),
+          ),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: box.maxHeight * 0.5),
             child: _panel(map.movable),
@@ -186,7 +282,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
         initial: widget.initial,
         mover: _mover,
         enabled: true,
-        onMoveStarted: () {},
+        onMoveStarted: _moveStarted,
         onMoved: _moved,
       ),
     ),
@@ -199,36 +295,54 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       children: <Widget>[
         Listener(
           behavior: HitTestBehavior.translucent,
-          onPointerDown: (_) => _touches++,
+          onPointerDown: (_) {
+            _touches++;
+            _intent++;
+          },
           child: map.picker(
             initial: widget.initial,
             mover: _mover,
             enabled: true,
-            onMoveStarted: () {},
+            onMoveStarted: _moveStarted,
             onMoved: _moved,
           ),
         ),
-        const Positioned.fill(child: MapPin(lifted: false, drops: 0)),
+        Positioned.fill(
+          child: MapPin(lifted: _moving, drops: _drops),
+        ),
         Positioned(left: 16, right: 16, top: 14, child: _searchField(l10n)),
-        Positioned(
-          left: 16,
-          right: 16,
-          top: 14 + 50 + 8,
-          child: IgnorePointer(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: _Hint(
-                _search == _Search.found
-                    ? l10n.addressSearchFound
-                    : l10n.addressMapHint,
+        if (!_largeText)
+          Positioned(
+            left: 16,
+            right: 16,
+            top: 14 + 50 + 8,
+            child: IgnorePointer(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: AnimatedOpacity(
+                  opacity: _hintGone ? 0 : 1,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  child: _Hint(
+                    _search == _Search.found
+                        ? l10n.addressSearchFound
+                        : l10n.addressMapHint,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
         Positioned(right: 16, bottom: 16, child: _myLocation(l10n)),
       ],
     );
   }
+
+  /// Large text has no room for a hint over the map; the panel says it
+  /// (`DL-126`).
+  bool get _largeText =>
+      textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
 
   Widget _searchField(AppLocalizations l10n) {
     return Material(
@@ -311,6 +425,13 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
 
   Widget _panel(bool movable) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool placed = _isPlaced(movable);
+    final Address? openedAt = widget.openedAt;
+    final String text = movable && !placed && openedAt != null
+        ? l10n.addressOpenedAt(openedAt.name)
+        : movable && _largeText
+        ? l10n.addressPointTextLarge
+        : l10n.addressPointText;
     final Widget? box = switch (_search) {
       _Search.notFound => _Notice(
         'address-search-not-found',
@@ -349,18 +470,9 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      Text(
-                        l10n.addressPointTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: KitColors.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       box ??
                           Text(
-                            l10n.addressPointText,
+                            text,
                             style: const TextStyle(
                               fontSize: 14,
                               color: KitColors.ink2,
@@ -395,15 +507,31 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              if (movable && !placed) ...<Widget>[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.addressMoveFirst,
+                  key: const ValueKey<String>('address-move-first'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: KitColors.ink2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ] else
+                const SizedBox(height: 14),
               SizedBox(
                 height: 54,
                 child: FilledButton(
                   key: const ValueKey<String>('address-point-confirm'),
-                  onPressed: () => _confirm(movable),
+                  onPressed: placed ? () => _confirm(movable) : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: KitColors.primary,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: KitColors.line,
+                    disabledForegroundColor: KitColors.muted,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
