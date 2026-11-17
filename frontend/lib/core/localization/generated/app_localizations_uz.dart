@@ -5045,7 +5045,10 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get deletedBody =>
-      'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.';
+      'Ism, telefon raqami, manzillar va sevimlilar o\'chirildi. Buyurtmalar qoldi — ismsiz, hisob uchun.';
+
+  @override
+  String get deletedThanks => 'Biz bilan bo\'lganingiz uchun rahmat.';
 
   @override
   String shopperMarketPer(String price, String unit) {

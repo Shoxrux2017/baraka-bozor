@@ -470,6 +470,35 @@ void main() {
     },
   );
 
+  test(
+    'after a deletion nothing is revoked and the slot holds no registration',
+    () async {
+      signInCustomer('c');
+      final ProviderContainer container = await start();
+      final SessionController session = container.read(
+        sessionControllerProvider.notifier,
+      );
+
+      await session.dropSession(SessionSlot.customer);
+      await pumpEventQueue();
+      expect(revokes(), isEmpty);
+
+      auth.verifyResult = IssuedSession(
+        token: 'c2',
+        user: user(id: 'c2'),
+      );
+      await session.verifyCustomerCode(phone: '+998901234567', code: '123456');
+      await pumpEventQueue();
+      await session.logout(SessionMode.customer);
+
+      expect(
+        revokes(),
+        <String>['revoke:customer:d-1'],
+        reason: 'only the new account\'s device; the deleted one is forgotten',
+      );
+    },
+  );
+
   test('a hook that throws is reported and the logout goes on', () async {
     final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
     final FlutterExceptionHandler? previous = FlutterError.onError;

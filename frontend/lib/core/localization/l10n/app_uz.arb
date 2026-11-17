@@ -3717,7 +3717,8 @@
   "deleteCodeHeading": "O'chirishni tasdiqlang",
   "profileDeleteAccount": "Akkauntni o'chirish",
   "deletedTitle": "Akkaunt o'chirildi",
-  "deletedBody": "Ma'lumotlaringiz o'chirildi.\nBiz bilan bo'lganingiz uchun rahmat.",
+  "deletedBody": "Ism, telefon raqami, manzillar va sevimlilar o'chirildi. Buyurtmalar qoldi — ismsiz, hisob uchun.",
+  "deletedThanks": "Biz bilan bo'lganingiz uchun rahmat.",
   "shopperMarketPer": "Bozor narxi: {price} / {unit}",
   "@shopperMarketPer": {
     "placeholders": {

@@ -12,6 +12,7 @@ import 'package:baraka_bozor/features/profile/application/account_deletion_contr
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/catalog/application/recent_searches.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/profile/presentation/delete_account_sheets.dart';
@@ -1195,6 +1196,191 @@ void main() {
           expect(byKey('code-paste'), findsOneWidget);
           await meets(tester);
         });
+      });
+    }
+  });
+
+  group('done', () {
+    const Size phone = Size(390, 844);
+
+    Future<void> startDeleting(WidgetTester tester) async {
+      await tester.enterText(byKey('code-field'), '123456');
+      await tester.pump();
+      await tester.tap(byKey('delete-submit'));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+    }
+
+    double fade(WidgetTester tester) => tester
+        .widget<FadeTransition>(
+          find
+              .ancestor(
+                of: byKey('account-deleted'),
+                matching: find.byType(FadeTransition),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    testWidgets('the done page fades in over the code screen', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      await startDeleting(tester);
+
+      expect(byKey('account-deleted'), findsOneWidget);
+      expect(fade(tester), lessThan(0.1));
+      await tester.pump(const Duration(milliseconds: 160));
+
+      expect(byKey('delete-account-screen'), findsOneWidget);
+      expect(byKey('account-deleted'), findsOneWidget);
+      expect(fade(tester), inExclusiveRange(0.3, 1));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(fade(tester), 1);
+      await tester.pumpAndSettle();
+      await finish(tester);
+    });
+
+    testWidgets('a calm grey check and the true words', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      await submit(tester, '123456');
+
+      final Finder circle = byKey('account-deleted-check');
+      expect(tester.getSize(circle), const Size(84, 84));
+      final DecoratedBox box = tester.widget<DecoratedBox>(
+        find.descendant(of: circle, matching: find.byType(DecoratedBox)).first,
+      );
+      expect((box.decoration as BoxDecoration).color, KitColors.chip);
+      final Icon icon = tester.widget<Icon>(
+        find.descendant(of: circle, matching: find.byType(Icon)),
+      );
+      expect(icon.icon, Icons.check);
+      expect(icon.size, 40);
+      expect(icon.color, KitColors.ink2);
+      expect(
+        find.descendant(
+          of: byKey('account-deleted'),
+          matching: find.byWidgetPredicate(
+            (Widget w) =>
+                w is DecoratedBox &&
+                w.decoration is BoxDecoration &&
+                (w.decoration as BoxDecoration).color == KitColors.primary,
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.text(
+          'Имя, номер телефона, адреса и избранное стёрты. '
+          'Заказы остались — без имени, для учёта.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Спасибо, что были с нами.'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('the title is announced', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      tester.takeAnnouncements();
+      await submit(tester, '123456');
+
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Аккаунт удалён'),
+      );
+      await finish(tester);
+    });
+
+    testWidgets('a deletion forgets the address and the searches of that '
+        'account only', (tester) async {
+      final String addressKey = DeliveryAddressChoice.preferenceKey('c');
+      preferences.values[addressKey] = 'a1';
+      preferences.values[DeliveryAddressChoice.preferenceKey('other')] = 'a2';
+      preferences.values[RecentSearches.preferenceKey('other')] = '["x"]';
+      await openCodeScreen(tester, size: phone);
+
+      await submit(tester, '123456');
+
+      expect(preferences.values.containsKey(addressKey), isFalse);
+      expect(preferences.values.containsKey(searchesKey), isFalse);
+      expect(
+        preferences.values[DeliveryAddressChoice.preferenceKey('other')],
+        'a2',
+      );
+      expect(
+        preferences.values[RecentSearches.preferenceKey('other')],
+        '["x"]',
+      );
+      await finish(tester);
+    });
+
+    testWidgets('Готово leads to sign-in', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      await submit(tester, '123456');
+      await tester.tap(byKey('account-deleted-done'));
+      await tester.pumpAndSettle();
+      expect(location(tester), AppPaths.auth);
+      await finish(tester);
+    });
+
+    testWidgets('system back leads to sign-in', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      await submit(tester, '123456');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(location(tester), AppPaths.auth);
+      await finish(tester);
+    });
+
+    testWidgets('the check circle scales and fades in', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      await submit(tester, '123456');
+
+      final Finder scale = find.ancestor(
+        of: byKey('account-deleted-check'),
+        matching: find.byType(ScaleTransition),
+      );
+      expect(scale, findsOneWidget);
+      expect(tester.widget<ScaleTransition>(scale).scale.value, 1);
+      await finish(tester);
+    });
+
+    testWidgets('with reduced motion the check only fades', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await openCodeScreen(tester, size: phone);
+      await submit(tester, '123456');
+
+      expect(
+        find.ancestor(
+          of: byKey('account-deleted-check'),
+          matching: find.byType(ScaleTransition),
+        ),
+        findsNothing,
+      );
+      await finish(tester);
+    });
+
+    for (final double scale in <double>[1, 2]) {
+      testWidgets('tap targets at x$scale', (tester) async {
+        await openCodeScreen(
+          tester,
+          size: scale == 1 ? phone : const Size(360, 640),
+          textScaler: scale == 1
+              ? TextScaler.noScaling
+              : NonlinearTextScaler(scale),
+        );
+        await submit(tester, '123456');
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await finish(tester);
       });
     }
   });

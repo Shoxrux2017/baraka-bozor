@@ -8399,8 +8399,14 @@ abstract class AppLocalizations {
   /// No description provided for @deletedBody.
   ///
   /// In uz, this message translates to:
-  /// **'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.'**
+  /// **'Ism, telefon raqami, manzillar va sevimlilar o\'chirildi. Buyurtmalar qoldi — ismsiz, hisob uchun.'**
   String get deletedBody;
+
+  /// No description provided for @deletedThanks.
+  ///
+  /// In uz, this message translates to:
+  /// **'Biz bilan bo\'lganingiz uchun rahmat.'**
+  String get deletedThanks;
 
   /// No description provided for @shopperMarketPer.
   ///

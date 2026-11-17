@@ -5100,7 +5100,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deletedTitle => 'Аккаунт удалён';
 
   @override
-  String get deletedBody => 'Ваши данные стёрты.\nСпасибо, что были с нами.';
+  String get deletedBody =>
+      'Имя, номер телефона, адреса и избранное стёрты. Заказы остались — без имени, для учёта.';
+
+  @override
+  String get deletedThanks => 'Спасибо, что были с нами.';
 
   @override
   String shopperMarketPer(String price, String unit) {

@@ -3266,7 +3266,8 @@
   "deleteCodeHeading": "Подтвердите удаление",
   "profileDeleteAccount": "Удалить аккаунт",
   "deletedTitle": "Аккаунт удалён",
-  "deletedBody": "Ваши данные стёрты.\nСпасибо, что были с нами.",
+  "deletedBody": "Имя, номер телефона, адреса и избранное стёрты. Заказы остались — без имени, для учёта.",
+  "deletedThanks": "Спасибо, что были с нами.",
   "shopperMarketPer": "Рыночная {price} за {unit}",
   "@shopperMarketPer": {
     "placeholders": {

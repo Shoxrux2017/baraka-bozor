@@ -1,19 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/accessibility/announce.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 
 /// Screen 36в: the account is deleted. An open page, so it stays on screen
 /// once the session is gone; "Готово" and system back lead to the phone
-/// screen.
-class AccountDeletedScreen extends StatelessWidget {
+/// screen. It fades in (`fadingPage`), its title is announced, and the grey
+/// check comes in once (`DL-140`).
+class AccountDeletedScreen extends StatefulWidget {
   const AccountDeletedScreen({super.key});
+
+  @override
+  State<AccountDeletedScreen> createState() => _AccountDeletedScreenState();
+}
+
+class _AccountDeletedScreenState extends State<AccountDeletedScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entrance;
+  CurvedAnimation? _curve;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        announce(context, AppLocalizations.of(context).deletedTitle);
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) {
+      return;
+    }
+    // Decided once, when the page first builds: the circle comes in a single
+    // time.
+    _started = true;
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    _entrance.duration = Duration(milliseconds: reduced ? 200 : 450);
+    _curve = CurvedAnimation(
+      parent: _entrance,
+      curve: reduced ? Curves.linear : const Cubic(0.2, 0.8, 0.2, 1),
+    );
+    _entrance.forward();
+  }
+
+  @override
+  void dispose() {
+    _curve?.dispose();
+    _entrance.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    final Animation<double> curve = _curve!;
+
+    Widget check = Container(
+      key: const ValueKey<String>('account-deleted-check'),
+      width: 84,
+      height: 84,
+      decoration: const BoxDecoration(
+        color: KitColors.chip,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: const Icon(Icons.check, size: 40, color: KitColors.ink2),
+    );
+    if (!reduced) {
+      check = ScaleTransition(
+        scale: Tween<double>(begin: 0.9, end: 1).animate(curve),
+        child: check,
+      );
+    }
+    check = FadeTransition(opacity: curve, child: check);
 
     return PopScope(
       canPop: false,
@@ -31,32 +100,11 @@ class AccountDeletedScreen extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Container(
-                          width: 130,
-                          height: 130,
-                          decoration: const BoxDecoration(
-                            color: KitColors.primaryWash,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Container(
-                            width: 90,
-                            height: 90,
-                            decoration: const BoxDecoration(
-                              color: KitColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check_circle,
-                              size: 44,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                        check,
                         const SizedBox(height: 24),
                         Semantics(
                           header: true,
@@ -70,13 +118,23 @@ class AccountDeletedScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
                           l10n.deletedBody,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.5,
+                            color: KitColors.ink2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.deletedThanks,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             fontSize: 13,
-                            height: 1.4,
+                            height: 1.45,
                             color: KitColors.muted,
                           ),
                         ),
