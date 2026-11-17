@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smart_auth/smart_auth.dart';
 
@@ -36,7 +37,8 @@ class SmartAuthPhoneNumberHint implements PhoneNumberHint {
         return null;
       }
       return nationalDigitsFromHint(number);
-    } on Object {
+    } on PlatformException {
+      // The picker is a convenience: when it fails, the person types.
       return null;
     }
   }
