@@ -9,6 +9,7 @@ import '../application/addresses_controllers.dart';
 import '../data/device_location.dart';
 import '../domain/addresses.dart';
 import 'map/address_map.dart';
+import 'map/map_pin.dart';
 
 /// What the map step hands on: the point the Customer confirmed and the
 /// address as they typed it, when they did (`DL-84` (2), `DL-86` (3)).
@@ -185,6 +186,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
         initial: widget.initial,
         mover: _mover,
         enabled: true,
+        onMoveStarted: () {},
         onMoved: _moved,
       ),
     ),
@@ -202,9 +204,11 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
             initial: widget.initial,
             mover: _mover,
             enabled: true,
+            onMoveStarted: () {},
             onMoved: _moved,
           ),
         ),
+        const Positioned.fill(child: MapPin(lifted: false, drops: 0)),
         Positioned(left: 16, right: 16, top: 14, child: _searchField(l10n)),
         Positioned(
           left: 16,

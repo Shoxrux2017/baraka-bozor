@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../../core/theme/kit_colors.dart';
+import '../../domain/address_search.dart';
 import '../../domain/addresses.dart';
 import 'address_map.dart';
 
@@ -22,12 +24,16 @@ final class GoogleAddressMap implements AddressMap {
     required GeoPoint initial,
     required PointMapMover mover,
     required bool enabled,
+    required VoidCallback onMoveStarted,
     required ValueChanged<GeoPoint> onMoved,
+    ServiceArea? zone,
   }) => _GooglePicker(
     initial: initial,
     mover: mover,
     enabled: enabled,
+    onMoveStarted: onMoveStarted,
     onMoved: onMoved,
+    zone: zone,
   );
 
   @override
@@ -37,9 +43,8 @@ final class GoogleAddressMap implements AddressMap {
 LatLng _latLng(GeoPoint point) =>
     LatLng(point.latitudeDegrees, point.longitudeDegrees);
 
-/// The drawing's pin: its tip marks the point, so the icon sits above the
-/// centre, with a small shadow under the tip. A drag that starts on it moves
-/// the map.
+/// The preview's still pin: its tip marks the point, so the icon sits above
+/// the centre, with a small shadow under the tip.
 class _CentrePin extends StatelessWidget {
   const _CentrePin({required this.size});
 
@@ -69,6 +74,59 @@ class _CentrePin extends StatelessWidget {
   );
 }
 
+/// The zone on the map (`DL-138`): the world outside the circle dimmed, and
+/// the circle's edge dashed green. The circle is 72 points.
+@visibleForTesting
+({Polygon dim, Polyline edge}) zoneOverlay(ServiceArea zone) {
+  const int steps = 72;
+  const double earthKm = 6371.0088;
+  const double outer = 5;
+  final double radius = double.parse(zone.radiusKm) / earthKm;
+  final double lat = zone.centre.latitudeDegrees * math.pi / 180;
+  final double lng = zone.centre.longitudeDegrees * math.pi / 180;
+  LatLng onCircle(int step) {
+    final double bearing = 2 * math.pi * step / steps;
+    final double pointLat = math.asin(
+      math.sin(lat) * math.cos(radius) +
+          math.cos(lat) * math.sin(radius) * math.cos(bearing),
+    );
+    final double pointLng =
+        lng +
+        math.atan2(
+          math.sin(bearing) * math.sin(radius) * math.cos(lat),
+          math.cos(radius) - math.sin(lat) * math.sin(pointLat),
+        );
+    return LatLng(pointLat * 180 / math.pi, pointLng * 180 / math.pi);
+  }
+
+  final List<LatLng> circle = <LatLng>[
+    for (int i = 0; i < steps; i++) onCircle(i),
+  ];
+  final double centreLat = zone.centre.latitudeDegrees;
+  final double centreLng = zone.centre.longitudeDegrees;
+  return (
+    dim: Polygon(
+      polygonId: const PolygonId('zone-dim'),
+      points: <LatLng>[
+        LatLng(centreLat - outer, centreLng - outer),
+        LatLng(centreLat - outer, centreLng + outer),
+        LatLng(centreLat + outer, centreLng + outer),
+        LatLng(centreLat + outer, centreLng - outer),
+      ],
+      holes: <List<LatLng>>[circle],
+      fillColor: const Color(0x21151D16),
+      strokeWidth: 0,
+    ),
+    edge: Polyline(
+      polylineId: const PolylineId('zone-edge'),
+      points: <LatLng>[...circle, circle.first],
+      color: KitColors.primary,
+      width: 3,
+      patterns: <PatternItem>[PatternItem.dash(12), PatternItem.gap(8)],
+    ),
+  );
+}
+
 /// Tells the application's own camera moves from the Customer's, so the
 /// app's move never rounds a stored point (`DL-23` (3)). The plugin's
 /// `animateCamera` completes when the call is dispatched, not when the
@@ -91,9 +149,11 @@ class CameraMoveClassifier {
   }
 
   /// A camera move started: the Customer's unless the app asked for it.
-  void moveStarted() {
+  /// Returns whether it is the Customer's.
+  bool moveStarted() {
     _customerMove = !_appMoveExpected;
     _appMoveExpected = false;
+    return _customerMove;
   }
 
   /// The camera is at [latitude], [longitude].
@@ -120,13 +180,17 @@ class _GooglePicker extends StatefulWidget {
     required this.initial,
     required this.mover,
     required this.enabled,
+    required this.onMoveStarted,
     required this.onMoved,
+    required this.zone,
   });
 
   final GeoPoint initial;
   final PointMapMover mover;
   final bool enabled;
+  final VoidCallback onMoveStarted;
   final ValueChanged<GeoPoint> onMoved;
+  final ServiceArea? zone;
 
   @override
   State<_GooglePicker> createState() => _GooglePickerState();
@@ -172,6 +236,10 @@ class _GooglePickerState extends State<_GooglePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final ServiceArea? zone = widget.zone;
+    final ({Polygon dim, Polyline edge})? overlay = zone == null
+        ? null
+        : zoneOverlay(zone);
     return AbsorbPointer(
       absorbing: !widget.enabled,
       child: Stack(
@@ -182,6 +250,8 @@ class _GooglePickerState extends State<_GooglePicker> {
               target: _latLng(widget.initial),
               zoom: 16,
             ),
+            polygons: overlay == null ? const <Polygon>{} : {overlay.dim},
+            polylines: overlay == null ? const <Polyline>{} : {overlay.edge},
             zoomControlsEnabled: false,
             myLocationButtonEnabled: false,
             mapToolbarEnabled: false,
@@ -198,7 +268,11 @@ class _GooglePickerState extends State<_GooglePicker> {
               // A move asked for before the map existed is made now.
               unawaited(_moverMoved());
             },
-            onCameraMoveStarted: _moves.moveStarted,
+            onCameraMoveStarted: () {
+              if (_moves.moveStarted()) {
+                widget.onMoveStarted();
+              }
+            },
             onCameraMove: (CameraPosition position) => _moves.moved(
               position.target.latitude,
               position.target.longitude,
@@ -210,7 +284,6 @@ class _GooglePickerState extends State<_GooglePicker> {
               }
             },
           ),
-          const _CentrePin(size: 48),
         ],
       ),
     );

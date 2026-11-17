@@ -5,6 +5,7 @@ import 'package:baraka_bozor/features/addresses/data/device_location.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/address_point_step.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/map_pin.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/point_fields_address_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,11 +104,16 @@ void main() {
     expect(confirmed.single.words, isNull);
   });
 
-  testWidgets('the step draws no pin of its own: the map owns it', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('the step draws the pin over a movable map and none over the '
+      'fields', (WidgetTester tester) async {
     await open(tester);
 
+    expect(find.byType(MapPin), findsOneWidget);
+    expect(find.byIcon(Icons.location_on), findsOneWidget);
+
+    await open(tester, map: const PointFieldsAddressMap());
+
+    expect(find.byType(MapPin), findsNothing);
     expect(find.byIcon(Icons.location_on), findsNothing);
   });
 

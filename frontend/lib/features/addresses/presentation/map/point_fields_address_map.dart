@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../domain/address_search.dart';
 import '../../domain/addresses.dart';
 import 'address_map.dart';
 import 'point_fields.dart';
@@ -17,7 +18,9 @@ final class PointFieldsAddressMap implements AddressMap {
     required GeoPoint initial,
     required PointMapMover mover,
     required bool enabled,
+    required VoidCallback onMoveStarted,
     required ValueChanged<GeoPoint> onMoved,
+    ServiceArea? zone,
   }) => pointFieldsPicker(initial: initial, enabled: enabled, onMoved: onMoved);
 
   @override
