@@ -9643,6 +9643,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yangi kod olish mumkin'**
   String get codeLockDoneSpoken;
+
+  /// No description provided for @codePaste.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni qo\'yish'**
+  String get codePaste;
+
+  /// No description provided for @codeOpenTelegram.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telegramni ochish'**
+  String get codeOpenTelegram;
+
+  /// No description provided for @codeNotArrived.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod kelmadimi?'**
+  String get codeNotArrived;
+
+  /// No description provided for @codeNotArrivedText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga {phone} raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda. Telegram boshqa raqamda bo\'lsa, raqamni o\'zgartiring.'**
+  String codeNotArrivedText(String phone);
+
+  /// No description provided for @codeNotArrivedTextOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod {phone} raqamiga keladi. Raqam xato terilgan bo\'lsa, uni o\'zgartiring.'**
+  String codeNotArrivedTextOther(String phone);
 }
 
 class _AppLocalizationsDelegate

@@ -3975,5 +3975,24 @@
       }
     }
   },
-  "codeLockDoneSpoken": "Можно получить новый код"
+  "codeLockDoneSpoken": "Можно получить новый код",
+  "codePaste": "Вставить код",
+  "codeOpenTelegram": "Открыть Telegram",
+  "codeNotArrived": "Не пришёл код?",
+  "codeNotArrivedText": "Код приходит сообщением в Telegram на номер {phone}. Откройте Telegram на этом телефоне: код — в самом новом сообщении. Если Telegram на другом номере — измените номер.",
+  "@codeNotArrivedText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeNotArrivedTextOther": "Код приходит на номер {phone}. Если номер набран с ошибкой — измените его.",
+  "@codeNotArrivedTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  }
 }

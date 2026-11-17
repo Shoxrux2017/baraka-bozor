@@ -5980,4 +5980,23 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get codeLockDoneSpoken => 'Yangi kod olish mumkin';
+
+  @override
+  String get codePaste => 'Kodni qo\'yish';
+
+  @override
+  String get codeOpenTelegram => 'Telegramni ochish';
+
+  @override
+  String get codeNotArrived => 'Kod kelmadimi?';
+
+  @override
+  String codeNotArrivedText(String phone) {
+    return 'Kod Telegramga $phone raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda. Telegram boshqa raqamda bo\'lsa, raqamni o\'zgartiring.';
+  }
+
+  @override
+  String codeNotArrivedTextOther(String phone) {
+    return 'Kod $phone raqamiga keladi. Raqam xato terilgan bo\'lsa, uni o\'zgartiring.';
+  }
 }

@@ -1649,8 +1649,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey<String>('auth-notice'), skipOffstage: false),
-        findsNothing,
-        reason: 'a failed resend shows on the code page only',
+        findsOneWidget,
+        reason: 'a failed resend shows on the code page only, once',
       );
     });
 

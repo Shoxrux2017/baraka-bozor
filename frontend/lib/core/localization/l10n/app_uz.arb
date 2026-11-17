@@ -4709,5 +4709,24 @@
       }
     }
   },
-  "codeLockDoneSpoken": "Yangi kod olish mumkin"
+  "codeLockDoneSpoken": "Yangi kod olish mumkin",
+  "codePaste": "Kodni qo'yish",
+  "codeOpenTelegram": "Telegramni ochish",
+  "codeNotArrived": "Kod kelmadimi?",
+  "codeNotArrivedText": "Kod Telegramga {phone} raqamiga xabar bo'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda. Telegram boshqa raqamda bo'lsa, raqamni o'zgartiring.",
+  "@codeNotArrivedText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeNotArrivedTextOther": "Kod {phone} raqamiga keladi. Raqam xato terilgan bo'lsa, uni o'zgartiring.",
+  "@codeNotArrivedTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -7,13 +7,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
-import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/submit_button.dart';
 import '../application/code_login_controller.dart';
+import '../data/clipboard_code.dart';
+import '../data/telegram_launcher.dart';
+import 'auth_notice.dart';
 import 'code_boxes.dart';
 import 'lock_card.dart';
+import 'no_code_sheet.dart';
 import 'rise_in.dart';
+import 'telegram_mark.dart';
 
 /// Steps 3 and 4 of `docs/04-user-flows.md` section 2: the code itself and
 /// the one button under it (`DL-139`).
@@ -54,6 +59,91 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
   Timer? _redTimer;
   bool _red = false;
 
+  /// The clipboard held text at the page's start or the app's last resume, so
+  /// the paste chip may show; it never reads the text before a tap.
+  bool _mayPaste = false;
+
+  /// The «Не пришёл код?» sheet is open and shows a refused resend itself.
+  bool _sheetOpen = false;
+
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _checkClipboard);
+    _checkClipboard();
+  }
+
+  Future<void> _checkClipboard() async {
+    final bool holds = await ref.read(clipboardCodeProvider).mayHoldCode();
+    if (mounted && holds != _mayPaste) {
+      setState(() => _mayPaste = holds);
+    }
+  }
+
+  /// A tap on the chip: a code fills the boxes and the usual paste verify
+  /// follows; none hides the chip until the next resume.
+  Future<void> _paste() async {
+    final String? code = await ref.read(clipboardCodeProvider).readCode();
+    if (!mounted) {
+      return;
+    }
+    if (code == null) {
+      setState(() => _mayPaste = false);
+      return;
+    }
+    _code.text = code;
+  }
+
+  Future<void> _openTelegram() async {
+    final bool opened = await ref.read(telegramLauncherProvider).open();
+    if (!opened && mounted) {
+      await _noCode();
+    }
+  }
+
+  Future<void> _noCode() async {
+    setState(() => _sheetOpen = true);
+    final bool sent = await showNoCodeSheet(context);
+    if (!mounted) {
+      return;
+    }
+    final CodeLoginController controller = ref.read(
+      codeLoginControllerProvider.notifier,
+    );
+    if (ref.read(codeLoginControllerProvider).failedAction ==
+        CodeLoginAction.resend) {
+      controller.clearFailure();
+    }
+    setState(() => _sheetOpen = false);
+    if (sent) {
+      _code.clear();
+    }
+  }
+
+  void _onNoticeAction(AuthNoticeAction action) {
+    switch (action) {
+      case AuthNoticeAction.retry:
+        unawaited(ref.read(codeLoginControllerProvider.notifier).retry());
+      case AuthNoticeAction.newCode:
+        unawaited(_resend());
+      case AuthNoticeAction.changeNumber:
+        unawaited(Navigator.of(context).maybePop());
+      case AuthNoticeAction.otherNumber:
+        break;
+    }
+  }
+
+  /// The failure this page shows: only a resend or a verify that failed (the
+  /// phone page shows a refused request).
+  ApiFailure? _noticeFailure(CodeLoginState state) {
+    final CodeLoginAction? action = state.failedAction;
+    return action == CodeLoginAction.resend || action == CodeLoginAction.verify
+        ? state.failure
+        : null;
+  }
+
   @override
   void didUpdateWidget(CodeEntry oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -75,6 +165,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _pending?.cancel();
     _redTimer?.cancel();
     _code.dispose();
@@ -202,12 +293,57 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
                 ),
               ),
             ),
-          FailureMessage(state.failure),
-          const SizedBox(height: 28),
+          if (_noticeFailure(state) case final ApiFailure failure
+              when !_sheetOpen)
+            AuthNotice(
+              view: authNoticeOf(
+                l10n,
+                failure,
+                phone: state.phone ?? '',
+                place: AuthNoticePlace.code,
+              ),
+              onAction: _onNoticeAction,
+            ),
           ListenableBuilder(
             listenable: _code,
-            builder: (BuildContext context, Widget? _) => _button(l10n, state),
+            builder: (BuildContext context, Widget? _) {
+              final bool showChip =
+                  _mayPaste &&
+                  state.entryOpen &&
+                  !state.busy &&
+                  _code.text.length < loginCodeLength &&
+                  _look == CodeBoxesLook.entry;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (showChip) _PasteChip(onTap: _paste),
+                  const SizedBox(height: 28),
+                  _button(l10n, state),
+                ],
+              );
+            },
           ),
+          if (telegram && state.entryOpen) ...<Widget>[
+            const SizedBox(height: 12),
+            _TelegramButton(onTap: _openTelegram),
+          ],
+          if (!state.locked)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: TextButton(
+                key: const ValueKey<String>('code-no-code'),
+                onPressed: _noCode,
+                style: TextButton.styleFrom(
+                  foregroundColor: KitColors.primaryDark,
+                  minimumSize: const Size(0, 44),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: Text(l10n.codeNotArrived),
+              ),
+            ),
         ],
       ),
     );
@@ -245,6 +381,76 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
         face: face,
         label: label,
         onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+/// «Вставить код»: a green-washed chip that reads the clipboard when tapped.
+class _PasteChip extends StatelessWidget {
+  const _PasteChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return RiseIn(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Center(
+          child: TextButton.icon(
+            key: const ValueKey<String>('code-paste'),
+            onPressed: onTap,
+            icon: const Icon(Icons.content_paste, size: 20),
+            label: Text(l10n.codePaste),
+            style: TextButton.styleFrom(
+              foregroundColor: KitColors.primaryDark,
+              backgroundColor: KitColors.primaryWash,
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «Открыть Telegram»: white, a hairline edge and the Telegram mark.
+class _TelegramButton extends StatelessWidget {
+  const _TelegramButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return OutlinedButton(
+      key: const ValueKey<String>('code-open-telegram'),
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: KitColors.ink,
+        backgroundColor: Colors.white,
+        minimumSize: const Size.fromHeight(54),
+        side: const BorderSide(color: KitColors.line),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const TelegramMark(size: 24),
+          const SizedBox(width: 10),
+          Flexible(child: Text(l10n.codeOpenTelegram)),
+        ],
       ),
     );
   }

@@ -6087,4 +6087,23 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get codeLockDoneSpoken => 'Можно получить новый код';
+
+  @override
+  String get codePaste => 'Вставить код';
+
+  @override
+  String get codeOpenTelegram => 'Открыть Telegram';
+
+  @override
+  String get codeNotArrived => 'Не пришёл код?';
+
+  @override
+  String codeNotArrivedText(String phone) {
+    return 'Код приходит сообщением в Telegram на номер $phone. Откройте Telegram на этом телефоне: код — в самом новом сообщении. Если Telegram на другом номере — измените номер.';
+  }
+
+  @override
+  String codeNotArrivedTextOther(String phone) {
+    return 'Код приходит на номер $phone. Если номер набран с ошибкой — измените его.';
+  }
 }
