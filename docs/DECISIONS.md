@@ -2166,3 +2166,4 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
     (e) A resend failure shown in the sheet clears when the sheet closes.
     (f) The consent text is 12 (was 11) in the app's font.
     (g) The sign-in caret blinks by a 530 ms timer, not a ticker, so tests settle; the checking pulse is a ticker only while a verify runs.
+    (h) `smart_auth` 3.2.0 pulls `androidx.credentials` 1.5.0-beta01, whose `androidx.biometric` 1.1.0 declares `USE_BIOMETRIC` and `USE_FINGERPRINT` for passkeys. The app uses neither biometrics nor passkeys, so the app manifest removes both (`tools:node="remove"`); the merged manifest of the debug build was checked. No SMS permission comes with the package.
