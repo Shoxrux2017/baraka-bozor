@@ -37,6 +37,18 @@ void main() {
   CodeLoginState state(ProviderContainer c) =>
       c.read(codeLoginControllerProvider);
 
+  /// Verifies and pumps past the accepted moment, so the answer is in.
+  Future<bool> verifyThrough(
+    WidgetTester tester,
+    ProviderContainer c,
+    String code,
+  ) async {
+    final Future<bool> result = controller(c).verify(code);
+    await tester.pump();
+    await tester.pump(codeAcceptedHold);
+    return result;
+  }
+
   setUp(() {
     tokens = InMemoryTokenStore();
     repository = FakeAuthRepository();
@@ -80,28 +92,31 @@ void main() {
     expect(state(c).busy, isFalse);
   });
 
-  test('a wrong code keeps the failure; the right one opens the session and clears the flow', () async {
-    repository.verifyFailure = refusal(422, 'code_invalid');
-    repository.verifyResult = IssuedSession(
-      token: 'c',
-      user: user(id: 'c'),
-    );
-    final ProviderContainer c = container();
-    await c.read(sessionControllerProvider.future);
-    await controller(c).requestCode('+998901234567');
+  testWidgets(
+    'a wrong code keeps the miss; the right one opens the session and clears the flow',
+    (WidgetTester tester) async {
+      repository.verifyFailure = refusal(422, 'code_invalid');
+      repository.verifyResult = IssuedSession(
+        token: 'c',
+        user: user(id: 'c'),
+      );
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      await controller(c).requestCode('+998901234567');
 
-    expect(await controller(c).verify('000000'), isFalse);
-    expect(state(c).failure?.code, 'code_invalid');
-    expect(state(c).hasCode, isTrue, reason: 'the code screen stays');
+      expect(await controller(c).verify('000000'), isFalse);
+      expect(state(c).wrongCode, isTrue);
+      expect(state(c).hasCode, isTrue, reason: 'the code screen stays');
 
-    repository.verifyFailure = null;
-    expect(await controller(c).verify('482913'), isTrue);
+      repository.verifyFailure = null;
+      expect(await verifyThrough(tester, c, '482913'), isTrue);
 
-    expect(repository.calls, contains('verify:+998901234567:482913'));
-    expect(state(c).hasCode, isFalse);
-    expect(c.read(sessionControllerProvider).value, isA<SignedIn>());
-    expect(tokens.tokens[SessionSlot.customer], 'c');
-  });
+      expect(repository.calls, contains('verify:+998901234567:482913'));
+      expect(state(c).hasCode, isFalse);
+      expect(c.read(sessionControllerProvider).value, isA<SignedIn>());
+      expect(tokens.tokens[SessionSlot.customer], 'c');
+    },
+  );
 
   test(
     'a request superseded by a reset is discarded when it answers',
@@ -121,29 +136,32 @@ void main() {
     },
   );
 
-  test('a verified code for a Shopper or Courier phone opens the customer session with a pending staff step', () async {
-    repository.verifyResult = IssuedSession(
-      token: 'c',
-      user: user(id: 'c', phone: '+998901111111'),
-    );
-    repository.staffSteps['+998901111111'] = StaffStep(
-      token: 'a' * 64,
-      expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
-    );
-    final ProviderContainer c = container();
-    await c.read(sessionControllerProvider.future);
+  testWidgets(
+    'a verified code for a Shopper or Courier phone opens the customer session with a pending staff step',
+    (WidgetTester tester) async {
+      repository.verifyResult = IssuedSession(
+        token: 'c',
+        user: user(id: 'c', phone: '+998901111111'),
+      );
+      repository.staffSteps['+998901111111'] = StaffStep(
+        token: 'a' * 64,
+        expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
+      );
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
 
-    expect(await controller(c).requestCode('+998901111111'), isTrue);
-    expect(await controller(c).verify('123456'), isTrue);
+      expect(await controller(c).requestCode('+998901111111'), isTrue);
+      expect(await verifyThrough(tester, c, '123456'), isTrue);
 
-    expect(repository.calls, contains('verify:+998901111111:123456'));
-    final SignedIn session =
-        c.read(sessionControllerProvider).value as SignedIn;
-    expect(session.activeMode, SessionMode.customer);
-    expect(session.staffStep?.token, 'a' * 64);
-    expect(session.staffUser, isNull);
-    expect(state(c).hasCode, isFalse, reason: 'the flow is over');
-  });
+      expect(repository.calls, contains('verify:+998901111111:123456'));
+      final SignedIn session =
+          c.read(sessionControllerProvider).value as SignedIn;
+      expect(session.activeMode, SessionMode.customer);
+      expect(session.staffStep?.token, 'a' * 64);
+      expect(session.staffUser, isNull);
+      expect(state(c).hasCode, isFalse, reason: 'the flow is over');
+    },
+  );
 
   test(
     'a refused resend keeps the code already on its way and shows why',
@@ -424,5 +442,195 @@ void main() {
 
     expect(await controller(c).verify('482913'), isFalse);
     expect(state(c).failure, isA<NetworkFailure>());
+  });
+
+  group('what runs, what failed and the accepted moment (DL-139)', () {
+    Future<ProviderContainer> withCode() async {
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      await controller(c).requestCode('+998901234567');
+      return c;
+    }
+
+    test('a wrong code counts a miss and the tries left', () async {
+      final ProviderContainer c = await withCode();
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(
+          status: 422,
+          code: 'code_invalid',
+          details: <String, Object?>{'attempts_left': 2},
+        ),
+      );
+
+      expect(await controller(c).verify('000000'), isFalse);
+
+      expect(state(c).wrongCode, isTrue);
+      expect(state(c).attemptsLeft, 2);
+      expect(state(c).misses, 1);
+      expect(state(c).failure, isNull);
+      expect(state(c).busy, isFalse);
+    });
+
+    test('a wrong code without details has no count', () async {
+      final ProviderContainer c = await withCode();
+      repository.verifyFailure = refusal(422, 'code_invalid');
+
+      await controller(c).verify('000000');
+      await controller(c).verify('000001');
+
+      expect(state(c).wrongCode, isTrue);
+      expect(state(c).attemptsLeft, isNull);
+      expect(state(c).misses, 2);
+    });
+
+    test(
+      'a new verify clears the wrong code; a resend resets the misses',
+      () async {
+        final ProviderContainer c = await withCode();
+        repository.verifyFailure = ApiRefusal(
+          const ApiError(
+            status: 422,
+            code: 'code_invalid',
+            details: <String, Object?>{'attempts_left': 1},
+          ),
+        );
+        await controller(c).verify('000000');
+        repository.holdAnswers = Completer<void>();
+
+        final Future<bool> again = controller(c).verify('000001');
+        expect(state(c).wrongCode, isFalse);
+        expect(state(c).attemptsLeft, isNull);
+        expect(state(c).misses, 1, reason: 'a miss stays until a code is sent');
+        repository.holdAnswers!.complete();
+        await again;
+        repository.holdAnswers = null;
+
+        expect(await controller(c).resend(), isTrue);
+        expect(state(c).misses, 0);
+        expect(state(c).wrongCode, isFalse);
+      },
+    );
+
+    test(
+      'a verify network failure can be retried with the same code',
+      () async {
+        final ProviderContainer c = await withCode();
+        repository.verifyFailure = const NetworkFailure();
+
+        expect(await controller(c).verify('482913'), isFalse);
+        expect(state(c).failure, isA<NetworkFailure>());
+        expect(state(c).failedAction, CodeLoginAction.verify);
+
+        expect(await controller(c).retry(), isFalse);
+
+        expect(
+          repository.calls.where(
+            (String call) => call == 'verify:+998901234567:482913',
+          ),
+          hasLength(2),
+        );
+      },
+    );
+
+    test('a request failure remembers its action', () async {
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      repository.requestFailure = const NetworkFailure();
+
+      expect(await controller(c).requestCode('+998901234567'), isFalse);
+      expect(state(c).failedAction, CodeLoginAction.request);
+
+      repository.requestFailure = null;
+      expect(await controller(c).retry(), isTrue);
+      expect(state(c).hasCode, isTrue);
+      expect(state(c).failedAction, isNull);
+
+      repository.requestFailure = const NetworkFailure();
+      expect(await controller(c).resend(), isFalse);
+      expect(state(c).failedAction, CodeLoginAction.resend);
+
+      controller(c).clearFailure();
+      expect(state(c).failure, isNull);
+      expect(state(c).failedAction, isNull);
+    });
+
+    testWidgets('a right code is accepted before the session opens', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyResult = IssuedSession(
+        token: 'c',
+        user: user(id: 'c'),
+      );
+      final ProviderContainer c = await withCode();
+
+      final Future<bool> result = controller(c).verify('482913');
+      await tester.pump();
+
+      expect(state(c).accepted, isTrue);
+      expect(state(c).busy, isFalse);
+      expect(c.read(sessionControllerProvider).value, isA<SignedOut>());
+      expect(tokens.tokens[SessionSlot.customer], isNull);
+
+      await tester.pump(codeAcceptedHold - const Duration(milliseconds: 1));
+      expect(c.read(sessionControllerProvider).value, isA<SignedOut>());
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(await result, isTrue);
+      expect(c.read(sessionControllerProvider).value, isA<SignedIn>());
+      expect(state(c).accepted, isFalse);
+    });
+
+    test('a second verify while one runs sends nothing', () async {
+      final ProviderContainer c = await withCode();
+      repository.holdAnswers = Completer<void>();
+      final Future<bool> first = controller(c).verify('111111');
+
+      expect(await controller(c).verify('222222'), isFalse);
+      expect(await controller(c).resend(), isFalse);
+      expect(await controller(c).retry(), isFalse);
+
+      repository.holdAnswers!.complete();
+      await first;
+      expect(
+        repository.calls.where((String call) => call.startsWith('verify:')),
+        hasLength(1),
+      );
+    });
+
+    test('a resend answer after changing the phone is dropped', () async {
+      final ProviderContainer c = await withCode();
+      repository.holdAnswers = Completer<void>();
+      final Future<bool> pending = controller(c).resend();
+
+      controller(c).changePhone();
+      repository.holdAnswers!.complete();
+
+      expect(await pending, isFalse);
+      expect(state(c).hasCode, isFalse);
+      expect(state(c).busy, isFalse);
+      expect(state(c).phone, '+998901234567');
+    });
+
+    testWidgets('change phone is refused while accepted', (
+      WidgetTester tester,
+    ) async {
+      repository.verifyResult = IssuedSession(
+        token: 'c',
+        user: user(id: 'c'),
+      );
+      final ProviderContainer c = await withCode();
+      final Future<bool> result = controller(c).verify('482913');
+      await tester.pump();
+      expect(state(c).accepted, isTrue);
+
+      controller(c).changePhone();
+      expect(state(c).accepted, isTrue);
+      expect(state(c).hasCode, isTrue);
+      expect(await controller(c).verify('482913'), isFalse);
+      expect(await controller(c).resend(), isFalse);
+
+      await tester.pump(codeAcceptedHold);
+      expect(await result, isTrue);
+    });
   });
 }

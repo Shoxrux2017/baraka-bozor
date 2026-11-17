@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/countdown_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -74,7 +75,16 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
             onSubmitted: _verify,
             enabled: state.entryOpen,
           ),
-          FailureMessage(state.failure),
+          // The wrong-code text is drawn by the attempts line later (DL-139);
+          // until then it keeps its old sentence.
+          FailureMessage(
+            state.failure ??
+                (state.wrongCode
+                    ? const ApiRefusal(
+                        ApiError(status: 422, code: 'code_invalid'),
+                      )
+                    : null),
+          ),
           LockMessage(
             lockedSeconds: state.lockedSeconds,
             lockOver: state.lockOver,

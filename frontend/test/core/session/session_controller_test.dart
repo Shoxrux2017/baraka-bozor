@@ -701,6 +701,32 @@ void main() {
   });
 
   group('logins', () {
+    test('beforeOpen runs before the state changes (DL-139)', () async {
+      repository.verifyResult = IssuedSession(
+        token: 'c',
+        user: user(id: 'c'),
+      );
+      final ProviderContainer c = container();
+      await bootstrap(c);
+      SessionState? seenInHook;
+      String? tokenInHook;
+
+      await controller(c).verifyCustomerCode(
+        phone: '+998901234567',
+        code: '000000',
+        beforeOpen: () async {
+          seenInHook = current(c);
+          tokenInHook = tokens.tokens[SessionSlot.customer];
+        },
+      );
+
+      expect(repository.calls, contains('verify:+998901234567:000000'));
+      expect(seenInHook, isA<SignedOut>());
+      expect(tokenInHook, isNull);
+      expect(current(c), isA<SignedIn>());
+      expect(tokens.tokens[SessionSlot.customer], 'c');
+    });
+
     test(
       'staff login stores the token in the staff slot and opens the staff mode',
       () async {
