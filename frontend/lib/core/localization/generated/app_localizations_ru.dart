@@ -5049,6 +5049,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deleteSendOffline => 'Нет связи — код не отправлен';
 
   @override
+  String get deleteEnterCode => 'Введите код из Telegram';
+
+  @override
+  String get deleteEnterCodeOther => 'Введите код';
+
+  @override
+  String get deleteDeleting => 'Удаляем аккаунт…';
+
+  @override
+  String get deleteCheckingSpoken => 'Проверяем, удалён ли аккаунт…';
+
+  @override
+  String get deleteOffline => 'Нет связи — аккаунт не удалён';
+
+  @override
+  String deleteNoCodeText(String phone) {
+    return 'Код приходит сообщением в Telegram на номер $phone. Откройте Telegram на этом телефоне: код — в самом новом сообщении.';
+  }
+
+  @override
+  String deleteNoCodeTextOther(String phone) {
+    return 'Код приходит на номер $phone.';
+  }
+
+  @override
   String get deleteBlockedTitle => 'Сейчас удалить нельзя';
 
   @override

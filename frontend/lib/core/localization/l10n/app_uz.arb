@@ -3681,6 +3681,27 @@
     }
   },
   "deleteSendOffline": "Aloqa yo'q — kod yuborilmadi",
+  "deleteEnterCode": "Telegramdagi kodni kiriting",
+  "deleteEnterCodeOther": "Kodni kiriting",
+  "deleteDeleting": "Akkaunt o'chirilmoqda…",
+  "deleteCheckingSpoken": "Akkaunt o'chirilganini tekshiryapmiz…",
+  "deleteOffline": "Aloqa yo'q — akkaunt o'chirilmadi",
+  "deleteNoCodeText": "Kod Telegramga {phone} raqamiga xabar bo'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda.",
+  "@deleteNoCodeText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteNoCodeTextOther": "Kod {phone} raqamiga keladi.",
+  "@deleteNoCodeTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "deleteBlockedTitle": "Hozir o'chirib bo'lmaydi",
   "deleteBlockedBody": "№ {number} buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o'chirish mumkin.",
   "@deleteBlockedBody": {

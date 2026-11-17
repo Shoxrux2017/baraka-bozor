@@ -8306,6 +8306,48 @@ abstract class AppLocalizations {
   /// **'Aloqa yo\'q — kod yuborilmadi'**
   String get deleteSendOffline;
 
+  /// No description provided for @deleteEnterCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telegramdagi kodni kiriting'**
+  String get deleteEnterCode;
+
+  /// No description provided for @deleteEnterCodeOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni kiriting'**
+  String get deleteEnterCodeOther;
+
+  /// No description provided for @deleteDeleting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt o\'chirilmoqda…'**
+  String get deleteDeleting;
+
+  /// No description provided for @deleteCheckingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt o\'chirilganini tekshiryapmiz…'**
+  String get deleteCheckingSpoken;
+
+  /// No description provided for @deleteOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — akkaunt o\'chirilmadi'**
+  String get deleteOffline;
+
+  /// No description provided for @deleteNoCodeText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga {phone} raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda.'**
+  String deleteNoCodeText(String phone);
+
+  /// No description provided for @deleteNoCodeTextOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod {phone} raqamiga keladi.'**
+  String deleteNoCodeTextOther(String phone);
+
   /// No description provided for @deleteBlockedTitle.
   ///
   /// In uz, this message translates to:

@@ -3237,6 +3237,27 @@
     }
   },
   "deleteSendOffline": "Нет связи — код не отправлен",
+  "deleteEnterCode": "Введите код из Telegram",
+  "deleteEnterCodeOther": "Введите код",
+  "deleteDeleting": "Удаляем аккаунт…",
+  "deleteCheckingSpoken": "Проверяем, удалён ли аккаунт…",
+  "deleteOffline": "Нет связи — аккаунт не удалён",
+  "deleteNoCodeText": "Код приходит сообщением в Telegram на номер {phone}. Откройте Telegram на этом телефоне: код — в самом новом сообщении.",
+  "@deleteNoCodeText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteNoCodeTextOther": "Код приходит на номер {phone}.",
+  "@deleteNoCodeTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "deleteBlockedTitle": "Сейчас удалить нельзя",
   "deleteBlockedBody": "Заказ № {number} ещё не завершён. Удалить аккаунт можно после доставки или отмены заказа.",
   "understoodButton": "Понятно",

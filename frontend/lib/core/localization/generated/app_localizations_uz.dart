@@ -4993,6 +4993,31 @@ class AppLocalizationsUz extends AppLocalizations {
   String get deleteSendOffline => 'Aloqa yo\'q — kod yuborilmadi';
 
   @override
+  String get deleteEnterCode => 'Telegramdagi kodni kiriting';
+
+  @override
+  String get deleteEnterCodeOther => 'Kodni kiriting';
+
+  @override
+  String get deleteDeleting => 'Akkaunt o\'chirilmoqda…';
+
+  @override
+  String get deleteCheckingSpoken => 'Akkaunt o\'chirilganini tekshiryapmiz…';
+
+  @override
+  String get deleteOffline => 'Aloqa yo\'q — akkaunt o\'chirilmadi';
+
+  @override
+  String deleteNoCodeText(String phone) {
+    return 'Kod Telegramga $phone raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda.';
+  }
+
+  @override
+  String deleteNoCodeTextOther(String phone) {
+    return 'Kod $phone raqamiga keladi.';
+  }
+
+  @override
   String get deleteBlockedTitle => 'Hozir o\'chirib bo\'lmaydi';
 
   @override
