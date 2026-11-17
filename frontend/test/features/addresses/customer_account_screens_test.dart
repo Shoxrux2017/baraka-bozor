@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/core/widgets/shake.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
@@ -1238,6 +1239,57 @@ void main() {
         expect(addresses.saved, isEmpty);
         await tester.pumpAndSettle();
         handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'a gap whose row is not built is still brought into view, with the '
+      'keyboard up and text x2',
+      (WidgetTester tester) async {
+        await openDetails(tester, textScaler: const NonlinearTextScaler(2));
+        final List<String> taps = haptics(tester);
+        await tester.scrollUntilVisible(
+          byKey('label-custom'),
+          200,
+          scrollable: find
+              .descendant(
+                of: byKey('address-form'),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tapAndSettle(tester, byKey('label-custom'));
+        await tester.enterText(byKey('field-label'), 'Dacha');
+        await tester.drag(byKey('address-form'), const Offset(0, -4000));
+        await tester.pumpAndSettle();
+        tester.view.viewInsets = const FakeViewPadding(bottom: 250);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+        expect(byKey('label-of-street'), findsNothing, reason: 'not built');
+
+        await tester.tap(byKey('address-save'));
+        await tester.pumpAndSettle();
+
+        final double listTop = tester.getTopLeft(byKey('address-form')).dy;
+        expect(
+          tester.getTopLeft(byKey('label-of-street')).dy - listTop,
+          closeTo(12, 0.5),
+        );
+        expect(focusOf(tester, 'street').hasFocus, isTrue);
+        expect(
+          tester
+              .widget<Shake>(
+                find.ancestor(
+                  of: byKey('label-of-street'),
+                  matching: find.byType(Shake),
+                ),
+              )
+              .trigger,
+          1,
+          reason: 'the field shook',
+        );
+        expect(taps, <String>['HapticFeedbackType.warningNotification']);
+        expect(addresses.saved, isEmpty);
       },
     );
 

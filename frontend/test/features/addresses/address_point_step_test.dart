@@ -467,6 +467,71 @@ void main() {
     expect(taps, isEmpty);
   });
 
+  testWidgets('a camera report with no finger on the map is not the '
+      "Customer's move", (WidgetTester tester) async {
+    final List<String> taps = haptics(tester);
+    final FakeAddressMap map = FakeAddressMap();
+    search.places[fakeDoor] = const PointAddress(
+      line: 'Navoiy 12',
+      houseKnown: true,
+    );
+    await open(tester, map: map, placed: false);
+
+    map.emitSystemCamera(fakeDoor);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+
+    expect(pin(tester).lifted, isFalse);
+    expect(pin(tester).drops, 0);
+    expect(taps, isEmpty);
+    expect(search.lookups, isEmpty);
+    expect(confirmButton(tester).onPressed, isNull);
+    expect(byKey('address-point-place'), findsNothing);
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.ancestor(
+              of: byKey('address-point-hint'),
+              matching: find.byType(AnimatedOpacity),
+            ),
+          )
+          .opacity,
+      1,
+    );
+  });
+
+  testWidgets('a held silent fix still lands after a camera report with no '
+      'finger', (WidgetTester tester) async {
+    final FakeAddressMap map = FakeAddressMap();
+    location.holdSilent = true;
+    await open(tester, map: map, placed: false);
+
+    map.emitSystemCamera(fakeDoor);
+    await tester.pump();
+    location.releaseSilent(found);
+    await tester.pump();
+    await tester.pump();
+
+    expect(target(tester), '41.299512,69.240146');
+    await confirm(tester);
+    expect(confirmed.single.point, found);
+  });
+
+  testWidgets('a finger that lifted without moving the map does not make a '
+      "later camera report the Customer's", (WidgetTester tester) async {
+    final FakeAddressMap map = FakeAddressMap();
+    await open(tester, map: map, placed: false);
+
+    await tester.tapAt(const Offset(10, 300));
+    await tester.pump(const Duration(seconds: 1));
+    map.emitSystemCamera(fakeDoor);
+    await tester.pump();
+
+    expect(pin(tester).lifted, isFalse);
+    expect(confirmButton(tester).onPressed, isNull);
+  });
+
   testWidgets('the hint fades after the first move', (
     WidgetTester tester,
   ) async {

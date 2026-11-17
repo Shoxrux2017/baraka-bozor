@@ -577,8 +577,10 @@ class _AddressFormState extends ConsumerState<_AddressForm>
     if (!mounted) {
       return;
     }
-    final RenderObject? box = _labelKeys[key]!.currentContext
-        ?.findRenderObject();
+    final RenderObject? box = await _builtLabel(key);
+    if (!mounted) {
+      return;
+    }
     if (_scroll.hasClients) {
       final RenderAbstractViewport? viewport = box == null
           ? null
@@ -606,6 +608,36 @@ class _AddressFormState extends ConsumerState<_AddressForm>
     }
     _focus[key]!.requestFocus();
     setState(() => _shakes[key] = (_shakes[key] ?? 0) + 1);
+  }
+
+  /// The label of [key] once its row is built. The list builds only the rows
+  /// in view, so a row far above or below is not there: the list jumps toward
+  /// it (where its place in the form says it lies, then to either end) and
+  /// waits for the frame, until the row exists (`DL-138`).
+  Future<RenderObject?> _builtLabel(String key) async {
+    RenderObject? built() => _labelKeys[key]!.currentContext?.findRenderObject();
+    if (built() != null || !_scroll.hasClients) {
+      return built();
+    }
+    final ScrollPosition position = _scroll.position;
+    final int at = _order.indexOf(key);
+    final double share = _order.length < 2 ? 0 : at / (_order.length - 1);
+    for (final double guess in <double>[
+      position.minScrollExtent +
+          (position.maxScrollExtent - position.minScrollExtent) * share,
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    ]) {
+      _scroll.jumpTo(guess);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return null;
+      }
+      if (built() != null) {
+        return built();
+      }
+    }
+    return null;
   }
 
   /// The label a field carries over it, without "необязательно".

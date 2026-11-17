@@ -89,6 +89,9 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   /// The wait after the pin came to rest before the address is asked for.
   static const Duration _lookupWait = Duration(milliseconds: 400);
 
+  /// How long a lifted finger still owns the next camera start.
+  static const Duration _touchGrace = Duration(milliseconds: 600);
+
   /// A rest this near the last looked-up point asks nothing again.
   static const double _reuseMetres = 15;
 
@@ -124,6 +127,13 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   /// latest touch is not heard. The map's own camera reports are not touches:
   /// Android sends them too when its permission windows cover the screen.
   int _touches = 0;
+
+  /// A finger is on the map, or lifted a moment ago: only then is a camera
+  /// start the Customer's. Android's SDK also reports camera moves when the
+  /// keyboard resizes the map or a window covers it (`DL-86` (7)); those have
+  /// no finger behind them (`DL-138`).
+  bool _touching = false;
+  Timer? _touchEnd;
 
   /// Counts what takes the pin out of the silent fix's hands: a touch, a
   /// search, "где я".
@@ -190,6 +200,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   void dispose() {
     _rise?.dispose();
     _lookupTimer?.cancel();
+    _touchEnd?.cancel();
     _mover.dispose();
     _field.dispose();
     super.dispose();
@@ -198,6 +209,9 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   /// The Customer put a finger to move the map: the pin lifts and the old
   /// address is no longer the pin's.
   void _moveStarted() {
+    if (!_touching) {
+      return;
+    }
     _intent++;
     _lookupTimer?.cancel();
     _lookupId++;
@@ -206,6 +220,13 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
       _hintGone = true;
       _lookupPending = false;
     });
+  }
+
+  /// The finger left the map; its camera start may still be on the way from
+  /// the platform, so the touch counts for a moment longer.
+  void _fingerLifted() {
+    _touchEnd?.cancel();
+    _touchEnd = Timer(_touchGrace, () => _touching = false);
   }
 
   /// The map came to rest at [point]. After the Customer's own move the pin
@@ -548,7 +569,11 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
                 onPointerDown: (_) {
                   _touches++;
                   _intent++;
+                  _touchEnd?.cancel();
+                  _touching = true;
                 },
+                onPointerUp: (_) => _fingerLifted(),
+                onPointerCancel: (_) => _fingerLifted(),
                 child: map.picker(
                   initial: widget.initial,
                   mover: _mover,

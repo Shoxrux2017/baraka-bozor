@@ -23,6 +23,7 @@ class FakeAddressMap implements AddressMap {
   @override
   final bool movable;
 
+  VoidCallback? _onMoveStarted;
   ValueChanged<GeoPoint>? _onMoved;
 
   /// The zone the step last gave the map.
@@ -30,6 +31,15 @@ class FakeAddressMap implements AddressMap {
 
   /// Reports a move the way a camera event does: no finger on the map.
   void emitMove(GeoPoint point) => _onMoved!(point);
+
+  /// Reports a camera move the way the SDK does when the keyboard resizes the
+  /// map or a permission window covers it: a start and a rest with no finger
+  /// on the map (`DL-86` (7), `DL-138`). A method, not a button: tapping a
+  /// button puts a pointer on the map.
+  void emitSystemCamera(GeoPoint point) {
+    _onMoveStarted!();
+    _onMoved!(point);
+  }
 
   @override
   Widget picker({
@@ -40,6 +50,7 @@ class FakeAddressMap implements AddressMap {
     required ValueChanged<GeoPoint> onMoved,
     ServiceArea? zone,
   }) {
+    _onMoveStarted = onMoveStarted;
     _onMoved = onMoved;
     this.zone = zone;
     return ListenableBuilder(
