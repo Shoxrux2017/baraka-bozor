@@ -14,4 +14,9 @@ final class UnconfiguredGeocoder implements AddressGeocoder
     {
         throw new GeocoderUnavailable;
     }
+
+    public function describe(string $latitude, string $longitude, string $language): ?PointAddress
+    {
+        throw new GeocoderUnavailable;
+    }
 }

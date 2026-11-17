@@ -34,7 +34,7 @@ Rules for every stage:
 | 15 | Rating | 10 | `reviewed_at` | Merged (PR #137) |
 | 16 | Profile and name | 18 | — | Merged (PR #138) |
 | 17 | Documents | 9 | — | Merged (PR #140) |
-| 18 | Addresses | 9 | — | Planned |
+| 18 | Addresses | 9 | — | Merged (PR #141) |
 | 19 | New address | 12 | reverse geocoding, zone | Planned |
 | 20 | Sign-in | 14 | tries left | Planned |
 | 21 | Account deletion | 11 | erasure race | Planned |

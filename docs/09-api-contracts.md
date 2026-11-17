@@ -92,6 +92,10 @@ Resolves the active Customer account or creates one when none is active, records
 
 `POST /customer/address-search` looks up an address typed in words (`DL-86` item 1): body `query` (3–200). It answers `{data: {latitude, longitude}}`, the point to move the map to, or `{data: null}` when nothing narrower than a city was found. The point is a suggestion: an address keeps the point the Customer confirms. `503 provider_unavailable` while the lookup cannot answer; `429 rate_limited` past 10 a minute or 30 a day per Customer.
 
+`POST /customer/address-search/reverse` names the point under the map pin (`DL-138` item 3): body `latitude`, `longitude` (the rules of an address, decimal strings) and `language` (`uz` or `ru`); an unknown field is `422 validation_failed`. It answers `{data: {line, house_known}}`, the street and number (or the premise, or the nearest named area) cut to 160 characters, `house_known` true only when a house or premise is named, or `{data: null}` when nothing is known there. The line is for display only: it is never put into the street, and neither the point nor Google's answer is stored or logged. `503 provider_unavailable` while the lookup cannot answer; `429 rate_limited` with `Retry-After` past 10 a minute or 30 a day per Customer, counted apart from the searches.
+
+`GET /customer/service-area` answers `{data: {latitude, longitude, radius_km}}` (`"41.311081"`, `"69.240562"`, `"10.00"`), the circle the map draws, or `{data: null}` while any of the three is unset. It is a preview: the server still refuses a saved point outside the area (`address_outside_service_area`).
+
 # Catalog
 
 ## 14. Customer Catalog
