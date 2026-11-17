@@ -24,7 +24,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get customerLoginIntro =>
-      'Telefon raqamingizni kiriting — kirish kodini yuboramiz';
+      'Telefon raqamingizni kiriting — kodni Telegramga yuboramiz';
 
   @override
   String get phoneLabel => 'Telefon raqami';
@@ -3783,10 +3783,33 @@ class AppLocalizationsUz extends AppLocalizations {
       'Summa olinishi kerak bo\'lgan summaga mos emas.';
 
   @override
-  String get getCodeButton => 'Kod olish';
+  String phoneDigitsLeft(int count) {
+    return 'Yana $count ta raqam kiriting';
+  }
 
   @override
-  String get codeComesInTelegram => 'Kod Telegramga keladi';
+  String codeSentSpoken(String phone) {
+    return 'Kod Telegramga $phone raqamiga yuborildi';
+  }
+
+  @override
+  String codeSentSmsSpoken(String phone) {
+    return 'Kod SMS orqali $phone raqamiga yuborildi';
+  }
+
+  @override
+  String codeSentOtherSpoken(String phone) {
+    return 'Kod $phone raqamiga yuborildi';
+  }
+
+  @override
+  String get phoneClear => 'Raqamni o\'chirish';
+
+  @override
+  String get sendingCode => 'Kod yuborilmoqda…';
+
+  @override
+  String get getCodeButton => 'Kod olish';
 
   @override
   String legalEdition(String date) {
@@ -3891,16 +3914,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get consentPrivacyLink => 'Maxfiylik siyosati';
 
   @override
-  String get confirmPhoneTitle => 'Raqamni tekshiring';
-
-  @override
-  String get confirmPhoneBody => 'Unga Telegramda kod yuboramiz';
-
-  @override
   String get editButton => 'O\'zgartirish';
-
-  @override
-  String get sendButton => 'Yuborish';
 
   @override
   String get codeTitle => 'Kodni kiriting';

@@ -4,7 +4,7 @@
   "pushChannelName": "Buyurtmalar",
   "pushChannelDescription": "Yangi buyurtmalar, savollar va holat o'zgarishlari",
   "customerLoginTitle": "Kirish",
-  "customerLoginIntro": "Telefon raqamingizni kiriting — kirish kodini yuboramiz",
+  "customerLoginIntro": "Telefon raqamingizni kiriting — kodni Telegramga yuboramiz",
   "phoneLabel": "Telefon raqami",
   "phoneHint": "90 123 45 67",
   "phoneInvalid": "Raqamning 9 ta raqamini kiriting",
@@ -2719,8 +2719,41 @@
   "courierOrderGoneHint": "U yopilgan, bekor qilingan yoki boshqa kuryerga berilgan.",
   "errorDeliveryStateConflict": "Yetkazish allaqachon o'zgargan, buyurtma yangilandi.",
   "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
+  "phoneDigitsLeft": "Yana {count} ta raqam kiriting",
+  "@phoneDigitsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeSentSpoken": "Kod Telegramga {phone} raqamiga yuborildi",
+  "@codeSentSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentSmsSpoken": "Kod SMS orqali {phone} raqamiga yuborildi",
+  "@codeSentSmsSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentOtherSpoken": "Kod {phone} raqamiga yuborildi",
+  "@codeSentOtherSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneClear": "Raqamni o'chirish",
+  "sendingCode": "Kod yuborilmoqda…",
   "getCodeButton": "Kod olish",
-  "codeComesInTelegram": "Kod Telegramga keladi",
   "legalEdition": "Tahrir: {date}",
   "@legalEdition": {
     "placeholders": {
@@ -2807,10 +2840,7 @@
   },
   "consentTermsLink": "Foydalanish shartlari",
   "consentPrivacyLink": "Maxfiylik siyosati",
-  "confirmPhoneTitle": "Raqamni tekshiring",
-  "confirmPhoneBody": "Unga Telegramda kod yuboramiz",
   "editButton": "O'zgartirish",
-  "sendButton": "Yuborish",
   "codeTitle": "Kodni kiriting",
   "nameTitle": "Ismingiz nima?",
   "nameSubtitle": "Ism yig'uvchi va kuryerga kerak",

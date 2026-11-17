@@ -4,7 +4,9 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import 'auth_scaffold.dart';
-import 'confirm_phone_dialog.dart';
+
+/// The scrim of the kit's dialogs.
+const Color authDialogBarrier = Color(0x14151D16);
 
 /// Screen 06 of `kit/01-vhod`: the account is ready. [context] must belong
 /// to a navigator that outlives the screen that asks, since the session

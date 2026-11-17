@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/app/providers.dart';
+import 'package:baraka_bozor/features/auth/data/phone_number_hint.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
@@ -31,6 +32,7 @@ import 'fake_favorites_repository.dart';
 import 'fake_legal_repository.dart';
 import 'fake_operations_repository.dart';
 import 'fake_shopper_orders_repository.dart';
+import 'fake_sign_in_device.dart';
 import 'in_memory_stores.dart';
 
 /// The app without the platform plugins: in-memory stores, fake repositories
@@ -51,6 +53,7 @@ Widget appUnderTest({
   FakeCourierOrdersRepository? courier,
   FakeLegalRepository? legal,
   FakePhoneCalls? phoneCalls,
+  FakePhoneNumberHint? phoneHint,
   FakeMapLinks? maps,
   FakeConnectivitySignal? connectivity,
   InMemoryPreferenceStore? preferences,
@@ -105,6 +108,10 @@ Widget appUnderTest({
         connectivity ?? FakeConnectivitySignal(),
       ),
       if (clock != null) clockProvider.overrideWithValue(clock),
+      // No test reaches the platform's own-number picker unless it says so.
+      phoneNumberHintProvider.overrideWithValue(
+        phoneHint ?? FakePhoneNumberHint(),
+      ),
       ...overrides,
     ],
     child: textScaler == null

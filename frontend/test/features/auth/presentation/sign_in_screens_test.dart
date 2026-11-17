@@ -71,9 +71,8 @@ void main() {
 
   Future<void> toCodeScreen(WidgetTester tester) async {
     await tester.enterText(find.byKey(key('phone-field')), '902222222');
+    await tester.pump();
     await tapKey(tester, 'continue-button');
-    await tester.pumpAndSettle();
-    await tapKey(tester, 'confirm-phone-send');
     await tester.pumpAndSettle();
   }
 
@@ -90,12 +89,24 @@ void main() {
       await open(tester, language);
       expect(find.byKey(key('continue-button')), findsOneWidget);
     },
-    'confirm dialog': (WidgetTester tester, String language) async {
+    'phone, digits missing': (WidgetTester tester, String language) async {
       await open(tester, language);
-      await tester.enterText(find.byKey(key('phone-field')), '902222222');
+      await tester.enterText(find.byKey(key('phone-field')), '90222');
+      await tester.pump();
       await tapKey(tester, 'continue-button');
       await tester.pumpAndSettle();
-      expect(find.byKey(key('confirm-phone-send')), findsOneWidget);
+      expect(find.byKey(key('phone-digits-hint')), findsOneWidget);
+    },
+    'phone, with a notice': (WidgetTester tester, String language) async {
+      repository.requestFailure = ApiRefusal(
+        const ApiError(status: 409, code: 'code_delivery_unavailable'),
+      );
+      await open(tester, language);
+      await tester.enterText(find.byKey(key('phone-field')), '902222222');
+      await tester.pump();
+      await tapKey(tester, 'continue-button');
+      await tester.pumpAndSettle();
+      expect(find.byKey(key('auth-notice')), findsOneWidget);
     },
     'code': (WidgetTester tester, String language) async {
       await open(tester, language);

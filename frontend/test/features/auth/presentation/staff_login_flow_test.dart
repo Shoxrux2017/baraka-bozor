@@ -328,11 +328,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.enterText(phoneField, '902222222');
+      await tester.pump();
       await tester.tap(find.byKey(const ValueKey<String>('continue-button')));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey<String>('confirm-phone-send')),
-      );
       await tester.pumpAndSettle();
       await tester.enterText(codeField, '482913');
       await tester.tap(find.byKey(const ValueKey<String>('verify-button')));

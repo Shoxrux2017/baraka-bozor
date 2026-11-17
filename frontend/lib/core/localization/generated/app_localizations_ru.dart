@@ -24,7 +24,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get customerLoginIntro =>
-      'Введите номер телефона — пришлём код для входа';
+      'Введите номер телефона — пришлём код в Telegram';
 
   @override
   String get phoneLabel => 'Номер телефона';
@@ -3817,10 +3817,40 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сумма не совпадает с суммой к получению.';
 
   @override
-  String get getCodeButton => 'Получить код';
+  String phoneDigitsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count цифр',
+      few: '$count цифры',
+      one: '$count цифру',
+    );
+    return 'Введите ещё $_temp0';
+  }
 
   @override
-  String get codeComesInTelegram => 'Код придёт в Telegram';
+  String codeSentSpoken(String phone) {
+    return 'Код отправлен в Telegram на номер $phone';
+  }
+
+  @override
+  String codeSentSmsSpoken(String phone) {
+    return 'Код отправлен в SMS на номер $phone';
+  }
+
+  @override
+  String codeSentOtherSpoken(String phone) {
+    return 'Код отправлен на номер $phone';
+  }
+
+  @override
+  String get phoneClear => 'Стереть номер';
+
+  @override
+  String get sendingCode => 'Отправляем код…';
+
+  @override
+  String get getCodeButton => 'Получить код';
 
   @override
   String legalEdition(String date) {
@@ -3925,16 +3955,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get consentPrivacyLink => 'Политику конфиденциальности';
 
   @override
-  String get confirmPhoneTitle => 'Проверьте номер';
-
-  @override
-  String get confirmPhoneBody => 'Отправим на него код в Telegram';
-
-  @override
   String get editButton => 'Изменить';
-
-  @override
-  String get sendButton => 'Отправить';
 
   @override
   String get codeTitle => 'Введите код';

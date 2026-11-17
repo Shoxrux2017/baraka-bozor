@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @customerLoginIntro.
   ///
   /// In uz, this message translates to:
-  /// **'Telefon raqamingizni kiriting — kirish kodini yuboramiz'**
+  /// **'Telefon raqamingizni kiriting — kodni Telegramga yuboramiz'**
   String get customerLoginIntro;
 
   /// No description provided for @phoneLabel.
@@ -6446,17 +6446,47 @@ abstract class AppLocalizations {
   /// **'Summa olinishi kerak bo\'lgan summaga mos emas.'**
   String get errorCashAmountMismatch;
 
+  /// No description provided for @phoneDigitsLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana {count} ta raqam kiriting'**
+  String phoneDigitsLeft(int count);
+
+  /// No description provided for @codeSentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga {phone} raqamiga yuborildi'**
+  String codeSentSpoken(String phone);
+
+  /// No description provided for @codeSentSmsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod SMS orqali {phone} raqamiga yuborildi'**
+  String codeSentSmsSpoken(String phone);
+
+  /// No description provided for @codeSentOtherSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod {phone} raqamiga yuborildi'**
+  String codeSentOtherSpoken(String phone);
+
+  /// No description provided for @phoneClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni o\'chirish'**
+  String get phoneClear;
+
+  /// No description provided for @sendingCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod yuborilmoqda…'**
+  String get sendingCode;
+
   /// No description provided for @getCodeButton.
   ///
   /// In uz, this message translates to:
   /// **'Kod olish'**
   String get getCodeButton;
-
-  /// No description provided for @codeComesInTelegram.
-  ///
-  /// In uz, this message translates to:
-  /// **'Kod Telegramga keladi'**
-  String get codeComesInTelegram;
 
   /// No description provided for @legalEdition.
   ///
@@ -6584,29 +6614,11 @@ abstract class AppLocalizations {
   /// **'Maxfiylik siyosati'**
   String get consentPrivacyLink;
 
-  /// No description provided for @confirmPhoneTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Raqamni tekshiring'**
-  String get confirmPhoneTitle;
-
-  /// No description provided for @confirmPhoneBody.
-  ///
-  /// In uz, this message translates to:
-  /// **'Unga Telegramda kod yuboramiz'**
-  String get confirmPhoneBody;
-
   /// No description provided for @editButton.
   ///
   /// In uz, this message translates to:
   /// **'O\'zgartirish'**
   String get editButton;
-
-  /// No description provided for @sendButton.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yuborish'**
-  String get sendButton;
 
   /// No description provided for @codeTitle.
   ///

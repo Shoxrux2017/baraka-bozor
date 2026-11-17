@@ -21,7 +21,6 @@ class AuthScaffold extends StatefulWidget {
     this.subtitle,
     this.onBack,
     this.backLabel,
-    this.footer,
     this.keepVisible,
     this.wordmark = true,
     this.card = false,
@@ -47,10 +46,6 @@ class AuthScaffold extends StatefulWidget {
 
   /// The back arrow's tooltip and spoken name; by default `back`.
   final String? backLabel;
-
-  /// Pinned to the bottom of the page when there is room, else below the
-  /// content.
-  final Widget? footer;
 
   /// The key of the widget that must stay in view above the keyboard: the
   /// main button with the 12 px below it. After the bottom inset grows, the
@@ -118,7 +113,6 @@ class _AuthScaffoldState extends State<AuthScaffold> {
       return _WideCardPage(
         onBack: widget.onBack,
         backLabel: widget.backLabel,
-        footer: widget.footer,
         above: <Widget>[
           if (wordmark) ...<Widget>[
             const WordmarkLanding(child: BrandWordmark(size: 30)),
@@ -192,11 +186,6 @@ class _AuthScaffoldState extends State<AuthScaffold> {
                     ],
                   ],
                 ),
-                if (widget.footer != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: widget.footer,
-                  ),
               ],
             ),
           ),
@@ -207,7 +196,7 @@ class _AuthScaffoldState extends State<AuthScaffold> {
 }
 
 /// A page column that is at least as tall as the screen, so its [spread]
-/// can pin a footer to the bottom, and that scrolls when its content is
+/// can centre or spread its children, and that scrolls when its content is
 /// taller: a small screen or large text never overflows.
 class _ScrollingPage extends StatelessWidget {
   const _ScrollingPage({
@@ -294,7 +283,6 @@ class AuthStatusScaffold extends StatelessWidget {
     if (wideCard && AuthScaffold.showsWideCard(context)) {
       return _WideCardPage(
         onBack: null,
-        footer: null,
         above: const <Widget>[],
         card: _WideCard(
           topPadding: 36,
@@ -616,7 +604,6 @@ class _CircleButton extends StatelessWidget {
 class _WideCardPage extends StatelessWidget {
   const _WideCardPage({
     required this.onBack,
-    required this.footer,
     required this.above,
     required this.card,
     this.backLabel,
@@ -624,13 +611,11 @@ class _WideCardPage extends StatelessWidget {
 
   final VoidCallback? onBack;
   final String? backLabel;
-  final Widget? footer;
   final List<Widget> above;
   final Widget card;
 
   @override
   Widget build(BuildContext context) {
-    final Widget? footer = this.footer;
     return Scaffold(
       backgroundColor: KitColors.page,
       body: SafeArea(
@@ -669,11 +654,6 @@ class _WideCardPage extends StatelessWidget {
                               ),
                             ),
                             Center(child: card),
-                            if (footer != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 24),
-                                child: footer,
-                              ),
                           ],
                         ),
                       ),

@@ -14,6 +14,7 @@ class LockMessage extends StatefulWidget {
   const LockMessage({
     required this.lockedSeconds,
     this.lockOver = false,
+    this.speaks = true,
     super.key,
   });
 
@@ -21,6 +22,11 @@ class LockMessage extends StatefulWidget {
 
   /// The lock has just run out; announced once, nothing is drawn for it here.
   final bool lockOver;
+
+  /// Whether the lock's start and end are announced. A page that another
+  /// page covers stays quiet and leaves the speaking to the one on top
+  /// (`DL-139`).
+  final bool speaks;
 
   @override
   State<LockMessage> createState() => _LockMessageState();
@@ -30,6 +36,9 @@ class _LockMessageState extends State<LockMessage> {
   @override
   void didUpdateWidget(LockMessage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!widget.speaks) {
+      return;
+    }
     if (oldWidget.lockedSeconds <= 0 && widget.lockedSeconds > 0) {
       SemanticsService.sendAnnouncement(
         View.of(context),

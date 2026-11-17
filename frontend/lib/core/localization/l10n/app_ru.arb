@@ -4,7 +4,7 @@
   "pushChannelName": "Заказы",
   "pushChannelDescription": "Новые заказы, вопросы и изменения статуса",
   "customerLoginTitle": "Вход",
-  "customerLoginIntro": "Введите номер телефона — пришлём код для входа",
+  "customerLoginIntro": "Введите номер телефона — пришлём код в Telegram",
   "phoneLabel": "Номер телефона",
   "phoneHint": "90 123 45 67",
   "phoneInvalid": "Введите 9 цифр номера",
@@ -2619,8 +2619,41 @@
   "courierOrderGoneHint": "Её закрыли, отменили или передали другому курьеру.",
   "errorDeliveryStateConflict": "Доставка уже изменилась, мы обновили заказ.",
   "errorCashAmountMismatch": "Сумма не совпадает с суммой к получению.",
+  "phoneDigitsLeft": "Введите ещё {count, plural, one{{count} цифру} few{{count} цифры} other{{count} цифр}}",
+  "@phoneDigitsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeSentSpoken": "Код отправлен в Telegram на номер {phone}",
+  "@codeSentSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentSmsSpoken": "Код отправлен в SMS на номер {phone}",
+  "@codeSentSmsSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentOtherSpoken": "Код отправлен на номер {phone}",
+  "@codeSentOtherSpoken": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneClear": "Стереть номер",
+  "sendingCode": "Отправляем код…",
   "getCodeButton": "Получить код",
-  "codeComesInTelegram": "Код придёт в Telegram",
   "legalEdition": "Редакция от {date}",
   "monthLong": "{month, select, m1{января} m2{февраля} m3{марта} m4{апреля} m5{мая} m6{июня} m7{июля} m8{августа} m9{сентября} m10{октября} m11{ноября} m12{декабря} other{}}",
   "dateLong": "{day} {month} {year}",
@@ -2642,10 +2675,7 @@
   "consentPrivacyOnly": "Продолжая, вы принимаете {privacy}",
   "consentTermsLink": "Условия использования",
   "consentPrivacyLink": "Политику конфиденциальности",
-  "confirmPhoneTitle": "Проверьте номер",
-  "confirmPhoneBody": "Отправим на него код в Telegram",
   "editButton": "Изменить",
-  "sendButton": "Отправить",
   "codeTitle": "Введите код",
   "nameTitle": "Как вас зовут?",
   "nameSubtitle": "Имя нужно сборщику и курьеру",

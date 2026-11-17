@@ -11,6 +11,7 @@ const Key _key = ValueKey<String>('go');
 Widget _app(
   SubmitFace face, {
   VoidCallback? onPressed,
+  VoidCallback? onOffTap,
   String? offHint,
   bool reduced = false,
 }) {
@@ -24,6 +25,7 @@ Widget _app(
               face: face,
               label: 'Сохранить',
               onPressed: onPressed,
+              onOffTap: onOffTap,
               offHint: offHint,
               buttonKey: _key,
             ),
@@ -72,6 +74,30 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.tap(find.byKey(_key), warnIfMissed: false);
     expect(taps, 1);
+  });
+
+  testWidgets('an off tap calls onOffTap and nothing else', (tester) async {
+    int taps = 0;
+    int offTaps = 0;
+    await tester.pumpWidget(
+      _app(SubmitFace.off, onPressed: () => taps++, onOffTap: () => offTaps++),
+    );
+    await tester.tap(find.byKey(_key), warnIfMissed: false);
+    expect(offTaps, 1);
+    expect(taps, 0);
+
+    for (final SubmitFace face in <SubmitFace>[
+      SubmitFace.ready,
+      SubmitFace.busy,
+      SubmitFace.done,
+    ]) {
+      await tester.pumpWidget(
+        _app(face, onPressed: () => taps++, onOffTap: () => offTaps++),
+      );
+      await tester.tap(find.byKey(_key), warnIfMissed: false);
+    }
+    expect(offTaps, 1, reason: 'only the off face calls it');
+    expect(taps, 1, reason: 'only the ready face presses');
   });
 
   testWidgets('off reads its hint', (tester) async {
