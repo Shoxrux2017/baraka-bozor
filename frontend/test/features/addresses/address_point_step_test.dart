@@ -10,6 +10,7 @@ import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dar
 import 'package:baraka_bozor/features/addresses/presentation/map/map_pin.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/point_fields_address_map.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -150,7 +151,11 @@ void main() {
 
     expect(target(tester), '41.299512,69.240146');
     expect(byKey('address-search-result'), findsOneWidget);
-    expect(byKey('address-words-kept'), findsOneWidget);
+    expect(
+      byKey('address-words-kept'),
+      findsNothing,
+      reason: 'a found address needs no promise; the street is filled',
+    );
 
     await confirm(tester);
     expect(confirmed.single.point, found);
@@ -532,6 +537,31 @@ void main() {
     expect(confirmButton(tester).onPressed, isNull);
   });
 
+  testWidgets('the hint goes once a search has answered, and stays gone', (
+    WidgetTester tester,
+  ) async {
+    search.answers['Navoiy 5'] = null;
+    await open(tester);
+    double opacity() => tester
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: byKey('address-point-hint'),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+    expect(opacity(), 1);
+
+    await type(tester, 'Navoiy 5');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(opacity(), 0);
+
+    await tester.tap(byKey('address-search-clear'));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(opacity(), 0, reason: 'the hint never returns');
+  });
+
   testWidgets('the hint fades after the first move', (
     WidgetTester tester,
   ) async {
@@ -628,6 +658,26 @@ void main() {
     expect(confirmed.single.point, found);
   });
 
+  testWidgets('Где я drops a silent fix still on its way', (
+    WidgetTester tester,
+  ) async {
+    location.holdSilent = true;
+    location.outcome = LocationFound(other);
+    await open(tester, placed: false);
+    await tester.tap(byKey('address-my-location'));
+    await tester.pump();
+    await tester.pump();
+    expect(target(tester), '41.280000,69.200000');
+
+    location.releaseSilent(found);
+    await tester.pump();
+    await tester.pump();
+
+    expect(target(tester), '41.280000,69.200000');
+    await confirm(tester);
+    expect(confirmed.single.point, other);
+  });
+
   testWidgets('a silent fix after a touch does not move the map', (
     WidgetTester tester,
   ) async {
@@ -684,6 +734,24 @@ void main() {
 
     expect(confirmed.single.mapHeight, greaterThan(100));
     expect(confirmed.single.place, isNull);
+  });
+
+  testWidgets('the map height the morph starts from ignores the keyboard', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await open(tester);
+    await confirm(tester);
+    final double closed = confirmed.single.mapHeight;
+
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+    await confirm(tester);
+
+    expect(confirmed.last.mapHeight, closeTo(closed, 0.5));
   });
 
   testWidgets('large text drops the hint and the panel says it', (
@@ -815,6 +883,7 @@ void main() {
     for (final ApiFailure failure in const <ApiFailure>[
       NetworkFailure(),
       ApiRefusal(ApiError(status: 429, code: 'rate_limited')),
+      ApiRefusal(ApiError(status: 503, code: 'provider_unavailable')),
     ]) {
       search.placeFailure = failure;
       await open(tester, locale: const Locale('ru'));
@@ -827,6 +896,80 @@ void main() {
       expect(confirmed.last.point, fakeDoor);
       expect(confirmed.last.place, isNull);
     }
+  });
+
+  for (final (String, int?, int) pause in <(String, int?, int)>[
+    ('the Retry-After it carried', 30, 30),
+    ('60 s when it carried none', null, 60),
+  ]) {
+    testWidgets('after a 429 no lookup goes out for ${pause.$1}', (
+      WidgetTester tester,
+    ) async {
+      search.placeFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'rate_limited'),
+        retryAfterSeconds: pause.$2,
+      );
+      await open(tester, locale: const Locale('ru'));
+      await moveAndRest(tester, 'fake-map-move');
+      expect(search.lookups, hasLength(1));
+
+      search.placeFailure = null;
+      search.places[fakeDoor] = door;
+      await moveAndRest(tester, 'fake-map-far');
+      expect(search.lookups, hasLength(1), reason: 'paused');
+      expect(byKey('address-point-place'), findsNothing);
+      expect(confirmButton(tester).onPressed, isNotNull);
+
+      await tester.pump(Duration(seconds: pause.$3 - 1));
+      await moveAndRest(tester, 'fake-map-move');
+      expect(search.lookups, hasLength(1), reason: 'still paused');
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(rest);
+      await tester.pump();
+      expect(search.lookups, hasLength(2), reason: 'the pause is over');
+      expect(find.text("Navoiy ko'chasi, 12"), findsOneWidget);
+    });
+  }
+
+  testWidgets('a map reopened with the place it knows asks nothing', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          addressMapProvider.overrideWithValue(FakeAddressMap()),
+          addressSearchRepositoryProvider.overrideWithValue(search),
+          deviceLocationProvider.overrideWithValue(location),
+        ],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AddressPointStep(
+              initial: fakeDoor,
+              placed: true,
+              place: door,
+              keepsWords: true,
+              onConfirmed: confirmed.add,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(rest);
+    await tester.pump();
+
+    expect(search.lookups, isEmpty);
+    expect(find.text("Navoiy ko'chasi, 12"), findsOneWidget);
+    await confirm(tester);
+    expect(confirmed.single.place?.line, "Navoiy ko'chasi, 12");
+
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+    await tester.pump(rest);
+    expect(search.lookups, hasLength(1), reason: 'a new place is asked for');
   });
 
   testWidgets('a late answer for an older point is not shown', (
@@ -937,6 +1080,26 @@ void main() {
     expect(confirmButton(tester).onPressed, isNotNull);
     await confirm(tester);
     expect(confirmed.single.point, fakeDoor);
+  });
+
+  testWidgets('while the zone is still loading nothing is outside', (
+    WidgetTester tester,
+  ) async {
+    search.holdArea = true;
+    search.area = zone;
+    await open(tester, locale: const Locale('ru'));
+    await tester.pump();
+
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+    expect(byKey('address-outside-zone'), findsNothing);
+    expect(confirmButton(tester).onPressed, isNotNull);
+
+    search.releaseArea(zone);
+    await tester.pump();
+    await tester.pump();
+    expect(byKey('address-outside-zone'), findsOneWidget);
+    expect(confirmButton(tester).onPressed, isNull);
   });
 
   testWidgets('without a zone nothing is outside', (WidgetTester tester) async {
@@ -1165,6 +1328,95 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('an app move landing during a Customer glide ends the '
+      'lift', (WidgetTester tester) async {
+    search.answers['Navoiy 5'] = found;
+    await open(tester, placed: false);
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+    expect(pin(tester).lifted, isTrue);
+
+    await type(tester, 'Navoiy 5');
+    await tester.pump();
+
+    expect(pin(tester).lifted, isFalse);
+    expect(target(tester), '41.299512,69.240146');
+    expect(confirmButton(tester).onPressed, isNotNull);
+    await confirm(tester);
+    expect(confirmed.single.point, found);
+  });
+
+  testWidgets('Ещё раз pressed after the step is gone does nothing', (
+    WidgetTester tester,
+  ) async {
+    location.outcome = const LocationFailed(LocationFailure.timedOut);
+    final ValueNotifier<bool> shown = ValueNotifier<bool>(true);
+    addTearDown(shown.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          addressMapProvider.overrideWithValue(FakeAddressMap()),
+          addressSearchRepositoryProvider.overrideWithValue(search),
+          deviceLocationProvider.overrideWithValue(location),
+        ],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ValueListenableBuilder<bool>(
+              valueListenable: shown,
+              builder: (BuildContext context, bool on, Widget? _) => on
+                  ? AddressPointStep(
+                      initial: start,
+                      placed: true,
+                      keepsWords: true,
+                      onConfirmed: confirmed.add,
+                    )
+                  : const SizedBox(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(byKey('address-my-location'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 750));
+    expect(location.calls, 1);
+
+    shown.value = false;
+    await tester.pump();
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Ещё раз'));
+    await tester.pump();
+
+    expect(location.calls, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Где я and the field buttons keep their tap action for a '
+      'reader', (WidgetTester tester) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await open(tester, locale: const Locale('ru'));
+    await enter(tester, 'Navoiy 5');
+
+    for (final String key in <String>[
+      'address-my-location',
+      'address-search-go',
+      'address-search-clear',
+    ]) {
+      expect(
+        tester
+            .getSemantics(byKey(key))
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: key,
+      );
+    }
+    semantics.dispose();
+  });
+
   for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets('the step holds at 320x640 with text x2 '
         '(${locale.languageCode})', (WidgetTester tester) async {
@@ -1201,7 +1453,7 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(byKey('address-point-hint'), findsNothing);
-      expect(byKey('address-words-kept'), findsOneWidget);
+      expect(byKey('address-words-kept'), findsNothing);
       expect(byKey('address-outside-zone'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

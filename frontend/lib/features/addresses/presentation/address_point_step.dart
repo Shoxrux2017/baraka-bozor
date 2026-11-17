@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
+import 'dart:ui' show FlutterView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +49,7 @@ class AddressPointStep extends ConsumerStatefulWidget {
     required this.keepsWords,
     required this.onConfirmed,
     this.openedAt,
+    this.place,
     this.onTyped,
     this.onWords,
     this.panelRises = false,
@@ -58,6 +59,10 @@ class AddressPointStep extends ConsumerStatefulWidget {
   final GeoPoint initial;
   final bool placed;
   final Address? openedAt;
+
+  /// The address the map already named at [initial], when the host holds it:
+  /// the map reopened from the details does not ask for it again.
+  final PointAddress? place;
 
   /// Whether the host will put the typed words into the street; the step
   /// promises to keep them only then.
@@ -89,6 +94,9 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   /// The wait after the pin came to rest before the address is asked for.
   static const Duration _lookupWait = Duration(milliseconds: 400);
 
+  /// How long lookups wait after a `429` that named no time.
+  static const Duration _pauseDefault = Duration(seconds: 60);
+
   /// How long a lifted finger still owns the next camera start.
   static const Duration _touchGrace = Duration(milliseconds: 600);
 
@@ -100,6 +108,10 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
 
   final GlobalKey _mapArea = GlobalKey();
+
+  /// The map area's height the last time no keyboard was up; the morph to the
+  /// details starts from it, since the keyboard closes with the confirm.
+  double? _calmHeight;
 
   late GeoPoint _point = widget.initial;
   late bool _placed = widget.placed;
@@ -144,6 +156,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   /// The panel's rise when [AddressPointStep.panelRises]; started once the
   /// motion setting is known.
   AnimationController? _rise;
+  CurvedAnimation? _riseCurve;
 
   /// The latest lookup scheduled; an older answer is not heard.
   int _lookupId = 0;
@@ -158,9 +171,18 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   /// The last answer: what the map names there, `null` when it names nothing.
   PointAddress? _place;
 
+  /// Lookups wait until a `429` has run out; the Customer's pin still moves
+  /// and confirms.
+  bool _lookupsPaused = false;
+  Timer? _pauseTimer;
+
   @override
   void initState() {
     super.initState();
+    if (widget.place != null) {
+      _placeAt = widget.initial;
+      _place = widget.place;
+    }
     if (ref.read(addressMapProvider).movable) {
       if (widget.placed) {
         _scheduleLookup();
@@ -193,14 +215,20 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
         vsync: this,
         duration: const Duration(milliseconds: 300),
       )..forward();
+      _riseCurve = CurvedAnimation(
+        parent: _rise!,
+        curve: const Cubic(0.2, 0.8, 0.2, 1),
+      );
     }
   }
 
   @override
   void dispose() {
+    _riseCurve?.dispose();
     _rise?.dispose();
     _lookupTimer?.cancel();
     _touchEnd?.cancel();
+    _pauseTimer?.cancel();
     _mover.dispose();
     _field.dispose();
     super.dispose();
@@ -249,10 +277,13 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
     }
   }
 
-  /// An answer moves the map and places the pin.
+  /// An answer moves the map and places the pin. It also ends a lift the
+  /// Customer's glide began: the app's move interrupts the glide, so no rest
+  /// of theirs would follow.
   void _moveTo(GeoPoint point) {
     _point = point;
     _placed = true;
+    _moving = false;
     _mover.moveTo(point);
     _scheduleLookup();
   }
@@ -263,7 +294,11 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
     _lookupTimer?.cancel();
     final int id = ++_lookupId;
     final GeoPoint? at = _placeAt;
-    if (at != null && _metresBetween(at, _point) <= _reuseMetres) {
+    if (at != null && greatCircleKm(at, _point) * 1000 <= _reuseMetres) {
+      _lookupPending = false;
+      return;
+    }
+    if (_lookupsPaused) {
       _lookupPending = false;
       return;
     }
@@ -280,8 +315,11 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
       answer = await ref
           .read(addressSearchRepositoryProvider)
           .addressAt(point, language: language);
-    } on ApiFailure {
+    } on ApiFailure catch (failure) {
       failed = true;
+      if (failure is ApiRefusal && failure.error.status == 429) {
+        _pauseLookups(failure.retryAfterSeconds);
+      }
     }
     if (!mounted || id != _lookupId) {
       return;
@@ -293,16 +331,23 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
     });
   }
 
-  static double _metresBetween(GeoPoint a, GeoPoint b) {
-    double rad(double degrees) => degrees * math.pi / 180;
-    final double lat1 = rad(a.latitudeDegrees);
-    final double lat2 = rad(b.latitudeDegrees);
-    final double dLat = lat2 - lat1;
-    final double dLon = rad(b.longitudeDegrees - a.longitudeDegrees);
-    final double h =
-        math.pow(math.sin(dLat / 2), 2) +
-        math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
-    return 2 * 6371008.8 * math.asin(math.min(1, math.sqrt(h)));
+  /// A `429` was answered: no lookup goes out until its `Retry-After` (a
+  /// minute when it named none) has passed, then the resting pin is asked
+  /// for once (`DL-138`).
+  void _pauseLookups(int? seconds) {
+    _lookupsPaused = true;
+    _pauseTimer?.cancel();
+    _pauseTimer = Timer(
+      seconds == null || seconds <= 0
+          ? _pauseDefault
+          : Duration(seconds: seconds),
+      () {
+        _lookupsPaused = false;
+        if (mounted && _placed && !_moving && _placeAt == null) {
+          setState(_scheduleLookup);
+        }
+      },
+    );
   }
 
   /// The address under the resting pin, when the map has answered for it.
@@ -361,6 +406,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
         return;
       }
       _answers++;
+      _hintGone = true;
       if (failed) {
         _search = _Search.unavailable;
       } else if (found == null) {
@@ -422,6 +468,14 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
     }
   }
 
+  /// The snack bar outlives the step in the root messenger: its action asks
+  /// again only while the step is there.
+  void _askAgain() {
+    if (mounted) {
+      unawaited(_whereAmI());
+    }
+  }
+
   /// Says why the location failed, with the way out when there is one
   /// (`DL-138`).
   void _locationFailed(LocationFailure why) {
@@ -441,7 +495,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
       LocationFailure.timedOut => (
         l10n.addressLocationSlow,
         l10n.addressLocationAgain,
-        _whereAmI,
+        _askAgain,
       ),
       LocationFailure.denied ||
       LocationFailure.failed => (l10n.addressLocationFailed, null, null),
@@ -474,18 +528,42 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
     if (!movable && !(_form.currentState?.validate() ?? false)) {
       return;
     }
+    FocusManager.instance.primaryFocus?.unfocus();
     widget.onConfirmed(
       AddressPointResult(
         point: _point,
         words: _words,
-        mapHeight: _mapArea.currentContext?.size?.height ?? 0,
+        mapHeight: _mapHeight(),
         place: movable && _answered ? _place : null,
       ),
     );
   }
 
+  /// The keyboard's height; the host's scaffold hides it from the step's
+  /// own media query.
+  double _keyboard() {
+    final FlutterView view = View.of(context);
+    return view.viewInsets.bottom / view.devicePixelRatio;
+  }
+
+  /// The map area's height without a keyboard: the one measured while none
+  /// was up, else the one in view plus the keyboard's height.
+  double _mapHeight() {
+    final double shown = _mapArea.currentContext?.size?.height ?? 0;
+    final double keyboard = _keyboard();
+    return keyboard > 0 ? _calmHeight ?? shown + keyboard : shown;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_keyboard() == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final double? height = _mapArea.currentContext?.size?.height;
+        if (mounted && height != null && height > 0) {
+          _calmHeight = height;
+        }
+      });
+    }
     final AddressMap map = ref.watch(addressMapProvider);
     final ServiceArea? zone = map.movable
         ? ref.watch(serviceAreaProvider).value
@@ -510,17 +588,14 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
   }
 
   Widget _rising(Widget panel) {
-    final AnimationController? rise = _rise;
-    return rise == null
+    final CurvedAnimation? curve = _riseCurve;
+    return curve == null
         ? panel
         : SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: rise,
-                    curve: const Cubic(0.2, 0.8, 0.2, 1),
-                  ),
-                ),
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(curve),
             child: panel,
           );
   }
@@ -608,7 +683,12 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
                   },
                   query: _words ?? '',
                   serial: _answers,
-                  keptLine: _words != null && widget.keepsWords
+                  // A found address fills the street itself: only a search
+                  // that found nothing promises the words (`DL-138`).
+                  keptLine:
+                      _words != null &&
+                          widget.keepsWords &&
+                          _search != _Search.found
                       ? l10n.addressWordsKept
                       : null,
                 ),
@@ -735,6 +815,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep>
           button: true,
           excludeSemantics: true,
           label: l10n.addressMyLocationSpoken,
+          onTap: _locating ? null : _whereAmI,
           child: Tooltip(
             message: l10n.addressMyLocation,
             child: InkWell(
@@ -928,6 +1009,7 @@ class _SuffixButton extends StatelessWidget {
       button: true,
       excludeSemantics: true,
       label: label,
+      onTap: onTap,
       child: SizedBox(
         width: 44,
         height: 44,

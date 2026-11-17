@@ -171,6 +171,35 @@ void main() {
       expect(tester.getTopLeft(byKey('address-point-confirm')).dy, rest);
     });
 
+    testWidgets('growing back from a scrolled list starts at its top', (
+      WidgetTester tester,
+    ) async {
+      await openNew(tester, size: const Size(360, 640));
+      await toDetails(tester);
+      final Finder scrollable = find
+          .descendant(
+            of: byKey('address-form'),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      double offset() =>
+          tester.state<ScrollableState>(scrollable).position.pixels;
+      await tester.drag(byKey('address-form'), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(offset(), greaterThan(0));
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+
+      expect(offset(), 0);
+      expect(
+        tester.getTopLeft(byKey('address-preview')).dy,
+        closeTo(tester.getTopLeft(byKey('address-form')).dy + 16, 0.5),
+      );
+      await tester.pumpAndSettle();
+      expect(byKey('address-point-confirm'), findsOneWidget);
+    });
+
     testWidgets('reduced motion fades between the steps', (
       WidgetTester tester,
     ) async {
@@ -207,6 +236,22 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(byKey('address-point-confirm'), findsOneWidget);
+    });
+
+    testWidgets('a preview tap during the morph does nothing', (
+      WidgetTester tester,
+    ) async {
+      await openNew(tester);
+      await placePin(tester);
+
+      await confirmNow(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('address-preview'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+
+      expect(byKey('address-save'), findsOneWidget);
+      expect(byKey('address-point-confirm'), findsNothing);
     });
 
     testWidgets('a second confirm during the morph does nothing', (
@@ -402,25 +447,52 @@ void main() {
     });
   });
 
-  group('large text', () {
-    testWidgets('every face fits at large text and meets the tap target '
-        'guideline', (WidgetTester tester) async {
-      final SemanticsHandle handle = tester.ensureSemantics();
-      await openNew(
-        tester,
-        size: const Size(360, 640),
-        textScaler: const NonlinearTextScaler(2),
-      );
-      await toDetails(tester);
-      expect(tester.takeException(), isNull);
-      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-      await tester.enterText(byKey('field-street'), 'Navoiy');
-      await systemBack(tester);
-      await systemBack(tester);
-      expect(byKey('address-leave-sheet'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-      handle.dispose();
-    });
+  group('tap targets', () {
+    for (final (String, TextScaler?) face in <(String, TextScaler?)>[
+      ('at 100 %', null),
+      ('at x2', const NonlinearTextScaler(2)),
+    ]) {
+      testWidgets('every face fits and meets the tap target guideline '
+          '${face.$1}', (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await openNew(tester, size: const Size(360, 640), textScaler: face.$2);
+        await toDetails(tester);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+        await tester.enterText(byKey('field-street'), 'Navoiy');
+        await tester.enterText(byKey('field-house'), '5');
+        addresses.hold = Completer<void>();
+        await tester.tap(byKey('address-save'));
+        await tester.pump();
+        expect(
+          find.descendant(
+            of: byKey('address-save'),
+            matching: find.text(l10n(tester).addressSaving),
+          ),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        addresses.hold!.complete();
+        await tester.pumpAndSettle();
+
+        handle.dispose();
+      });
+
+      testWidgets('the leave sheet meets the tap target guideline '
+          '${face.$1}', (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await openNew(tester, size: const Size(360, 640), textScaler: face.$2);
+        await toDetails(tester);
+        await tester.enterText(byKey('field-street'), 'Navoiy');
+        await systemBack(tester);
+        await systemBack(tester);
+        expect(byKey('address-leave-sheet'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        handle.dispose();
+      });
+    }
   });
 }

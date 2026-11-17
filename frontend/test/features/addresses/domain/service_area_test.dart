@@ -30,6 +30,19 @@ void main() {
     expect(area.contains(far), isFalse);
   });
 
+  test('the great-circle distance is symmetric and zero on the spot', () {
+    final GeoPoint far = GeoPoint.fromDegrees(41.311081, 69.38);
+
+    expect(greatCircleKm(_centre, _centre), 0);
+    expect(greatCircleKm(_centre, far), greatCircleKm(far, _centre));
+    expect(greatCircleKm(_centre, far), closeTo(11.646, 0.001));
+    // One degree of latitude is about 111.195 km.
+    expect(
+      greatCircleKm(GeoPoint.fromDegrees(41, 69), GeoPoint.fromDegrees(42, 69)),
+      closeTo(earthRadiusKm * 3.141592653589793 / 180, 1e-6),
+    );
+  });
+
   test('the radius drops trailing zeros', () {
     ServiceArea of(String radius) =>
         ServiceArea(centre: _centre, radiusKm: radius);

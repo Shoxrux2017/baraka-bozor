@@ -448,6 +448,11 @@ class _AddressFormState extends ConsumerState<_AddressForm>
   /// from that map returns to the details.
   void _growBack({required bool toDetailsAfter}) {
     FocusManager.instance.primaryFocus?.unfocus();
+    // The preview is the list's first row: it grows from where it can be
+    // seen, not from partly out of sight.
+    if (_scroll.hasClients && _scroll.offset > 0) {
+      _scroll.jumpTo(0);
+    }
     _run(_Move.toMap, () => _backToDetails = toDetailsAfter);
   }
 
@@ -709,6 +714,7 @@ class _AddressFormState extends ConsumerState<_AddressForm>
         initial: _point,
         placed: !_isNew || _pointConfirmed,
         openedAt: _isNew && !_pointConfirmed ? _delivery : null,
+        place: _pointConfirmed ? _place : null,
         keepsWords: _streetTakesWords,
         onConfirmed: _confirmed,
         onTyped: (bool typed) => setState(() => _typed = typed),

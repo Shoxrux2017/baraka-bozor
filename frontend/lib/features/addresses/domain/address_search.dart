@@ -31,6 +31,24 @@ final class PointAddress {
   final bool houseKnown;
 }
 
+/// Mean Earth radius in kilometres, as the server's `ServiceAreaPolicy`.
+const double earthRadiusKm = 6371.0088;
+
+/// The great-circle distance between [a] and [b] in kilometres, by haversine.
+/// The zone, the step's 15 m reuse and the map's circle all measure with it
+/// (`DL-138`).
+double greatCircleKm(GeoPoint a, GeoPoint b) {
+  double rad(double degrees) => degrees * math.pi / 180;
+  final double lat1 = rad(a.latitudeDegrees);
+  final double lat2 = rad(b.latitudeDegrees);
+  final double dLat = lat2 - lat1;
+  final double dLon = rad(b.longitudeDegrees - a.longitudeDegrees);
+  final double h =
+      math.pow(math.sin(dLat / 2), 2) +
+      math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
+  return 2 * earthRadiusKm * math.asin(math.min(1, math.sqrt(h)));
+}
+
 /// The circle the company delivers within (`DL-138`). The phone only
 /// previews it: the server still refuses a saved point outside.
 final class ServiceArea {
@@ -42,21 +60,8 @@ final class ServiceArea {
   /// decimals.
   final String radiusKm;
 
-  /// Mean Earth radius in kilometres, as the server's `ServiceAreaPolicy`.
-  static const double _earthKm = 6371.0088;
-
-  /// The great-circle distance from the centre to [point], by haversine.
-  double distanceKmTo(GeoPoint point) {
-    double rad(double degrees) => degrees * math.pi / 180;
-    final double lat1 = rad(centre.latitudeDegrees);
-    final double lat2 = rad(point.latitudeDegrees);
-    final double dLat = lat2 - lat1;
-    final double dLon = rad(point.longitudeDegrees - centre.longitudeDegrees);
-    final double a =
-        math.pow(math.sin(dLat / 2), 2) +
-        math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
-    return 2 * _earthKm * math.asin(math.min(1, math.sqrt(a)));
-  }
+  /// The great-circle distance from the centre to [point].
+  double distanceKmTo(GeoPoint point) => greatCircleKm(centre, point);
 
   /// Whether [point] lies within the radius, the edge included.
   bool contains(GeoPoint point) =>

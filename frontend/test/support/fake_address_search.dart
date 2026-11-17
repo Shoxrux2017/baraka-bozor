@@ -39,6 +39,10 @@ class FakeAddressSearch implements AddressSearchRepository {
   /// A failure the zone read throws.
   ApiFailure? areaFailure;
 
+  /// Whether the zone read waits for [releaseArea].
+  bool holdArea = false;
+  Completer<ServiceArea?>? _pendingArea;
+
   @override
   Future<GeoPoint?> locate(String query) {
     queries.add(query);
@@ -72,8 +76,13 @@ class FakeAddressSearch implements AddressSearchRepository {
   void releasePlace(GeoPoint point, PointAddress? answer) =>
       _pendingPlaces[point]!.complete(answer);
 
+  /// Answers the held zone read.
+  void releaseArea(ServiceArea? answer) => _pendingArea!.complete(answer);
+
   @override
-  Future<ServiceArea?> serviceArea() => areaFailure != null
+  Future<ServiceArea?> serviceArea() => holdArea
+      ? (_pendingArea = Completer<ServiceArea?>()).future
+      : areaFailure != null
       ? Future<ServiceArea?>.error(areaFailure!)
       : Future<ServiceArea?>.value(area);
 }

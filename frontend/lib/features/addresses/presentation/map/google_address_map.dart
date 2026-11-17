@@ -79,9 +79,8 @@ class _CentrePin extends StatelessWidget {
 @visibleForTesting
 ({Polygon dim, Polyline edge}) zoneOverlay(ServiceArea zone) {
   const int steps = 72;
-  const double earthKm = 6371.0088;
   const double outer = 5;
-  final double radius = double.parse(zone.radiusKm) / earthKm;
+  final double radius = double.parse(zone.radiusKm) / earthRadiusKm;
   final double lat = zone.centre.latitudeDegrees * math.pi / 180;
   final double lng = zone.centre.longitudeDegrees * math.pi / 180;
   LatLng onCircle(int step) {

@@ -32,7 +32,14 @@ class SearchAnswer extends StatefulWidget {
 
 class _SearchAnswerState extends State<SearchAnswer>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this);
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
+  );
+  late final CurvedAnimation _eased = CurvedAnimation(
+    parent: _controller,
+    curve: const Cubic(0.2, 0.8, 0.2, 1),
+  );
   bool _started = false;
 
   @override
@@ -60,6 +67,7 @@ class _SearchAnswerState extends State<SearchAnswer>
 
   @override
   void dispose() {
+    _eased.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -99,10 +107,7 @@ class _SearchAnswerState extends State<SearchAnswer>
       SearchFace.unavailable => Icons.cloud_off,
     };
     final bool reduced = MediaQuery.disableAnimationsOf(context);
-    final Animation<double> eased = CurvedAnimation(
-      parent: _controller,
-      curve: const Cubic(0.2, 0.8, 0.2, 1),
-    );
+    final Animation<double> eased = _eased;
     return AnimatedBuilder(
       animation: eased,
       builder: (BuildContext context, Widget? child) => Opacity(
