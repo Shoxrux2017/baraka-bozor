@@ -254,7 +254,7 @@ void main() {
   });
 
   testWidgets('where am I moves the map', (WidgetTester tester) async {
-    location.point = found;
+    location.outcome = LocationFound(found);
     await open(tester);
     await tester.tap(byKey('address-my-location'));
     await tester.pump();
@@ -277,7 +277,7 @@ void main() {
 
     await tester.tap(byKey('fake-map-move'));
     await tester.pump();
-    location.release(found);
+    location.release(LocationFound(found));
     await tester.pump();
 
     expect(target(tester), '');
@@ -295,7 +295,7 @@ void main() {
 
     map.emitMove(fakeDoor);
     await tester.pump();
-    location.release(found);
+    location.release(LocationFound(found));
     await tester.pump();
 
     expect(target(tester), '41.299512,69.240146');
@@ -329,13 +329,13 @@ void main() {
     await open(tester);
     await tester.tap(byKey('address-my-location'));
     await tester.pump();
-    location.release(null);
+    location.release(const LocationFailed(LocationFailure.failed));
     await tester.pump();
 
     expect(find.text(l10n(tester).addressLocationFailed), findsOneWidget);
     expect(target(tester), '');
     location.hold = false;
-    location.point = found;
+    location.outcome = LocationFound(found);
     await tester.tap(byKey('address-my-location'));
     await tester.pump();
     expect(location.calls, 2);

@@ -16,6 +16,7 @@ class AddressSearchRepositoryImpl implements AddressSearchRepository {
 
   static final Options _customer = RequestSlot.of(SessionSlot.customer);
   static final RegExp _latitude = RegExp(r'^-?\d{1,2}\.\d{6}$');
+  static final RegExp _radius = RegExp(r'^\d{1,4}(\.\d{1,2})?$');
   static final RegExp _longitude = RegExp(r'^-?\d{1,3}\.\d{6}$');
 
   @override
@@ -27,6 +28,58 @@ class AddressSearchRepositoryImpl implements AddressSearchRepository {
     );
     return parse(ApiEnvelope.unwrap(response.data));
   });
+
+  @override
+  Future<PointAddress?> addressAt(GeoPoint point, {required String language}) =>
+      guardApiCall(() async {
+        final Response<dynamic> response = await _dio.post<dynamic>(
+          '/customer/address-search/reverse',
+          data: <String, Object?>{
+            'latitude': point.latitude,
+            'longitude': point.longitude,
+            'language': language,
+          },
+          options: _customer,
+        );
+        return _parseAddress(ApiEnvelope.unwrap(response.data));
+      });
+
+  @override
+  Future<ServiceArea?> serviceArea() => guardApiCall(() async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      '/customer/service-area',
+      options: _customer,
+    );
+    return _parseArea(ApiEnvelope.unwrap(response.data));
+  });
+
+  static PointAddress? _parseAddress(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, 'point address');
+    final String line = json.string('line');
+    if (line.length > 160) {
+      throw const FormatException('address line off the contract');
+    }
+    return PointAddress(line: line, houseKnown: json.boolean('house_known'));
+  }
+
+  static ServiceArea? _parseArea(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, 'service area');
+    final GeoPoint? centre = parse(<String, Object?>{
+      'latitude': json.string('latitude'),
+      'longitude': json.string('longitude'),
+    });
+    final String radius = json.string('radius_km');
+    if (!_radius.hasMatch(radius) || double.parse(radius) <= 0) {
+      throw const FormatException('radius off the contract');
+    }
+    return ServiceArea(centre: centre!, radiusKm: radius);
+  }
 
   /// The point, held to its contract: two six-decimal strings on the globe;
   /// `null` when the server found nothing.

@@ -133,19 +133,23 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   Future<void> _whereAmI() async {
     final int touches = _touches;
     setState(() => _locating = true);
-    final GeoPoint? here = await ref.read(deviceLocationProvider).current();
+    final LocationOutcome outcome = await ref
+        .read(deviceLocationProvider)
+        .current();
     if (!mounted) {
       return;
     }
     setState(() => _locating = false);
-    if (here == null) {
+    if (outcome case LocationFound(point: final GeoPoint here)) {
+      if (touches == _touches) {
+        setState(() => _moveTo(here));
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).addressLocationFailed),
         ),
       );
-    } else if (touches == _touches) {
-      setState(() => _moveTo(here));
     }
   }
 
