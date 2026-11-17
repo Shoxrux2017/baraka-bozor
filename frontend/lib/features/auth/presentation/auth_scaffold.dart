@@ -588,10 +588,11 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// A 40 px circle with a hairline border around one icon button. On the
-/// panel's page ([filled]) the circle and its slot are 44, a real 44 tap
-/// target (`DL-117`, `DL-136`); the hairline is drawn over the circle, not
-/// inside it.
+/// A circle with a hairline border around one icon button. The slot is
+/// always 44 and the button fills it, a real 44 tap target (`DL-117`,
+/// `DL-136`, `DL-139`); the circle is 40 on the phone's page and 44 on the
+/// panel's light page ([filled]), where the hairline is drawn over the
+/// circle, not inside it.
 class _CircleButton extends StatelessWidget {
   const _CircleButton({required this.child, this.filled = false});
 
@@ -615,9 +616,21 @@ class _CircleButton extends StatelessWidget {
               border: Border.all(color: KitColors.line),
             )
           : null,
-      child: ClipOval(child: Center(child: child)),
+      child: filled ? ClipOval(child: Center(child: child)) : null,
     );
-    return circle;
+    if (filled) {
+      return circle;
+    }
+    return SizedBox.square(
+      dimension: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          circle,
+          Positioned.fill(child: child),
+        ],
+      ),
+    );
   }
 }
 

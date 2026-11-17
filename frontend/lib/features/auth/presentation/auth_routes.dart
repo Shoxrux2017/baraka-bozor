@@ -13,9 +13,10 @@ import 'staff_password_screen.dart';
 import 'unreachable_screen.dart';
 import 'wrong_surface_screen.dart';
 
-/// The screens outside every role shell. They are flat, not nested: none
-/// is a page over another, so no back gesture lands on a screen the session
-/// guard would only bounce away from. Each screen carries its own way back.
+/// The screens outside every role shell. They are flat, not nested, except
+/// the code, which is a page over the phone: no other back gesture may land
+/// on a screen the session guard would only bounce away from. Each screen
+/// carries its own way back.
 final FeatureRoutes authRoutes = FeatureRoutes(
   feature: 'auth',
   routes: <RouteBase>[
@@ -24,12 +25,16 @@ final FeatureRoutes authRoutes = FeatureRoutes(
       name: 'customer-phone',
       pageBuilder: (BuildContext context, GoRouterState state) =>
           appPage(state, const AuthEntryScreen(), entry: true),
-    ),
-    GoRoute(
-      path: AppPaths.customerCode,
-      name: 'customer-code',
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, const CodeScreen(), entry: true),
+      routes: <RouteBase>[
+        // `/auth/code`: a page over the phone page, so back lands on the
+        // number (`DL-139`).
+        GoRoute(
+          path: 'code',
+          name: 'customer-code',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const CodeScreen()),
+        ),
+      ],
     ),
     GoRoute(
       path: AppPaths.staffLogin,

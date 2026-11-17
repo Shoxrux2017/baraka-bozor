@@ -331,8 +331,11 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey<String>('continue-button')));
       await tester.pumpAndSettle();
+      // The sixth digit verifies by itself; the ✓ shows for 700 ms.
       await tester.enterText(codeField, '482913');
-      await tester.tap(find.byKey(const ValueKey<String>('verify-button')));
+      await tester.pump(const Duration(milliseconds: 160));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
     }
 

@@ -4681,5 +4681,33 @@
       }
     }
   },
-  "codeEmptySpoken": "bo'sh"
+  "codeEmptySpoken": "bo'sh",
+  "codeSentLead": "Kodni Telegramga shu raqamga yubordik",
+  "codeSentLeadSms": "Kodni SMS orqali shu raqamga yubordik",
+  "codeSentLeadOther": "Kodni shu raqamga yubordik",
+  "codeBackSpoken": "Orqaga, telefon raqamiga",
+  "codeFieldSpoken": "Telegramdagi kod, 6 ta raqam",
+  "codeFieldSpokenOther": "Kod, 6 ta raqam",
+  "codeChecking": "Tekshirilmoqda…",
+  "codeAccepted": "Kod to'g'ri",
+  "codeWrongLeft": "Kod noto'g'ri. Yana {count} ta urinish qoldi",
+  "@codeWrongLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeLockText": "Kod 3 marta noto'g'ri kiritildi. Hisob nolga yetganda yangi kod so'rash mumkin bo'ladi.",
+  "codeLockDoneTime": "Yana mumkin",
+  "codeLockDoneText": "Tanaffus tugadi. Yangi kod oling — avvalgisi endi ishlamaydi.",
+  "codeLockSpoken": "Tanaffus {time}. Kod 3 marta noto'g'ri kiritildi",
+  "@codeLockSpoken": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLockDoneSpoken": "Yangi kod olish mumkin"
 }

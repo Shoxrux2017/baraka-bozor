@@ -6032,4 +6032,59 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get codeEmptySpoken => 'пусто';
+
+  @override
+  String get codeSentLead => 'Отправили код в Telegram на номер';
+
+  @override
+  String get codeSentLeadSms => 'Отправили SMS с кодом на номер';
+
+  @override
+  String get codeSentLeadOther => 'Отправили код на номер';
+
+  @override
+  String get codeBackSpoken => 'Назад, к номеру телефона';
+
+  @override
+  String get codeFieldSpoken => 'Код из Telegram, 6 цифр';
+
+  @override
+  String get codeFieldSpokenOther => 'Код, 6 цифр';
+
+  @override
+  String get codeChecking => 'Проверяем…';
+
+  @override
+  String get codeAccepted => 'Код верный';
+
+  @override
+  String codeWrongLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Осталось $count попыток',
+      few: 'Осталось $count попытки',
+      one: 'Осталась $count попытка',
+    );
+    return 'Неверный код. $_temp0';
+  }
+
+  @override
+  String get codeLockText =>
+      'Код введён неверно 3 раза. Новый код можно будет запросить, когда отсчёт дойдёт до нуля.';
+
+  @override
+  String get codeLockDoneTime => 'Можно снова';
+
+  @override
+  String get codeLockDoneText =>
+      'Пауза кончилась. Получите новый код — прежний больше не действует.';
+
+  @override
+  String codeLockSpoken(String time) {
+    return 'Пауза $time. Код введён неверно 3 раза';
+  }
+
+  @override
+  String get codeLockDoneSpoken => 'Можно получить новый код';
 }

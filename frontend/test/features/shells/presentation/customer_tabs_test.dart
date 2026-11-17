@@ -497,7 +497,9 @@ void main() {
       await tester.tap(byKey('continue-button'));
       await tester.pumpAndSettle();
       await tester.enterText(byKey('code-field'), '482913');
-      await tester.tap(byKey('verify-button'));
+      await tester.pump(const Duration(milliseconds: 160));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
 
       expect(find.byType(CatalogHomeScreen), findsOneWidget);

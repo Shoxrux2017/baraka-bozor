@@ -3947,5 +3947,33 @@
       }
     }
   },
-  "codeEmptySpoken": "пусто"
+  "codeEmptySpoken": "пусто",
+  "codeSentLead": "Отправили код в Telegram на номер",
+  "codeSentLeadSms": "Отправили SMS с кодом на номер",
+  "codeSentLeadOther": "Отправили код на номер",
+  "codeBackSpoken": "Назад, к номеру телефона",
+  "codeFieldSpoken": "Код из Telegram, 6 цифр",
+  "codeFieldSpokenOther": "Код, 6 цифр",
+  "codeChecking": "Проверяем…",
+  "codeAccepted": "Код верный",
+  "codeWrongLeft": "Неверный код. {count, plural, one{Осталась {count} попытка} few{Осталось {count} попытки} other{Осталось {count} попыток}}",
+  "@codeWrongLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeLockText": "Код введён неверно 3 раза. Новый код можно будет запросить, когда отсчёт дойдёт до нуля.",
+  "codeLockDoneTime": "Можно снова",
+  "codeLockDoneText": "Пауза кончилась. Получите новый код — прежний больше не действует.",
+  "codeLockSpoken": "Пауза {time}. Код введён неверно 3 раза",
+  "@codeLockSpoken": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLockDoneSpoken": "Можно получить новый код"
 }

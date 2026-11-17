@@ -9559,6 +9559,90 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'bo\'sh'**
   String get codeEmptySpoken;
+
+  /// No description provided for @codeSentLead.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni Telegramga shu raqamga yubordik'**
+  String get codeSentLead;
+
+  /// No description provided for @codeSentLeadSms.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni SMS orqali shu raqamga yubordik'**
+  String get codeSentLeadSms;
+
+  /// No description provided for @codeSentLeadOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni shu raqamga yubordik'**
+  String get codeSentLeadOther;
+
+  /// No description provided for @codeBackSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Orqaga, telefon raqamiga'**
+  String get codeBackSpoken;
+
+  /// No description provided for @codeFieldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telegramdagi kod, 6 ta raqam'**
+  String get codeFieldSpoken;
+
+  /// No description provided for @codeFieldSpokenOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod, 6 ta raqam'**
+  String get codeFieldSpokenOther;
+
+  /// No description provided for @codeChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirilmoqda…'**
+  String get codeChecking;
+
+  /// No description provided for @codeAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod to\'g\'ri'**
+  String get codeAccepted;
+
+  /// No description provided for @codeWrongLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod noto\'g\'ri. Yana {count} ta urinish qoldi'**
+  String codeWrongLeft(int count);
+
+  /// No description provided for @codeLockText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod 3 marta noto\'g\'ri kiritildi. Hisob nolga yetganda yangi kod so\'rash mumkin bo\'ladi.'**
+  String get codeLockText;
+
+  /// No description provided for @codeLockDoneTime.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana mumkin'**
+  String get codeLockDoneTime;
+
+  /// No description provided for @codeLockDoneText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanaffus tugadi. Yangi kod oling — avvalgisi endi ishlamaydi.'**
+  String get codeLockDoneText;
+
+  /// No description provided for @codeLockSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanaffus {time}. Kod 3 marta noto\'g\'ri kiritildi'**
+  String codeLockSpoken(String time);
+
+  /// No description provided for @codeLockDoneSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kod olish mumkin'**
+  String get codeLockDoneSpoken;
 }
 
 class _AppLocalizationsDelegate

@@ -5932,4 +5932,52 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get codeEmptySpoken => 'bo\'sh';
+
+  @override
+  String get codeSentLead => 'Kodni Telegramga shu raqamga yubordik';
+
+  @override
+  String get codeSentLeadSms => 'Kodni SMS orqali shu raqamga yubordik';
+
+  @override
+  String get codeSentLeadOther => 'Kodni shu raqamga yubordik';
+
+  @override
+  String get codeBackSpoken => 'Orqaga, telefon raqamiga';
+
+  @override
+  String get codeFieldSpoken => 'Telegramdagi kod, 6 ta raqam';
+
+  @override
+  String get codeFieldSpokenOther => 'Kod, 6 ta raqam';
+
+  @override
+  String get codeChecking => 'Tekshirilmoqda…';
+
+  @override
+  String get codeAccepted => 'Kod to\'g\'ri';
+
+  @override
+  String codeWrongLeft(int count) {
+    return 'Kod noto\'g\'ri. Yana $count ta urinish qoldi';
+  }
+
+  @override
+  String get codeLockText =>
+      'Kod 3 marta noto\'g\'ri kiritildi. Hisob nolga yetganda yangi kod so\'rash mumkin bo\'ladi.';
+
+  @override
+  String get codeLockDoneTime => 'Yana mumkin';
+
+  @override
+  String get codeLockDoneText =>
+      'Tanaffus tugadi. Yangi kod oling — avvalgisi endi ishlamaydi.';
+
+  @override
+  String codeLockSpoken(String time) {
+    return 'Tanaffus $time. Kod 3 marta noto\'g\'ri kiritildi';
+  }
+
+  @override
+  String get codeLockDoneSpoken => 'Yangi kod olish mumkin';
 }

@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 const Set<String> _entryNames = <String>{
   'bootstrap',
   'customer-phone',
-  'customer-code',
   'staff-login',
   'change-password',
   'staff-password',
@@ -38,6 +37,7 @@ const Set<String> _entryNames = <String>{
 const Set<String> _risingNames = <String>{'customer-order-rate'};
 
 const Set<String> _pageNames = <String>{
+  'customer-code',
   'catalog-categories',
   'catalog-category',
   'catalog-recommended',

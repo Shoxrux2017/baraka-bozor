@@ -78,8 +78,11 @@ void main() {
 
   Future<void> toStaffPassword(WidgetTester tester) async {
     await toCodeScreen(tester);
+    // The sixth digit verifies by itself; the ✓ shows for 700 ms.
     await tester.enterText(find.byKey(key('code-field')), '482913');
-    await tapKey(tester, 'verify-button');
+    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
   }
 
@@ -126,7 +129,7 @@ void main() {
       await tester.enterText(find.byKey(key('code-field')), '000000');
       await tapKey(tester, 'verify-button');
       await tester.pumpAndSettle();
-      expect(find.byKey(key('lock-message')), findsOneWidget);
+      expect(find.byKey(key('code-lock-card')), findsOneWidget);
       await tester.pump(const Duration(seconds: 59));
     },
     'code, lock over': (WidgetTester tester, String language) async {
@@ -141,8 +144,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 59));
       await tester.pump();
-      expect(find.byKey(key('lock-over-message')), findsOneWidget);
+      expect(find.byKey(key('code-lock-card')), findsOneWidget);
       expect(find.byKey(key('lock-message')), findsNothing);
+      expect(
+        tester.widget<FilledButton>(find.byKey(key('verify-button'))).onPressed,
+        isNotNull,
+      );
     },
     'phone, locked': (WidgetTester tester, String language) async {
       repository.requestFailure = ApiRefusal(
