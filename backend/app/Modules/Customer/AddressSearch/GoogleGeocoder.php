@@ -73,7 +73,7 @@ final class GoogleGeocoder implements AddressGeocoder
         return $this->pointOf($body['results'][0] ?? null);
     }
 
-    public function describe(string $latitude, string $longitude, string $language): ?PointAddress
+    public function describe(#[\SensitiveParameter] string $latitude, #[\SensitiveParameter] string $longitude, string $language): ?PointAddress
     {
         $parameters = [
             'latlng' => "{$latitude},{$longitude}",
@@ -142,14 +142,17 @@ final class GoogleGeocoder implements AddressGeocoder
         }
 
         $route = $named['route'] ?? null;
-        $house = $named['street_number'] ?? $named['premise'] ?? null;
+        $number = $named['street_number'] ?? null;
+        $premise = $named['premise'] ?? null;
 
-        if ($route !== null && $house !== null) {
-            return new PointAddress("{$route}, {$house}", true);
+        // A number alone says nothing about the street, so a house needs its
+        // street or a named building (`DL-138` item 3).
+        if ($route !== null && ($number ?? $premise) !== null) {
+            return new PointAddress("{$route}, ".($number ?? $premise), true);
         }
 
-        if ($house !== null) {
-            return new PointAddress($house, true);
+        if ($premise !== null) {
+            return new PointAddress($premise, true);
         }
 
         if ($route !== null) {

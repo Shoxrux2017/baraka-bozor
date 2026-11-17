@@ -19,9 +19,7 @@ final class ServiceAreaController extends Controller
     {
         $settings = BusinessSettings::current();
 
-        if ($settings->service_centre_latitude === null
-            || $settings->service_centre_longitude === null
-            || $settings->service_radius_km === null) {
+        if (! $settings->hasServiceArea()) {
             return response()->json(['data' => null]);
         }
 

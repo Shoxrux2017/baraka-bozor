@@ -4,7 +4,7 @@
 - Manzillar va xaritadagi nuqta — yetkazib berish uchun.
 - Buyurtmalar, teruvchiga javoblar, baholar va fikrlar.
 - Ilova tili.
-Telefoningiz joylashuvi faqat sizni xaritada ko'rsatish uchun kerak — biz uni saqlamaymiz.
+Telefoningiz joylashuvi faqat sizni xaritada ko'rsatish uchun kerak: ruxsat avval berilgan bo'lsa, xarita siz turgan joyda ochiladi, «Men qayerdaman» tugmasi esa belgini siz turgan joyga qo'yadi. Biz uni saqlamaymiz; belgi nuqtasini ko'cha va uyni aytish uchun Google'ga yuboramiz.
 ## Ularni kim ko'radi
 BarakaBozor teruvchisi, kuryeri va operatori — faqat buyurtmangiz uchun keraklisini.
 ## Ma'lumotlarni kimga beramiz

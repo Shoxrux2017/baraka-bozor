@@ -54,9 +54,7 @@ final class SearchAddress
     {
         $settings = BusinessSettings::current();
 
-        if ($settings->service_centre_latitude === null
-            || $settings->service_centre_longitude === null
-            || $settings->service_radius_km === null) {
+        if (! $settings->hasServiceArea()) {
             return null;
         }
 

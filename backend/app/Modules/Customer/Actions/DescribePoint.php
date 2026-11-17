@@ -31,7 +31,7 @@ final class DescribePoint
         private readonly AddressGeocoder $geocoder,
     ) {}
 
-    public function __invoke(User $customer, string $latitude, string $longitude, string $language): ?PointAddress
+    public function __invoke(User $customer, #[\SensitiveParameter] string $latitude, #[\SensitiveParameter] string $longitude, string $language): ?PointAddress
     {
         $this->reserve("address-reverse:minute:{$customer->id}", self::PER_MINUTE, 60);
         $this->reserve("address-reverse:day:{$customer->id}", self::PER_DAY, 86_400);

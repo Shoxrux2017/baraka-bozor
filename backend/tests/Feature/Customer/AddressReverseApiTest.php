@@ -92,6 +92,26 @@ final class AddressReverseApiTest extends TestCase
             ->assertExactJson(['data' => ['line' => 'Orzu savdo', 'house_known' => true]]);
     }
 
+    public function test_a_number_without_a_street_is_not_a_house_line(): void
+    {
+        Http::fake([self::GOOGLE => Http::response($this->found([
+            $this->googleResult(['street_address'], [['street_number', '14'], ['sublocality_level_1', 'Chilonzor tumani']]),
+        ]))]);
+
+        $this->reverse()->assertOk()
+            ->assertExactJson(['data' => ['line' => 'Chilonzor tumani', 'house_known' => false]]);
+    }
+
+    public function test_a_premise_beats_a_number_without_a_street(): void
+    {
+        Http::fake([self::GOOGLE => Http::response($this->found([
+            $this->googleResult(['premise'], [['street_number', '14'], ['premise', 'Orzu savdo']]),
+        ]))]);
+
+        $this->reverse()->assertOk()
+            ->assertExactJson(['data' => ['line' => 'Orzu savdo', 'house_known' => true]]);
+    }
+
     public function test_a_district_alone_is_named_without_a_house(): void
     {
         Http::fake([self::GOOGLE => Http::response($this->found([
