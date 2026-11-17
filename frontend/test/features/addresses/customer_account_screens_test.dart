@@ -1227,8 +1227,8 @@ void main() {
         final double listTop = tester.getTopLeft(byKey('address-form')).dy;
         expect(
           tester.getTopLeft(label).dy - listTop,
-          isNot(closeTo(12, 0.5)),
-          reason: 'the label is not yet where the scroll will put it',
+          greaterThan(12.5),
+          reason: 'the label stands below where the scroll will put it',
         );
         tester.takeAnnouncements();
 
