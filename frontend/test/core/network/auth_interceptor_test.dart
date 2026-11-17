@@ -109,6 +109,40 @@ void main() {
     },
   );
 
+  test('a request that keeps its session is not dropped on authentication_required', () async {
+    okReply = (RequestOptions _) => errorReply(401, 'authentication_required');
+
+    await expectLater(
+      dio.get<dynamic>(
+        '/customer/profile',
+        options: RequestSlot.of(
+          SessionSlot.customer,
+          keepOnUnauthenticated: true,
+        ),
+      ),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(refused, isEmpty);
+  });
+
+  test('it is still dropped on account_blocked', () async {
+    okReply = (RequestOptions _) => errorReply(401, 'account_blocked');
+
+    await expectLater(
+      dio.get<dynamic>(
+        '/customer/profile',
+        options: RequestSlot.of(
+          SessionSlot.customer,
+          keepOnUnauthenticated: true,
+        ),
+      ),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(refused, <SessionSlot>[SessionSlot.customer]);
+  });
+
   test('a blocked account drops the active slot', () async {
     okReply = (RequestOptions _) => errorReply(401, 'account_blocked');
 

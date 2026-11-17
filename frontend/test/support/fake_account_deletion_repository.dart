@@ -20,6 +20,11 @@ class FakeAccountDeletionRepository implements AccountDeletionRepository {
   int requests = 0;
   Completer<void>? hold;
 
+  /// What [stillExists] answers, unless a failure is queued.
+  bool exists = true;
+  final List<ApiFailure> existsFailures = <ApiFailure>[];
+  int checks = 0;
+
   @override
   Future<RequestedCode> requestCode() async {
     requests++;
@@ -37,6 +42,16 @@ class FakeAccountDeletionRepository implements AccountDeletionRepository {
     if (deleteFailures.isNotEmpty) {
       throw deleteFailures.removeAt(0);
     }
+  }
+
+  @override
+  Future<bool> stillExists() async {
+    checks++;
+    await hold?.future;
+    if (existsFailures.isNotEmpty) {
+      throw existsFailures.removeAt(0);
+    }
+    return exists;
   }
 }
 

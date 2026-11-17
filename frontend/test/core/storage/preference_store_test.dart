@@ -22,4 +22,15 @@ void main() {
       expect(await store.read('missing'), isNull);
     },
   );
+
+  test('remove forgets the key', () async {
+    const PreferenceStore store = SecurePreferenceStore();
+    await store.write('language', 'ru');
+    await store.write('other', 'x');
+
+    await store.remove('language');
+
+    expect(await store.read('language'), isNull);
+    expect(backing.keys, <String>['bb_pref_other']);
+  });
 }

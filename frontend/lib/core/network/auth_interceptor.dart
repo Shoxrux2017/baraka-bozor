@@ -62,6 +62,8 @@ class AuthInterceptor extends Interceptor {
         error != null &&
         error.status == 401 &&
         revokingCodes.contains(error.code) &&
+        !(error.code == 'authentication_required' &&
+            RequestSlot.keepsOnUnauthenticated(err.requestOptions)) &&
         await _sentTokenIsStillStored(err.requestOptions, slot)) {
       await _onTokenRefused(slot);
     }
@@ -91,11 +93,26 @@ abstract final class RequestSlot {
   static const String _key = 'bb_session_slot';
   static const String _explicitKey = 'bb_session_slot_explicit';
   static const String _stampKey = 'bb_session_slot_sent';
+  static const String _keepKey = 'bb_session_keep_on_unauthenticated';
 
   /// Options for a request made on behalf of [slot], or of no session when
   /// [slot] is `null`.
-  static Options of(SessionSlot? slot) =>
-      Options(extra: <String, Object?>{_key: slot, _explicitKey: true});
+  ///
+  /// With [keepOnUnauthenticated] a `401 authentication_required` to the
+  /// request leaves the session alone and reaches the caller, who reads it as
+  /// a deleted account (`DL-140`); `401 account_blocked` still drops it.
+  static Options of(SessionSlot? slot, {bool keepOnUnauthenticated = false}) =>
+      Options(
+        extra: <String, Object?>{
+          _key: slot,
+          _explicitKey: true,
+          if (keepOnUnauthenticated) _keepKey: true,
+        },
+      );
+
+  /// Whether the request keeps its session on `authentication_required`.
+  static bool keepsOnUnauthenticated(RequestOptions options) =>
+      options.extra[_keepKey] == true;
 
   /// The slot a request should be sent for: the explicit one when the data
   /// source named it, otherwise the active mode right now.
