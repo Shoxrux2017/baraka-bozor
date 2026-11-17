@@ -615,7 +615,8 @@ class _AddressFormState extends ConsumerState<_AddressForm>
   /// it (where its place in the form says it lies, then to either end) and
   /// waits for the frame, until the row exists (`DL-138`).
   Future<RenderObject?> _builtLabel(String key) async {
-    RenderObject? built() => _labelKeys[key]!.currentContext?.findRenderObject();
+    RenderObject? built() =>
+        _labelKeys[key]!.currentContext?.findRenderObject();
     if (built() != null || !_scroll.hasClients) {
       return built();
     }
@@ -919,68 +920,107 @@ class _AddressFormState extends ConsumerState<_AddressForm>
     );
   }
 
+  /// What the preview keeps free at its left for the map's own Google logo,
+  /// which must stay visible: the pill wraps upward instead (`DL-86` (2),
+  /// `DL-138`).
+  static const double _logoClear = 90;
+
+  /// The preview's height when the pill is one line.
+  static const double _previewHeight = 118;
+
   /// The still map of the point as one button, with the pill "Изменить
   /// точку" over its corner. [grown] is how far the map has shrunk into it:
   /// 0 is the map's own height, edge to edge; 1 is the preview.
   Widget _preview(AppLocalizations l10n, MutationState change, double grown) {
     final AddressMap map = ref.watch(addressMapProvider);
-    final double height = _mapHeight > 118
-        ? _mapHeight + (118 - _mapHeight) * grown
-        : 118;
     final PointAddress? place = _place;
     final bool idle = change.isBusy || _saved || _move != _Move.none;
-    return SizedBox(
-      height: height,
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints box) => OverflowBox(
-          minWidth: box.maxWidth + 32 * (1 - grown),
-          maxWidth: box.maxWidth + 32 * (1 - grown),
-          child: Transform.translate(
-            offset: Offset(0, -16 * (1 - grown)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16 * grown),
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  IgnorePointer(child: map.preview(point: _point)),
-                  Semantics(
-                    container: true,
-                    button: true,
-                    excludeSemantics: true,
-                    label: place == null
-                        ? l10n.addressChangePointSpoken
-                        : '${l10n.addressChangePointSpoken}. '
-                              '${l10n.addressPinLine(place.line)}',
-                    onTap: idle ? null : _changePoint,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        key: const ValueKey<String>('address-preview'),
-                        onTap: idle ? null : _changePoint,
-                        child: Stack(
-                          children: <Widget>[
-                            Positioned(
-                              right: 10,
-                              bottom: 10,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: math.max(0, box.maxWidth - 20),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) {
+        final double pillWidth = math.max(0, box.maxWidth - 10 - _logoClear);
+        final double rest = math.max(
+          _previewHeight,
+          _pillHeight(l10n, pillWidth) + 20,
+        );
+        final double height = _mapHeight > rest
+            ? _mapHeight + (rest - _mapHeight) * grown
+            : rest;
+        return SizedBox(
+          height: height,
+          child: OverflowBox(
+            minWidth: box.maxWidth + 32 * (1 - grown),
+            maxWidth: box.maxWidth + 32 * (1 - grown),
+            child: Transform.translate(
+              offset: Offset(0, -16 * (1 - grown)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16 * grown),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    IgnorePointer(child: map.preview(point: _point)),
+                    Semantics(
+                      container: true,
+                      button: true,
+                      excludeSemantics: true,
+                      label: place == null
+                          ? l10n.addressChangePointSpoken
+                          : '${l10n.addressChangePointSpoken}. '
+                                '${l10n.addressPinLine(place.line)}',
+                      onTap: idle ? null : _changePoint,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          key: const ValueKey<String>('address-preview'),
+                          onTap: idle ? null : _changePoint,
+                          child: Stack(
+                            children: <Widget>[
+                              Positioned(
+                                right: 10,
+                                bottom: 10,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: pillWidth,
+                                  ),
+                                  child: _pill(l10n, change.isBusy),
                                 ),
-                                child: _pill(l10n, change.isBusy),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  static const TextStyle _pillText = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
+
+  /// How tall the pill is when its text wraps in [width]: the preview is
+  /// never lower than the pill and its margins, so a large text still leaves
+  /// the logo corner free (`DL-138`).
+  double _pillHeight(AppLocalizations l10n, double width) {
+    final TextPainter painter = TextPainter(
+      text: TextSpan(
+        text: l10n.addressChangePoint,
+        style:
+            Theme.of(context).textTheme.bodyMedium?.merge(_pillText) ??
+            _pillText,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: math.max(0, width - 28 - 20 - 6));
+    final double height = painter.height;
+    painter.dispose();
+    return math.max(44, height.ceilToDouble());
   }
 
   /// The pill the preview carries: white, 44 high at least.
@@ -1012,9 +1052,7 @@ class _AddressFormState extends ConsumerState<_AddressForm>
           Flexible(
             child: Text(
               l10n.addressChangePoint,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+              style: _pillText.copyWith(
                 color: busy ? KitColors.muted : KitColors.ink,
               ),
             ),

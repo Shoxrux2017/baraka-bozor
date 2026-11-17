@@ -785,7 +785,7 @@ void main() {
     }
 
     for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
-      testWidgets('the change-point pill stays inside the preview at 320x640 '
+      testWidgets('the change-point pill leaves the map logo free at 320x640 '
           'with text x2 (${device.languageCode})', (WidgetTester tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = 2;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -797,8 +797,26 @@ void main() {
         final Rect preview = tester.getRect(byKey('address-preview'));
         final Rect pill = tester.getRect(byKey('address-change-point'));
         expect(pill.height, greaterThanOrEqualTo(44));
-        expect(pill.left, greaterThanOrEqualTo(preview.left + 10));
+        // The lite map's Google logo sits at the preview's bottom left and is
+        // never covered (`DL-86` (2)).
+        expect(pill.left, greaterThanOrEqualTo(preview.left + 90));
+        expect(pill.top, greaterThanOrEqualTo(preview.top + 10));
+        expect(pill.bottom, closeTo(preview.bottom - 10, 0.5));
         expect(pill.right, closeTo(preview.right - 10, 0.5));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the change-point pill leaves the map logo free at 320x640 '
+          'at 100 % (${device.languageCode})', (WidgetTester tester) async {
+        await openProfile(tester, size: const Size(320, 640), device: device);
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerAddress('a-1'));
+        await tester.pumpAndSettle();
+
+        final Rect preview = tester.getRect(byKey('address-preview'));
+        final Rect pill = tester.getRect(byKey('address-change-point'));
+        expect(pill.left, greaterThanOrEqualTo(preview.left + 90));
+        expect(preview.height, closeTo(118, 0.5));
         expect(tester.takeException(), isNull);
       });
 
