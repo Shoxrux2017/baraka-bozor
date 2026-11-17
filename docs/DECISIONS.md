@@ -2170,12 +2170,12 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
 
 ## DL-140 — The Apple batch, stage 21: account deletion (2026-11-17, agent; items `del-1`, `del-10` Owner)
 
-1. **Owner `del-1`**: the sheet says what is erased — «Имя и номер телефона», «Адреса», «Избранное», «Корзина» — and what stays — «Заказы — без имени, телефона и адреса, для учёта» — which is what `EraseCustomer` erases; supersedes the sheet text of `DL-94` and kit drawing 36.
+1. **Owner `del-1`**: under its title the sheet says «Это навсегда — вернуть аккаунт нельзя.», then what is erased — «Имя и номер телефона», «Адреса», «Избранное», «Корзина» — and what stays — «Заказы — без имени, телефона и адреса, для учёта» — which is what `EraseCustomer` erases; supersedes the sheet text of `DL-94` and kit drawing 36.
 2. **Owner `del-10`**: the done screen shows a calm grey check and the true text (orders stay), with a fade and a success buzz instead of the green halo; supersedes drawing 36в.
 3. **The code is spent last**: the code check runs as the erasure's consent under the cart and user locks after the unfinished-order check; a refused code commits its count and is rethrown after the commit, so an order placed during the deletion either comes first and refuses it without costing the code, or waits for the lock and finds the tokens gone. The lock order is cart → user → challenge; sign-in takes only the challenge, so no new deadlock.
 4. **The `409` details** gain `status` and `item_count` for the sheet's order card (`UnfinishedOrders::details`, the count as `OrderLineSums::add` gives it); the panel ignores them.
 5. **A lost answer**: after a delete that may have arrived, the app asks `GET /customer/profile`; a `401 authentication_required` there or on the delete itself means the account is gone, because Customer tokens are revoked only by that token's logout and by the erasure, and a blocked account answers `account_blocked`; only these two calls keep the session on that answer. A check that answers `200` or fails shows «Нет связи — аккаунт не удалён» and keeps the code.
-6. **Push**: the logout hook is not run (reason as above, «Before the tasks» (2)).
+6. **Push**: the deletion does not run the logout hook. `EraseCustomer` deletes the account's push devices in the erasure's transaction and revokes its tokens, so a revoke after it would be refused, and one before it would unregister a device whose deletion may still be refused; the registrar forgets the slot when the session drops. The review's finding of 2026-10-28 is therefore not a defect.
 7. **The device forgets** the account's recent searches and chosen delivery address (`PreferenceStore.remove`).
 8. **The sheet drags** with Flutter's own drag; while the code is sent `SheetHold` rubber-bands it, and «Оставить аккаунт», the scrim and back still close it.
 9. **One sheet, two faces**, the order card opens the order.
