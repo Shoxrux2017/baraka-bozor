@@ -620,6 +620,27 @@
   },
   "addressSaving": "Сохраняем…",
   "addressSavedButton": "Сохранено",
+  "addressChangePointSpoken": "Изменить точку на карте",
+  "addressPinLine": "Метка: {line}",
+  "@addressPinLine": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "addressLeaveTitle": "Выйти без сохранения?",
+  "addressLeaveNamed": "Адрес не сохранится — «{name}», и всё, что вы ввели, пропадёт.",
+  "@addressLeaveNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressLeavePlain": "Адрес не сохранится, и всё, что вы ввели, пропадёт.",
+  "addressLeaveStay": "Продолжить ввод",
+  "addressLeaveGo": "Выйти",
   "addressMapHint": "Передвиньте карту, чтобы метка встала на вход в ваш дом",
   "addressPointTitle": "Точка доставки",
   "addressSearchHint": "Или напишите адрес: улица, дом",

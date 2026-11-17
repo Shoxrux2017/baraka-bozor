@@ -1357,6 +1357,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressSavedButton => 'Сохранено';
 
   @override
+  String get addressChangePointSpoken => 'Изменить точку на карте';
+
+  @override
+  String addressPinLine(String line) {
+    return 'Метка: $line';
+  }
+
+  @override
+  String get addressLeaveTitle => 'Выйти без сохранения?';
+
+  @override
+  String addressLeaveNamed(String name) {
+    return 'Адрес не сохранится — «$name», и всё, что вы ввели, пропадёт.';
+  }
+
+  @override
+  String get addressLeavePlain =>
+      'Адрес не сохранится, и всё, что вы ввели, пропадёт.';
+
+  @override
+  String get addressLeaveStay => 'Продолжить ввод';
+
+  @override
+  String get addressLeaveGo => 'Выйти';
+
+  @override
   String get addressMapHint =>
       'Передвиньте карту, чтобы метка встала на вход в ваш дом';
 

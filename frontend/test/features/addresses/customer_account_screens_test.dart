@@ -574,6 +574,13 @@ void main() {
       expect(byKey('address-point-confirm'), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
+      expect(
+        byKey('address-leave-sheet'),
+        findsOneWidget,
+        reason: 'a filled form asks before it is left (DL-138)',
+      );
+      await tester.tap(byKey('address-leave-go'));
+      await tester.pumpAndSettle();
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
 
       // A new address changing its point from the form: back returns to the
@@ -606,6 +613,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(byKey('address-point-confirm'), findsOneWidget, reason: 'step 1');
       await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-leave-go'));
       await tester.pumpAndSettle();
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
 
@@ -643,7 +652,7 @@ void main() {
       expect(byKey('address-save'), findsOneWidget);
       expect(byKey('address-point-confirm'), findsNothing);
       expect(
-        tester.widget<InkWell>(byKey('address-change-point')).onTap,
+        tester.widget<InkWell>(byKey('address-preview')).onTap,
         isNull,
         reason: 'the point cannot be changed mid-save',
       );
@@ -775,7 +784,7 @@ void main() {
     }
 
     for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
-      testWidgets('the change-point chip leaves the map logo free at 320x640 '
+      testWidgets('the change-point pill stays inside the preview at 320x640 '
           'with text x2 (${device.languageCode})', (WidgetTester tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = 2;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -784,21 +793,11 @@ void main() {
             .push(AppPaths.customerAddress('a-1'));
         await tester.pumpAndSettle();
 
-        final Finder chip = byKey('address-change-point');
-        final Rect preview = tester.getRect(
-          find
-              .ancestor(
-                of: chip,
-                matching: find.byWidgetPredicate(
-                  (Widget w) => w is SizedBox && w.height == 118,
-                ),
-              )
-              .first,
-        );
-        expect(
-          tester.getTopLeft(chip).dx,
-          greaterThanOrEqualTo(preview.left + preview.width * 0.4),
-        );
+        final Rect preview = tester.getRect(byKey('address-preview'));
+        final Rect pill = tester.getRect(byKey('address-change-point'));
+        expect(pill.height, greaterThanOrEqualTo(44));
+        expect(pill.left, greaterThanOrEqualTo(preview.left + 10));
+        expect(pill.right, closeTo(preview.right - 10, 0.5));
         expect(tester.takeException(), isNull);
       });
 
@@ -934,6 +933,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(byKey('address-point-confirm'), findsOneWidget);
       await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('address-leave-go'));
       await tester.pumpAndSettle();
       expect(find.text(l10n(tester).errorNetwork), findsNothing);
 

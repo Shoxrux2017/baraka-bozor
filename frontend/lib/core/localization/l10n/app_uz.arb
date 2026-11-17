@@ -686,6 +686,27 @@
   },
   "addressSaving": "Saqlanmoqda…",
   "addressSavedButton": "Saqlandi",
+  "addressChangePointSpoken": "Xaritadagi nuqtani o'zgartirish",
+  "addressPinLine": "Belgi: {line}",
+  "@addressPinLine": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "addressLeaveTitle": "Saqlamasdan chiqasizmi?",
+  "addressLeaveNamed": "«{name}» manzili saqlanmaydi, kiritganlaringiz o'chib ketadi.",
+  "@addressLeaveNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addressLeavePlain": "Manzil saqlanmaydi, kiritganlaringiz o'chib ketadi.",
+  "addressLeaveStay": "Kiritishni davom ettirish",
+  "addressLeaveGo": "Chiqish",
   "addressMapHint": "Xaritani suring: belgi uyingiz kirish joyida tursin",
   "addressPointTitle": "Yetkazish nuqtasi",
   "addressSearchHint": "Yoki manzilni yozing: ko'cha, uy",

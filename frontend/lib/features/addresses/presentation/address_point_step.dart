@@ -49,6 +49,9 @@ class AddressPointStep extends ConsumerStatefulWidget {
     required this.keepsWords,
     required this.onConfirmed,
     this.openedAt,
+    this.onTyped,
+    this.onWords,
+    this.panelRises = false,
     super.key,
   });
 
@@ -61,13 +64,25 @@ class AddressPointStep extends ConsumerStatefulWidget {
   final bool keepsWords;
   final ValueChanged<AddressPointResult> onConfirmed;
 
+  /// Tells whether the search field holds words, typed or sent, so the host
+  /// knows when leaving would lose something (`DL-138`).
+  final ValueChanged<bool>? onTyped;
+
+  /// The words the search field holds, whenever they change.
+  final ValueChanged<String>? onWords;
+
+  /// The step is reached by the preview growing back into the map: the panel
+  /// slides up from below on its first frame.
+  final bool panelRises;
+
   @override
   ConsumerState<AddressPointStep> createState() => _AddressPointStepState();
 }
 
 enum _Search { start, found, notFound, unavailable }
 
-class _AddressPointStepState extends ConsumerState<AddressPointStep> {
+class _AddressPointStepState extends ConsumerState<AddressPointStep>
+    with SingleTickerProviderStateMixin {
   static const int _shortest = 3;
   static const int _searchMax = 200;
 
@@ -116,6 +131,10 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
 
   Timer? _lookupTimer;
 
+  /// The panel's rise when [AddressPointStep.panelRises]; started once the
+  /// motion setting is known.
+  AnimationController? _rise;
+
   /// The latest lookup scheduled; an older answer is not heard.
   int _lookupId = 0;
 
@@ -155,7 +174,21 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.panelRises &&
+        _rise == null &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _rise = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      )..forward();
+    }
+  }
+
+  @override
   void dispose() {
+    _rise?.dispose();
     _lookupTimer?.cancel();
     _mover.dispose();
     _field.dispose();
@@ -338,6 +371,12 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       _search = _Search.start;
       _searching = false;
     });
+    _reportWords();
+  }
+
+  void _reportWords() {
+    widget.onTyped?.call(_field.text.trim().isNotEmpty);
+    widget.onWords?.call(_field.text.trim());
   }
 
   Future<void> _whereAmI() async {
@@ -438,13 +477,31 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
             key: _mapArea,
             child: map.movable ? _movableMap(map, zone) : _fields(map),
           ),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: box.maxHeight * 0.5),
-            child: _panel(map.movable, zone),
+          _rising(
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: box.maxHeight * 0.5),
+              child: _panel(map.movable, zone),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _rising(Widget panel) {
+    final AnimationController? rise = _rise;
+    return rise == null
+        ? panel
+        : SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: rise,
+                    curve: const Cubic(0.2, 0.8, 0.2, 1),
+                  ),
+                ),
+            child: panel,
+          );
   }
 
   Widget _fields(AddressMap map) => SingleChildScrollView(
@@ -578,7 +635,10 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
             maxLength: _searchMax,
             maxLengthEnforcement: MaxLengthEnforcement.enforced,
             onSubmitted: _submit,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) {
+              setState(() {});
+              _reportWords();
+            },
             style: const TextStyle(fontSize: 14, color: KitColors.ink),
             decoration: InputDecoration(
               hintText: l10n.addressSearchHint,

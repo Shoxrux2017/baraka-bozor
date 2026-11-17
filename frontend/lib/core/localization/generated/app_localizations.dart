@@ -2492,6 +2492,48 @@ abstract class AppLocalizations {
   /// **'Saqlandi'**
   String get addressSavedButton;
 
+  /// No description provided for @addressChangePointSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritadagi nuqtani o\'zgartirish'**
+  String get addressChangePointSpoken;
+
+  /// No description provided for @addressPinLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgi: {line}'**
+  String addressPinLine(String line);
+
+  /// No description provided for @addressLeaveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlamasdan chiqasizmi?'**
+  String get addressLeaveTitle;
+
+  /// No description provided for @addressLeaveNamed.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» manzili saqlanmaydi, kiritganlaringiz o\'chib ketadi.'**
+  String addressLeaveNamed(String name);
+
+  /// No description provided for @addressLeavePlain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil saqlanmaydi, kiritganlaringiz o\'chib ketadi.'**
+  String get addressLeavePlain;
+
+  /// No description provided for @addressLeaveStay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kiritishni davom ettirish'**
+  String get addressLeaveStay;
+
+  /// No description provided for @addressLeaveGo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqish'**
+  String get addressLeaveGo;
+
   /// No description provided for @addressMapHint.
   ///
   /// In uz, this message translates to:

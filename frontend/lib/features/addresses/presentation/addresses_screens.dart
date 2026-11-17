@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -20,8 +21,10 @@ import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/shake.dart';
 import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
+import '../domain/address_search.dart';
 import '../domain/addresses.dart';
 import 'address_label_chips.dart';
+import 'address_leave_sheet.dart';
 import 'address_point_step.dart';
 import 'map/address_map.dart';
 
@@ -87,6 +90,11 @@ class _Plain extends StatelessWidget {
 
 enum _Step { point, details }
 
+/// The one transition running between the steps of a new address: the map
+/// shrinking into the preview, the preview growing back, and with reduced
+/// motion the map step fading in after it (`DL-138`).
+enum _Move { none, toDetails, toMap, mapIn }
+
 class _AddressForm extends ConsumerStatefulWidget {
   const _AddressForm({required this.address});
 
@@ -96,7 +104,8 @@ class _AddressForm extends ConsumerStatefulWidget {
   ConsumerState<_AddressForm> createState() => _AddressFormState();
 }
 
-class _AddressFormState extends ConsumerState<_AddressForm> {
+class _AddressFormState extends ConsumerState<_AddressForm>
+    with SingleTickerProviderStateMixin {
   static const int _streetMax = 160;
 
   /// The fields in the order the keyboard's "next" walks them and a save
@@ -177,11 +186,41 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   /// from it returns there.
   bool _backToDetails = false;
 
+  /// Runs the morph between the steps; [_move] says which one.
+  late final AnimationController _morph = AnimationController(
+    vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
+  );
+  _Move _move = _Move.none;
+
+  /// The height of the map area when the point was confirmed: the preview
+  /// shrinks from it and grows back to it.
+  double _mapHeight = 0;
+
+  /// What the map named under the confirmed point, `null` when it named
+  /// nothing.
+  PointAddress? _place;
+
+  /// The map step's search field holds words, and those words.
+  bool _typed = false;
+  String _typedWords = '';
+
+  /// The map step is reached by the preview growing back: its panel rises.
+  bool _rise = false;
+
+  /// The leave sheet is open.
+  bool _leaving = false;
+
   bool get _isNew => widget.address == null;
 
   @override
   void initState() {
     super.initState();
+    _morph.addStatusListener((AnimationStatus status) {
+      if (status == AnimationStatus.completed) {
+        _moveDone();
+      }
+    });
     for (final String key in <String>['street', 'house']) {
       _focus[key]!.addListener(() => _left(key));
     }
@@ -266,6 +305,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       node.dispose();
     }
     _scroll.dispose();
+    _morph.dispose();
     super.dispose();
   }
 
@@ -289,9 +329,13 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       _isNew && (_street.text.trim().isEmpty || _street.text == _filledWords);
 
   /// The Customer confirmed the pin: the details follow. The words they typed
-  /// fill the street where [_streetTakesWords] allows.
+  /// fill the street where [_streetTakesWords] allows. While a morph runs a
+  /// second confirm does nothing.
   void _confirmed(AddressPointResult result) {
-    setState(() {
+    if (_move != _Move.none) {
+      return;
+    }
+    void change() {
       _point = result.point;
       final String? words = result.words;
       if (words != null && _streetTakesWords) {
@@ -304,18 +348,147 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       _backToDetails = false;
       _pointConfirmed = true;
       _step = _Step.details;
-    });
+      _place = result.place;
+      _typed = false;
+      _typedWords = '';
+      _rise = false;
+      if (result.mapHeight > 0) {
+        _mapHeight = result.mapHeight;
+      }
+    }
+
+    if (_isNew) {
+      _run(_Move.toDetails, change);
+    } else {
+      setState(change);
+    }
   }
 
-  /// Back walks the steps; nothing moves while a save runs.
-  void _back(bool didPop) {
-    if (didPop || _saved || ref.read(addressFormControllerProvider).isBusy) {
+  /// Starts [move] after [change]; the controller's length follows the
+  /// motion setting.
+  void _run(_Move move, VoidCallback change) {
+    final bool still = MediaQuery.disableAnimationsOf(context);
+    _morph.duration = Duration(
+      milliseconds: switch (move) {
+        _Move.toDetails => still ? 200 : 400,
+        _Move.toMap => still ? 160 : 320,
+        _ => 200,
+      },
+    );
+    setState(() {
+      change();
+      _move = move;
+    });
+    _morph.forward(from: 0);
+  }
+
+  void _moveDone() {
+    if (!mounted) {
       return;
     }
-    setState(() {
-      _step = _isNew && !_backToDetails ? _Step.point : _Step.details;
-      _backToDetails = false;
-    });
+    switch (_move) {
+      case _Move.toMap:
+        final bool still = MediaQuery.disableAnimationsOf(context);
+        void arrive() {
+          _step = _Step.point;
+          _typed = false;
+          _typedWords = '';
+          _rise = !still;
+        }
+
+        if (still) {
+          _run(_Move.mapIn, arrive);
+        } else {
+          setState(() {
+            arrive();
+            _move = _Move.none;
+          });
+        }
+      case _Move.toDetails || _Move.mapIn:
+        setState(() => _move = _Move.none);
+      case _Move.none:
+        break;
+    }
+  }
+
+  /// Something was entered on a new address: leaving would lose it.
+  bool get _entered =>
+      _typed ||
+      <TextEditingController>[
+        _street,
+        _house,
+        _apartment,
+        _landmark,
+        _note,
+      ].any((TextEditingController c) => c.text.trim().isNotEmpty) ||
+      (_kind ?? AddressLabelKind.none) != AddressLabelKind.none;
+
+  /// Back walks the steps; nothing moves while a save or a morph runs, and a
+  /// new address that was filled in asks before it is left.
+  void _back(bool didPop) {
+    if (didPop ||
+        _saved ||
+        _move != _Move.none ||
+        ref.read(addressFormControllerProvider).isBusy) {
+      return;
+    }
+    if (_isNew && _step == _Step.point && !_backToDetails) {
+      unawaited(_askToLeave());
+    } else if (_isNew && _step == _Step.details) {
+      _growBack(toDetailsAfter: false);
+    } else {
+      setState(() {
+        _step = _Step.details;
+        _backToDetails = false;
+      });
+    }
+  }
+
+  /// The preview grows back into the map; [toDetailsAfter] tells that back
+  /// from that map returns to the details.
+  void _growBack({required bool toDetailsAfter}) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _run(_Move.toMap, () => _backToDetails = toDetailsAfter);
+  }
+
+  /// The preview was tapped: a new address grows it back into the map, an
+  /// edit swaps to the map.
+  void _changePoint() {
+    if (_saved ||
+        _move != _Move.none ||
+        ref.read(addressFormControllerProvider).isBusy) {
+      return;
+    }
+    if (_isNew) {
+      _growBack(toDetailsAfter: true);
+    } else {
+      setState(() => _step = _Step.point);
+    }
+  }
+
+  Future<void> _askToLeave() async {
+    if (_leaving) {
+      return;
+    }
+    _leaving = true;
+    final String street = _street.text.trim();
+    final bool leave = await showAddressLeaveSheet(
+      context,
+      name: street.isNotEmpty
+          ? street
+          : _typedWords.isNotEmpty
+          ? _typedWords
+          : null,
+    );
+    _leaving = false;
+    if (!mounted || !leave) {
+      return;
+    }
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppPaths.customerAddresses);
+    }
   }
 
   Future<void> _submit() async {
@@ -463,7 +636,8 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       canPop:
           !change.isBusy &&
           !_saved &&
-          (_isNew ? onPoint && !_backToDetails : !onPoint),
+          _move == _Move.none &&
+          (_isNew ? onPoint && !_backToDetails && !_entered : !onPoint),
       onPopInvokedWithResult: (bool didPop, Object? _) => _back(didPop),
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -480,22 +654,96 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
               )
             : kitAppBar(title: title),
         body: UnderActiveMode(
-          child: onPoint
-              ? AddressPointStep(
-                  key: const ValueKey<String>('address-point-step'),
-                  initial: _point,
-                  placed: !_isNew || _pointConfirmed,
-                  openedAt: _isNew && !_pointConfirmed ? _delivery : null,
-                  keepsWords: _streetTakesWords,
-                  onConfirmed: _confirmed,
-                )
-              : _details(l10n, change),
+          child: onPoint ? _pointStep() : _details(l10n, change),
         ),
       ),
     );
   }
 
+  /// The map step; with reduced motion it fades in after the details fade out.
+  Widget _pointStep() {
+    return AnimatedBuilder(
+      animation: _morph,
+      builder: (BuildContext context, Widget? step) => Opacity(
+        key: const ValueKey<String>('address-map-fade'),
+        opacity: _move == _Move.mapIn
+            ? Curves.easeOut.transform(_morph.value)
+            : 1,
+        child: step,
+      ),
+      child: AddressPointStep(
+        key: const ValueKey<String>('address-point-step'),
+        initial: _point,
+        placed: !_isNew || _pointConfirmed,
+        openedAt: _isNew && !_pointConfirmed ? _delivery : null,
+        keepsWords: _streetTakesWords,
+        onConfirmed: _confirmed,
+        onTyped: (bool typed) => setState(() => _typed = typed),
+        onWords: (String words) => _typedWords = words,
+        panelRises: _rise,
+      ),
+    );
+  }
+
   Widget _details(AppLocalizations l10n, MutationState change) {
+    return AnimatedBuilder(
+      animation: _morph,
+      builder: (BuildContext context, Widget? _) =>
+          _detailsAt(l10n, change, _look()),
+    );
+  }
+
+  /// How far each part of the details has come in the running morph: the
+  /// preview's shrink, the fields' arrival, the footer's offset (a fraction
+  /// of its height) and, with reduced motion, the whole face's opacity.
+  ({double preview, double fields, double footer, double whole}) _look() {
+    const Cubic out = Cubic(0.2, 0.8, 0.2, 1);
+    final double t = _morph.value;
+    final bool still = MediaQuery.disableAnimationsOf(context);
+    switch (_move) {
+      case _Move.toDetails when still:
+        return (
+          preview: 1,
+          fields: 1,
+          footer: 0,
+          whole: Curves.easeOut.transform(t),
+        );
+      case _Move.toDetails:
+        return (
+          preview: const Interval(0, 350 / 400, curve: out).transform(t),
+          fields: const Interval(80 / 400, 1, curve: out).transform(t),
+          footer:
+              1 - const Interval(60 / 400, 360 / 400, curve: out).transform(t),
+          whole: 1,
+        );
+      case _Move.toMap when still:
+        return (
+          preview: 1,
+          fields: 1,
+          footer: 0,
+          whole: 1 - Curves.easeIn.transform(t),
+        );
+      case _Move.toMap:
+        return (
+          preview: 1 - const Cubic(0.4, 0, 0.2, 1).transform(t),
+          fields: 1 - const Interval(0, 0.5, curve: Curves.easeIn).transform(t),
+          footer: const Interval(
+            0,
+            260 / 320,
+            curve: Curves.easeIn,
+          ).transform(t),
+          whole: 1,
+        );
+      case _Move.none || _Move.mapIn:
+        return (preview: 1, fields: 1, footer: 0, whole: 1);
+    }
+  }
+
+  Widget _detailsAt(
+    AppLocalizations l10n,
+    MutationState change,
+    ({double preview, double fields, double footer, double whole}) look,
+  ) {
     final bool custom = _kind == AddressLabelKind.custom;
     final bool locked = change.isBusy || _saved;
     // At large text the house and the apartment each take the width.
@@ -514,157 +762,232 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       locked: locked,
       action: TextInputAction.next,
     );
-    return Form(
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            child: ListView(
-              key: const ValueKey<String>('address-form'),
-              controller: _scroll,
-              padding: const EdgeInsets.all(16),
-              children: <Widget>[
-                _preview(l10n, change),
-                const SizedBox(height: 16),
-                _field(
-                  'street',
-                  l10n.addressFieldStreet,
-                  locked: locked,
-                  required: true,
-                  action: TextInputAction.next,
-                ),
-                if (stacked) ...<Widget>[house, apartment] else
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(child: house),
-                      const SizedBox(width: 12),
-                      Expanded(child: apartment),
-                    ],
-                  ),
-                _field(
-                  'landmark',
-                  l10n.addressLandmark,
-                  locked: locked,
-                  hint: l10n.addressLandmarkHint,
-                  action: TextInputAction.next,
-                ),
-                _field(
-                  'delivery_note',
-                  l10n.addressFieldNote,
-                  locked: locked,
-                  hint: l10n.addressNoteHint,
-                  maxLines: 3,
-                  counter: true,
-                ),
-                Text(
-                  l10n.addressLabelTitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: KitColors.muted,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                AddressLabelChips(
-                  kind: _kind ?? AddressLabelKind.none,
-                  enabled: !locked,
-                  onChanged: (AddressLabelKind kind) =>
-                      setState(() => _kind = kind),
-                ),
-                if (custom) ...<Widget>[
-                  const SizedBox(height: 14),
-                  _field(
-                    'label',
-                    l10n.addressLabelName,
-                    locked: locked,
-                    action: TextInputAction.done,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          _footer(l10n, change),
-        ],
+    final PointAddress? place = _place;
+    // Each row below the preview arrives on its own, so the list still builds
+    // only the rows in view.
+    Widget fade(Widget row) => Opacity(
+      opacity: look.fields,
+      child: Transform.translate(
+        offset: Offset(0, 48 * (1 - look.fields)),
+        child: row,
       ),
     );
-  }
-
-  /// The still map of the point with "Изменить точку" over its corner.
-  Widget _preview(AppLocalizations l10n, MutationState change) {
-    final AddressMap map = ref.watch(addressMapProvider);
-    return SizedBox(
-      height: 118,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints box) => Stack(
-            fit: StackFit.expand,
+    return IgnorePointer(
+      ignoring: _move != _Move.none,
+      child: Opacity(
+        key: const ValueKey<String>('address-details-fade'),
+        opacity: look.whole,
+        child: Form(
+          child: Column(
             children: <Widget>[
-              IgnorePointer(child: map.preview(point: _point)),
-              Positioned(
-                right: 10,
-                bottom: 10,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: box.maxWidth * 0.6 - 11,
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Material(
-                      color: Colors.white,
-                      elevation: 2,
-                      shadowColor: const Color(0x33000000),
-                      borderRadius: BorderRadius.circular(10),
-                      child: InkWell(
-                        key: const ValueKey<String>('address-change-point'),
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: change.isBusy || _saved
-                            ? null
-                            : () => setState(() {
-                                _backToDetails = _isNew;
-                                _step = _Step.point;
-                              }),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Icon(
-                                Icons.edit_location_alt_outlined,
-                                size: 16,
-                                color: change.isBusy
-                                    ? KitColors.muted
-                                    : KitColors.primaryDark,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  l10n.addressChangePoint,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: change.isBusy
-                                        ? KitColors.muted
-                                        : KitColors.ink,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+              Expanded(
+                child: ListView(
+                  key: const ValueKey<String>('address-form'),
+                  controller: _scroll,
+                  padding: const EdgeInsets.all(16),
+                  children: <Widget>[
+                    _preview(l10n, change, look.preview),
+                    ...<Widget>[
+                      if (place != null) _placeLine(place),
+                      const SizedBox(height: 16),
+                      _field(
+                        'street',
+                        l10n.addressFieldStreet,
+                        locked: locked,
+                        required: true,
+                        action: TextInputAction.next,
+                      ),
+                      if (stacked) ...<Widget>[house, apartment] else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(child: house),
+                            const SizedBox(width: 12),
+                            Expanded(child: apartment),
+                          ],
+                        ),
+                      _field(
+                        'landmark',
+                        l10n.addressLandmark,
+                        locked: locked,
+                        hint: l10n.addressLandmarkHint,
+                        action: TextInputAction.next,
+                      ),
+                      _field(
+                        'delivery_note',
+                        l10n.addressFieldNote,
+                        locked: locked,
+                        hint: l10n.addressNoteHint,
+                        maxLines: 3,
+                        counter: true,
+                      ),
+                      Text(
+                        l10n.addressLabelTitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: KitColors.muted,
                         ),
                       ),
-                    ),
-                  ),
+                      const SizedBox(height: 8),
+                      AddressLabelChips(
+                        kind: _kind ?? AddressLabelKind.none,
+                        enabled: !locked,
+                        onChanged: (AddressLabelKind kind) =>
+                            setState(() => _kind = kind),
+                      ),
+                      if (custom) ...<Widget>[
+                        const SizedBox(height: 14),
+                        _field(
+                          'label',
+                          l10n.addressLabelName,
+                          locked: locked,
+                          action: TextInputAction.done,
+                        ),
+                      ],
+                    ].map(fade),
+                  ],
+                ),
+              ),
+              ClipRect(
+                child: FractionalTranslation(
+                  translation: Offset(0, look.footer),
+                  child: _footer(l10n, change),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// The address the map named under the point, under the preview.
+  Widget _placeLine(PointAddress place) {
+    return Padding(
+      key: const ValueKey<String>('address-preview-place'),
+      padding: const EdgeInsets.fromLTRB(2, 8, 2, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Icon(Icons.location_on, size: 18, color: KitColors.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              AppLocalizations.of(context).addressPinLine(place.line),
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: KitColors.ink2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The still map of the point as one button, with the pill "Изменить
+  /// точку" over its corner. [grown] is how far the map has shrunk into it:
+  /// 0 is the map's own height, edge to edge; 1 is the preview.
+  Widget _preview(AppLocalizations l10n, MutationState change, double grown) {
+    final AddressMap map = ref.watch(addressMapProvider);
+    final double height = _mapHeight > 118
+        ? _mapHeight + (118 - _mapHeight) * grown
+        : 118;
+    final PointAddress? place = _place;
+    final bool idle = change.isBusy || _saved || _move != _Move.none;
+    return SizedBox(
+      height: height,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints box) => OverflowBox(
+          minWidth: box.maxWidth + 32 * (1 - grown),
+          maxWidth: box.maxWidth + 32 * (1 - grown),
+          child: Transform.translate(
+            offset: Offset(0, -16 * (1 - grown)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16 * grown),
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  IgnorePointer(child: map.preview(point: _point)),
+                  Semantics(
+                    container: true,
+                    button: true,
+                    excludeSemantics: true,
+                    label: place == null
+                        ? l10n.addressChangePointSpoken
+                        : '${l10n.addressChangePointSpoken}. '
+                              '${l10n.addressPinLine(place.line)}',
+                    onTap: idle ? null : _changePoint,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        key: const ValueKey<String>('address-preview'),
+                        onTap: idle ? null : _changePoint,
+                        child: Stack(
+                          children: <Widget>[
+                            Positioned(
+                              right: 10,
+                              bottom: 10,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: math.max(0, box.maxWidth - 20),
+                                ),
+                                child: _pill(l10n, change.isBusy),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The pill the preview carries: white, 44 high at least.
+  Widget _pill(AppLocalizations l10n, bool busy) {
+    return Container(
+      key: const ValueKey<String>('address-change-point'),
+      constraints: const BoxConstraints(minHeight: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.edit_location_alt_outlined,
+            size: 20,
+            color: busy ? KitColors.muted : KitColors.primary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              l10n.addressChangePoint,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: busy ? KitColors.muted : KitColors.ink,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

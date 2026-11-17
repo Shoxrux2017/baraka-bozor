@@ -1342,6 +1342,32 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressSavedButton => 'Saqlandi';
 
   @override
+  String get addressChangePointSpoken => 'Xaritadagi nuqtani o\'zgartirish';
+
+  @override
+  String addressPinLine(String line) {
+    return 'Belgi: $line';
+  }
+
+  @override
+  String get addressLeaveTitle => 'Saqlamasdan chiqasizmi?';
+
+  @override
+  String addressLeaveNamed(String name) {
+    return '«$name» manzili saqlanmaydi, kiritganlaringiz o\'chib ketadi.';
+  }
+
+  @override
+  String get addressLeavePlain =>
+      'Manzil saqlanmaydi, kiritganlaringiz o\'chib ketadi.';
+
+  @override
+  String get addressLeaveStay => 'Kiritishni davom ettirish';
+
+  @override
+  String get addressLeaveGo => 'Chiqish';
+
+  @override
   String get addressMapHint =>
       'Xaritani suring: belgi uyingiz kirish joyida tursin';
 
