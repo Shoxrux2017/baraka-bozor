@@ -12,13 +12,16 @@ use RuntimeException;
  * the client logs out on any `401`.
  *
  * `apiCode` is `code_invalid`, `code_expired`, `code_attempts_exhausted` or
- * `code_locked`; `retryAfterSeconds` is set only for `code_locked`.
+ * `code_locked`; `retryAfterSeconds` is set only for `code_locked`;
+ * `attemptsLeft` only for a wrong code against an open challenge, so the
+ * client can say how many tries remain (`DL-139`).
  */
 final class LoginCodeRefused extends RuntimeException
 {
     public function __construct(
         public readonly string $apiCode,
         public readonly ?int $retryAfterSeconds = null,
+        public readonly ?int $attemptsLeft = null,
     ) {
         parent::__construct($apiCode);
     }

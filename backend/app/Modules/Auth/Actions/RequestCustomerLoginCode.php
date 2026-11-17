@@ -56,7 +56,7 @@ final class RequestCustomerLoginCode
     {
         // Broadest first: a request refused on the address alone charges the
         // phone nothing, so one noisy source cannot use up a phone's window.
-        $this->reserve('login-code:ip:'.ClientAddress::limiterKey($ip), self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
+        $this->reserve('login-code:ip:'.ClientAddress::limiterKey($ip), self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited', ['limit' => 'address']);
 
         // A locked phone gets no new code: a resend would end the lock early.
         // Checked before the hour slot, so a refused request costs the phone
@@ -66,7 +66,7 @@ final class RequestCustomerLoginCode
             throw ApiException::tooManyRequests('code_locked', $this->limiter->availableIn($lockKey));
         }
 
-        $this->reserve("login-code:hour:{$phone}", LoginCodePolicy::SENDS_PER_HOUR, LoginCodePolicy::HOUR_SECONDS, 'rate_limited');
+        $this->reserve("login-code:hour:{$phone}", LoginCodePolicy::SENDS_PER_HOUR, LoginCodePolicy::HOUR_SECONDS, 'rate_limited', ['limit' => 'phone_hourly', 'max_sends' => LoginCodePolicy::SENDS_PER_HOUR]);
 
         $testCode = $this->testPhones->codeFor($phone);
         $code = $testCode ?? self::generate();
@@ -109,12 +109,15 @@ final class RequestCustomerLoginCode
      * The increment is atomic in the cache, so concurrent requests see distinct
      * counts and only $max of them pass. A refused request has already been
      * counted under this key and under the keys reserved before it; that keeps
-     * a window closed and never widens one.
+     * a window closed and never widens one. `$details` names which limit it
+     * was, so the client can say the true reason (`DL-139`).
+     *
+     * @param  array<string, mixed>  $details
      */
-    private function reserve(string $key, int $max, int $decaySeconds, string $apiCode): void
+    private function reserve(string $key, int $max, int $decaySeconds, string $apiCode, array $details): void
     {
         if ($this->limiter->hit($key, $decaySeconds) > $max) {
-            throw ApiException::tooManyRequests($apiCode, $this->limiter->availableIn($key));
+            throw ApiException::tooManyRequests($apiCode, $this->limiter->availableIn($key), $details);
         }
     }
 
