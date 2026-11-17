@@ -208,7 +208,8 @@ final class AddressReverseApiTest extends TestCase
         foreach ($bad as [$field, $body]) {
             $this->asCustomer()->postJson(self::URL, $body)
                 ->assertStatus(422)
-                ->assertJsonPath('code', 'validation_failed');
+                ->assertJsonPath('code', 'validation_failed')
+                ->assertJsonValidationErrorFor($field, 'errors');
         }
 
         Http::assertNothingSent();
