@@ -1,8 +1,12 @@
 import 'dart:async';
 
-import 'package:baraka_bozor/core/formatting/countdown_format.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/localization/order_labels.dart';
+import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
+import 'package:baraka_bozor/features/auth/presentation/auth_notice.dart';
+import 'package:baraka_bozor/features/profile/application/account_deletion_controller.dart';
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -10,6 +14,7 @@ import 'package:baraka_bozor/features/catalog/application/recent_searches.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/profile/presentation/delete_account_sheets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +23,7 @@ import '../../../support/app_harness.dart';
 import '../../../support/fake_account_deletion_repository.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 
 void main() {
   late InMemoryTokenStore tokens;
@@ -59,6 +65,7 @@ void main() {
     Size size = const Size(800, 1200),
     Locale device = const Locale('ru'),
     double textScale = 1,
+    TextScaler? textScaler,
   }) async {
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -71,6 +78,7 @@ void main() {
         repository: auth,
         device: device,
         preferences: preferences,
+        textScaler: textScaler,
         overrides: [
           accountDeletionRepositoryProvider.overrideWithValue(deletion),
         ],
@@ -84,8 +92,15 @@ void main() {
     Size size = const Size(800, 1200),
     Locale device = const Locale('ru'),
     double textScale = 1,
+    TextScaler? textScaler,
   }) async {
-    await pumpApp(tester, size: size, device: device, textScale: textScale);
+    await pumpApp(
+      tester,
+      size: size,
+      device: device,
+      textScale: textScale,
+      textScaler: textScaler,
+    );
     unawaited(showDeleteAccountSheet(host(tester)));
     await tester.pumpAndSettle();
   }
@@ -114,27 +129,88 @@ void main() {
   Future<void> finish(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox.shrink());
 
-  group('the confirm sheet (36)', () {
-    testWidgets('lists what is erased and kept, and the note', (tester) async {
+  group('sheet', () {
+    const Size phone = Size(390, 844);
+    const String nbspPhone = '+998 90 123 45 67';
+
+    List<String> announced(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .map((CapturedAccessibilityAnnouncement a) => a.message)
+        .toList();
+
+    testWidgets('the sheet says it is forever and what is erased and kept', (
+      tester,
+    ) async {
       await openSheet(tester);
 
       expect(byKey('delete-account-sheet'), findsOneWidget);
       expect(find.text('Удалить аккаунт?'), findsOneWidget);
-      expect(find.text('Имя и номер телефона'), findsOneWidget);
-      expect(find.text('Адреса'), findsOneWidget);
-      expect(find.text('Избранное и корзину'), findsOneWidget);
+      expect(byKey('delete-subtitle'), findsOneWidget);
       expect(
-        find.text('История заказов — без имени и телефона, для учёта'),
+        find.text('Это навсегда — вернуть аккаунт нельзя.'),
         findsOneWidget,
       );
-      expect(find.textContaining('Вернуть аккаунт нельзя.'), findsOneWidget);
+      for (final String row in <String>[
+        'Имя и номер телефона',
+        'Адреса',
+        'Избранное',
+        'Корзина',
+        'Заказы — без имени, телефона и адреса, для учёта',
+      ]) {
+        expect(
+          find.descendant(
+            of: byKey('delete-account-sheet'),
+            matching: find.text(row),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(
+        find.text('С этим номером можно войти снова — как новый покупатель.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Вернуть аккаунт нельзя.'), findsNothing);
       await finish(tester);
     });
 
-    testWidgets('Отмена sends nothing', (tester) async {
+    testWidgets('the buttons say what happens', (tester) async {
       await openSheet(tester);
 
-      await tester.tap(byKey('delete-cancel'));
+      expect(
+        find.descendant(
+          of: byKey('delete-confirm'),
+          matching: find.text('Получить код для удаления'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('delete-cancel'),
+          matching: find.text('Оставить аккаунт'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(byKey('delete-confirm')).dy,
+        lessThan(tester.getTopLeft(byKey('delete-cancel')).dy),
+      );
+      expect(
+        find.textContaining('Код для удаления придёт в Telegram на'),
+        findsOneWidget,
+      );
+      expect(find.textContaining(nbspPhone), findsOneWidget);
+      await finish(tester);
+    });
+
+    // Repro del-3: on main the sheet cannot be dragged shut.
+    testWidgets('a fling down closes the sheet', (tester) async {
+      await openSheet(tester, size: phone);
+
+      await tester.fling(
+        byKey('delete-account-sheet'),
+        const Offset(0, 500),
+        1500,
+      );
       await tester.pumpAndSettle();
 
       expect(byKey('delete-account-sheet'), findsNothing);
@@ -142,49 +218,252 @@ void main() {
       await finish(tester);
     });
 
-    testWidgets('test_two_quick_taps_request_one_code', (tester) async {
+    testWidgets(
+      'while sending a drag springs back but Оставить аккаунт leaves',
+      (tester) async {
+        final Completer<void> hold = Completer<void>();
+        deletion.hold = hold;
+        await openSheet(tester, size: phone);
+
+        await tester.tap(byKey('delete-confirm'));
+        await tester.pump();
+        expect(find.text('Отправляем код…'), findsOneWidget);
+
+        await tester.fling(
+          byKey('delete-account-sheet'),
+          const Offset(0, 500),
+          1500,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(byKey('delete-account-sheet'), findsOneWidget);
+        expect(find.text('Отправляем код…'), findsOneWidget);
+
+        await tester.tap(byKey('delete-cancel'));
+        await tester.pumpAndSettle();
+        expect(byKey('delete-account-sheet'), findsNothing);
+
+        hold.complete();
+        await tester.pumpAndSettle();
+
+        expect(byKey('delete-account-screen'), findsNothing);
+        expect(byKey('delete-account-sheet'), findsNothing);
+        expect(byKey('delete-unfinished-sheet'), findsNothing);
+        await finish(tester);
+      },
+    );
+
+    testWidgets('a late answer of a closed sheet changes nothing', (
+      tester,
+    ) async {
       final Completer<void> hold = Completer<void>();
       deletion.hold = hold;
       await openSheet(tester);
 
       await tester.tap(byKey('delete-confirm'));
       await tester.pump();
-      await tester.tap(byKey('delete-confirm'), warnIfMissed: false);
-      await tester.pump();
+      await tester.tap(byKey('delete-cancel'));
+      await tester.pumpAndSettle();
+      unawaited(showDeleteAccountSheet(host(tester)));
+      await tester.pumpAndSettle();
+
       hold.complete();
       await tester.pumpAndSettle();
 
+      expect(byKey('delete-account-sheet'), findsOneWidget);
+      expect(byKey('delete-account-screen'), findsNothing);
+      expect(
+        ProviderScope.containerOf(host(tester))
+            .read(accountDeletionControllerProvider)
+            .requested,
+        isNull,
+      );
+      expect(
+        tester.widget<FilledButton>(byKey('delete-confirm')).onPressed,
+        isNotNull,
+      );
       expect(deletion.requests, 1);
       await finish(tester);
     });
 
-    testWidgets('a sent code opens the code screen with the phone', (
-      tester,
-    ) async {
-      await openCodeScreen(tester);
+    testWidgets('offline the strip offers Повторить', (tester) async {
+      deletion.requestFailures.add(const NetworkFailure());
+      await openSheet(tester);
 
-      expect(byKey('delete-account-sheet'), findsNothing);
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-send-strip'), findsOneWidget);
+      expect(find.text('Нет связи — код не отправлен'), findsOneWidget);
+      expect(announced(tester), contains('Нет связи — код не отправлен'));
+
+      await tester.tap(find.text('Повторить'));
+      await tester.pumpAndSettle();
+
+      expect(deletion.requests, 2);
       expect(byKey('delete-account-screen'), findsOneWidget);
-      expect(location(tester), AppPaths.customerDeleteAccount);
-      expect(find.textContaining('+998 90 123 45 67'), findsOneWidget);
       await finish(tester);
     });
 
-    testWidgets('another failure shows its text above the buttons', (
+    testWidgets('a 409 turns the same sheet into the blocked face', (
       tester,
     ) async {
-      deletion.requestFailures.add(wrongCodeRefusal());
+      deletion.requestFailures.add(
+        unfinishedRefusal(status: 'shopping', itemCount: 2),
+      );
+      await openSheet(tester);
+      final ModalRoute<Object?>? route = ModalRoute.of(
+        tester.element(byKey('delete-account-sheet')),
+      );
+      expect(route, isA<ModalBottomSheetRoute<Object?>>());
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-account-sheet'), findsNothing);
+      expect(byKey('delete-unfinished-sheet'), findsOneWidget);
+      expect(
+        ModalRoute.of(tester.element(byKey('delete-unfinished-sheet'))),
+        same(route),
+      );
+      expect(find.byType(BottomSheet), findsOneWidget);
+      final AppLocalizations t = l10n(tester);
+      expect(
+        find.descendant(
+          of: byKey('delete-order-card'),
+          matching: find.text('Заказ № 1021'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('delete-order-card'),
+          matching: find.text(
+            '${OrderLabels.customerStatus(t, OrderStatus.shopping)} · '
+            '${t.orderItemCount(2)}',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        announced(tester),
+        contains('${t.deleteBlockedTitle}. ${t.deleteBlockedBody(1021)}'),
+      );
+
+      await tester.tap(byKey('delete-order-card'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-unfinished-sheet'), findsNothing);
+      expect(location(tester), AppPaths.customerOrder('o-1'));
+      await finish(tester);
+    });
+
+    testWidgets('the blocked face: К заказу opens the order, Понятно closes', (
+      tester,
+    ) async {
+      deletion.requestFailures.add(unfinishedRefusal());
+      await openSheet(tester);
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(byKey('delete-understood'));
+      await tester.pumpAndSettle();
+      expect(byKey('delete-unfinished-sheet'), findsNothing);
+      expect(location(tester), isNot(AppPaths.customerOrder('o-1')));
+
+      deletion.requestFailures.add(unfinishedRefusal());
+      unawaited(showDeleteAccountSheet(host(tester)));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('delete-to-order'));
+      await tester.pumpAndSettle();
+      expect(location(tester), AppPaths.customerOrder('o-1'));
+      await finish(tester);
+    });
+
+    testWidgets('a status the app does not know leaves only the count', (
+      tester,
+    ) async {
+      deletion.requestFailures.add(
+        unfinishedRefusal(status: 'something_new', itemCount: 3),
+      );
+      await openSheet(tester);
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: byKey('delete-order-card'),
+          matching: find.text(l10n(tester).orderItemCount(3)),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining(' · '), findsNothing);
+      await finish(tester);
+    });
+
+    // Repro del-11: on main the rows are separate nodes.
+    testWidgets('the erased things are one phrase', (tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openSheet(tester);
+
+      final SemanticsNode erased = tester.getSemantics(
+        byKey('delete-erased-group'),
+      );
+      final SemanticsNode kept = tester.getSemantics(
+        byKey('delete-kept-group'),
+      );
+      final AppLocalizations t = l10n(tester);
+
+      expect(erased.label, t.deleteErasedSpoken);
+      expect(kept.label, t.deleteKeptSpoken);
+      expect(erased.childrenCount, 0);
+      expect(kept.childrenCount, 0);
+      handle.dispose();
+      await finish(tester);
+    });
+
+    testWidgets('a sent code is announced and opens the code screen', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      tester.takeAnnouncements();
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+
+      final AppLocalizations t = l10n(tester);
+      expect(
+        announced(tester),
+        containsAllInOrder(<String>[
+          t.sendingCode,
+          t.codeSentSpoken('+998 90 123 45 67'),
+        ]),
+      );
+      expect(byKey('delete-account-screen'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('another refusal shows its notice and keeps the sheet', (
+      tester,
+    ) async {
+      deletion.requestFailures.add(
+        const ApiRefusal(ApiError(status: 500, code: 'server_error')),
+      );
       await openSheet(tester);
 
       await tester.tap(byKey('delete-confirm'));
       await tester.pumpAndSettle();
 
       expect(byKey('delete-account-sheet'), findsOneWidget);
-      expect(find.text(l10n(tester).errorCodeInvalid), findsOneWidget);
+      expect(find.byType(AuthNotice), findsOneWidget);
       await finish(tester);
     });
 
-    testWidgets('a locked phone at the request shows the lock on the sheet', (
+    testWidgets('a locked phone at the request shows the lock, button off', (
       tester,
     ) async {
       deletion.requestFailures.add(lockedRefusal(retryAfter: 30));
@@ -194,24 +473,13 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(byKey('delete-account-sheet'), findsOneWidget);
       expect(byKey('lock-message'), findsOneWidget);
-      expect(
-        find.text(l10n(tester).codeLocked(formatCountdown(30))),
-        findsOneWidget,
-      );
       expect(
         tester.widget<FilledButton>(byKey('delete-confirm')).onPressed,
         isNull,
       );
-      final int sent = deletion.requests;
-      await tester.tap(byKey('delete-confirm'), warnIfMissed: false);
-      await tester.pump();
-      expect(deletion.requests, sent);
-
       await tester.pump(const Duration(seconds: 31));
       await tester.pump();
-
       expect(byKey('lock-message'), findsNothing);
       expect(
         tester.widget<FilledButton>(byKey('delete-confirm')).onPressed,
@@ -220,25 +488,64 @@ void main() {
       await finish(tester);
     });
 
-    testWidgets('a 409 at the request opens the unfinished-order sheet and '
-        '"К заказу" opens that order', (tester) async {
-      deletion.requestFailures.add(unfinishedRefusal());
-      await openSheet(tester);
+    testWidgets('both languages render', (tester) async {
+      await openSheet(tester, device: const Locale('uz'));
 
-      await tester.tap(byKey('delete-confirm'));
-      await tester.pumpAndSettle();
-
-      expect(byKey('delete-account-sheet'), findsNothing);
-      expect(byKey('delete-unfinished-sheet'), findsOneWidget);
-      expect(find.textContaining('Заказ № 1021'), findsOneWidget);
-
-      await tester.tap(find.text('К заказу'));
-      await tester.pumpAndSettle();
-
-      expect(byKey('delete-unfinished-sheet'), findsNothing);
-      expect(location(tester), AppPaths.customerOrder('o-1'));
+      expect(find.text("O'chirish uchun kod olish"), findsOneWidget);
+      expect(find.text('Akkauntni qoldirish'), findsOneWidget);
+      expect(find.text('Savat'), findsOneWidget);
       await finish(tester);
     });
+
+    for (final double scale in <double>[1, 2]) {
+      group('tap targets at x$scale', () {
+        final TextScaler scaler = scale == 1
+            ? TextScaler.noScaling
+            : NonlinearTextScaler(scale);
+        final Size size = scale == 1 ? phone : const Size(360, 640);
+
+        testWidgets('idle', (tester) async {
+          await openSheet(tester, size: size, textScaler: scaler);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await finish(tester);
+        });
+
+        testWidgets('sending', (tester) async {
+          deletion.hold = Completer<void>();
+          await openSheet(tester, size: size, textScaler: scaler);
+          await tester.ensureVisible(byKey('delete-confirm'));
+          await tester.pump();
+          await tester.tap(byKey('delete-confirm'));
+          await tester.pump();
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await finish(tester);
+        });
+
+        testWidgets('offline', (tester) async {
+          deletion.requestFailures.add(const NetworkFailure());
+          await openSheet(tester, size: size, textScaler: scaler);
+          await tester.ensureVisible(byKey('delete-confirm'));
+          await tester.pump();
+          await tester.tap(byKey('delete-confirm'));
+          await tester.pumpAndSettle();
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await finish(tester);
+        });
+
+        testWidgets('blocked', (tester) async {
+          deletion.requestFailures.add(
+            unfinishedRefusal(status: 'shopping', itemCount: 2),
+          );
+          await openSheet(tester, size: size, textScaler: scaler);
+          await tester.ensureVisible(byKey('delete-confirm'));
+          await tester.pump();
+          await tester.tap(byKey('delete-confirm'));
+          await tester.pumpAndSettle();
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await finish(tester);
+        });
+      });
+    }
   });
 
   group('the code screen (36а)', () {
@@ -329,7 +636,13 @@ void main() {
       await submit(tester, '123456');
 
       expect(byKey('delete-unfinished-sheet'), findsOneWidget);
-      expect(find.textContaining('Заказ № 1055'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('delete-order-card'),
+          matching: find.text('Заказ № 1055'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Понятно'));
       await tester.pumpAndSettle();

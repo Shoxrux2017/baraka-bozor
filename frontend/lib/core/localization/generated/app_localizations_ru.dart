@@ -5007,21 +5007,46 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deleteErasedAddresses => 'Адреса';
 
   @override
-  String get deleteErasedFavorites => 'Избранное и корзину';
+  String get deleteSubtitle => 'Это навсегда — вернуть аккаунт нельзя.';
+
+  @override
+  String get deleteErasedFavorites => 'Избранное';
+
+  @override
+  String get deleteErasedCart => 'Корзина';
 
   @override
   String get deleteKeptHeading => 'Останется';
 
   @override
   String get deleteKeptOrders =>
-      'История заказов — без имени и телефона, для учёта';
+      'Заказы — без имени, телефона и адреса, для учёта';
 
   @override
-  String get deleteNote =>
-      'Вернуть аккаунт нельзя. С этим номером можно войти снова — как новый покупатель.';
+  String get deleteAgain =>
+      'С этим номером можно войти снова — как новый покупатель.';
 
   @override
-  String get deleteConfirm => 'Удалить';
+  String get deleteErasedSpoken =>
+      'Сотрём: имя и номер телефона, адреса, избранное, корзина';
+
+  @override
+  String get deleteKeptSpoken =>
+      'Останется: заказы — без имени, телефона и адреса, для учёта';
+
+  @override
+  String get deleteGetCode => 'Получить код для удаления';
+
+  @override
+  String get deleteKeep => 'Оставить аккаунт';
+
+  @override
+  String deleteCodeWillCome(String phone) {
+    return 'Код для удаления придёт в Telegram на $phone';
+  }
+
+  @override
+  String get deleteSendOffline => 'Нет связи — код не отправлен';
 
   @override
   String get deleteBlockedTitle => 'Сейчас удалить нельзя';

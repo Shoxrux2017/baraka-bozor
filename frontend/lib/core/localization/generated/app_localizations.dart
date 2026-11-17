@@ -8234,11 +8234,23 @@ abstract class AppLocalizations {
   /// **'Manzillar'**
   String get deleteErasedAddresses;
 
+  /// No description provided for @deleteSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu butunlay — akkauntni qaytarib bo\'lmaydi.'**
+  String get deleteSubtitle;
+
   /// No description provided for @deleteErasedFavorites.
   ///
   /// In uz, this message translates to:
-  /// **'Sevimlilar va savat'**
+  /// **'Sevimlilar'**
   String get deleteErasedFavorites;
+
+  /// No description provided for @deleteErasedCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat'**
+  String get deleteErasedCart;
 
   /// No description provided for @deleteKeptHeading.
   ///
@@ -8249,20 +8261,50 @@ abstract class AppLocalizations {
   /// No description provided for @deleteKeptOrders.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmalar tarixi — ism va telefonsiz, hisob uchun'**
+  /// **'Buyurtmalar — ism, telefon va manzilsiz, hisob uchun'**
   String get deleteKeptOrders;
 
-  /// No description provided for @deleteNote.
+  /// No description provided for @deleteAgain.
   ///
   /// In uz, this message translates to:
-  /// **'Akkauntni qaytarib bo\'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.'**
-  String get deleteNote;
+  /// **'Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.'**
+  String get deleteAgain;
 
-  /// No description provided for @deleteConfirm.
+  /// No description provided for @deleteErasedSpoken.
   ///
   /// In uz, this message translates to:
-  /// **'O\'chirish'**
-  String get deleteConfirm;
+  /// **'O\'chiriladi: ism va telefon raqami, manzillar, sevimlilar, savat'**
+  String get deleteErasedSpoken;
+
+  /// No description provided for @deleteKeptSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qoladi: buyurtmalar — ism, telefon va manzilsiz, hisob uchun'**
+  String get deleteKeptSpoken;
+
+  /// No description provided for @deleteGetCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirish uchun kod olish'**
+  String get deleteGetCode;
+
+  /// No description provided for @deleteKeep.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni qoldirish'**
+  String get deleteKeep;
+
+  /// No description provided for @deleteCodeWillCome.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirish kodi Telegramga {phone} raqamiga keladi'**
+  String deleteCodeWillCome(String phone);
+
+  /// No description provided for @deleteSendOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — kod yuborilmadi'**
+  String get deleteSendOffline;
 
   /// No description provided for @deleteBlockedTitle.
   ///

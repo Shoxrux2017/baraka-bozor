@@ -3218,11 +3218,25 @@
   "deleteErasedHeading": "Сотрём",
   "deleteErasedName": "Имя и номер телефона",
   "deleteErasedAddresses": "Адреса",
-  "deleteErasedFavorites": "Избранное и корзину",
+  "deleteSubtitle": "Это навсегда — вернуть аккаунт нельзя.",
+  "deleteErasedFavorites": "Избранное",
+  "deleteErasedCart": "Корзина",
   "deleteKeptHeading": "Останется",
-  "deleteKeptOrders": "История заказов — без имени и телефона, для учёта",
-  "deleteNote": "Вернуть аккаунт нельзя. С этим номером можно войти снова — как новый покупатель.",
-  "deleteConfirm": "Удалить",
+  "deleteKeptOrders": "Заказы — без имени, телефона и адреса, для учёта",
+  "deleteAgain": "С этим номером можно войти снова — как новый покупатель.",
+  "deleteErasedSpoken": "Сотрём: имя и номер телефона, адреса, избранное, корзина",
+  "deleteKeptSpoken": "Останется: заказы — без имени, телефона и адреса, для учёта",
+  "deleteGetCode": "Получить код для удаления",
+  "deleteKeep": "Оставить аккаунт",
+  "deleteCodeWillCome": "Код для удаления придёт в Telegram на {phone}",
+  "@deleteCodeWillCome": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSendOffline": "Нет связи — код не отправлен",
   "deleteBlockedTitle": "Сейчас удалить нельзя",
   "deleteBlockedBody": "Заказ № {number} ещё не завершён. Удалить аккаунт можно после доставки или отмены заказа.",
   "understoodButton": "Понятно",

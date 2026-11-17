@@ -55,14 +55,23 @@ class FakeAccountDeletionRepository implements AccountDeletionRepository {
   }
 }
 
-ApiRefusal unfinishedRefusal({String id = 'o-1', int number = 1021}) =>
-    ApiRefusal(
-      ApiError(
-        status: 409,
-        code: 'account_has_unfinished_orders',
-        details: <String, Object?>{'order_id': id, 'order_number': number},
-      ),
-    );
+ApiRefusal unfinishedRefusal({
+  String id = 'o-1',
+  int number = 1021,
+  String? status,
+  int? itemCount,
+}) => ApiRefusal(
+  ApiError(
+    status: 409,
+    code: 'account_has_unfinished_orders',
+    details: <String, Object?>{
+      'order_id': id,
+      'order_number': number,
+      'status': ?status,
+      'item_count': ?itemCount,
+    },
+  ),
+);
 
 ApiRefusal lockedRefusal({int? retryAfter}) => ApiRefusal(
   const ApiError(status: 429, code: 'code_locked'),
