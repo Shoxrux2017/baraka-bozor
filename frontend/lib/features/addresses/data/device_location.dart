@@ -99,7 +99,21 @@ final class GeolocatorDeviceLocation implements DeviceLocation {
         return null;
       }
       return await _read();
-    } on Object {
+    } on TimeoutException {
+      return null;
+    } on LocationServiceDisabledException {
+      return null;
+    } on PermissionDeniedException {
+      return null;
+    } on PlatformException {
+      return null;
+    } on PermissionRequestInProgressException {
+      return null;
+    } on PermissionDefinitionsNotFoundException {
+      return null;
+    } on ActivityMissingException {
+      return null;
+    } on PositionUpdateException {
       return null;
     }
   }
