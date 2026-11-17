@@ -652,6 +652,40 @@
   "addressLabelName": "Nomi",
   "addressChangePoint": "Nuqtani o'zgartirish",
   "addressSaveButton": "Manzilni saqlash",
+  "fieldRequiredSpoken": "{label}, majburiy maydon",
+  "@fieldRequiredSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldOptionalSpoken": "{label}, ixtiyoriy",
+  "@fieldOptionalSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addressFieldMissingSpoken": "«{label}» maydonini to'ldiring",
+  "@addressFieldMissingSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addressOptional": "{label} · ixtiyoriy",
+  "@addressOptional": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSaving": "Saqlanmoqda…",
+  "addressSavedButton": "Saqlandi",
   "addressMapHint": "Xaritani suring: belgi uyingiz kirish joyida tursin",
   "addressPointTitle": "Yetkazish nuqtasi",
   "addressSearchHint": "Yoki manzilni yozing: ko'cha, uy",

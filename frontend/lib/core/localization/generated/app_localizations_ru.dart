@@ -1331,6 +1331,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressSaveButton => 'Сохранить адрес';
 
   @override
+  String fieldRequiredSpoken(String label) {
+    return '$label, обязательное поле';
+  }
+
+  @override
+  String fieldOptionalSpoken(String label) {
+    return '$label, необязательно';
+  }
+
+  @override
+  String addressFieldMissingSpoken(String label) {
+    return 'Заполните поле «$label»';
+  }
+
+  @override
+  String addressOptional(String label) {
+    return '$label · необязательно';
+  }
+
+  @override
+  String get addressSaving => 'Сохраняем…';
+
+  @override
+  String get addressSavedButton => 'Сохранено';
+
+  @override
   String get addressMapHint =>
       'Передвиньте карту, чтобы метка встала на вход в ваш дом';
 

@@ -586,6 +586,40 @@
   "addressLabelName": "Название",
   "addressChangePoint": "Изменить точку",
   "addressSaveButton": "Сохранить адрес",
+  "fieldRequiredSpoken": "{label}, обязательное поле",
+  "@fieldRequiredSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldOptionalSpoken": "{label}, необязательно",
+  "@fieldOptionalSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addressFieldMissingSpoken": "Заполните поле «{label}»",
+  "@addressFieldMissingSpoken": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addressOptional": "{label} · необязательно",
+  "@addressOptional": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSaving": "Сохраняем…",
+  "addressSavedButton": "Сохранено",
   "addressMapHint": "Передвиньте карту, чтобы метка встала на вход в ваш дом",
   "addressPointTitle": "Точка доставки",
   "addressSearchHint": "Или напишите адрес: улица, дом",

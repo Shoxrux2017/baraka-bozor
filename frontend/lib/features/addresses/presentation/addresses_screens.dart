@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/accessibility/announce.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
@@ -10,6 +17,7 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
+import '../../../core/widgets/shake.dart';
 import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
 import '../domain/addresses.dart';
@@ -91,7 +99,37 @@ class _AddressForm extends ConsumerStatefulWidget {
 class _AddressFormState extends ConsumerState<_AddressForm> {
   static const int _streetMax = 160;
 
-  final GlobalKey<FormState> _form = GlobalKey<FormState>();
+  /// The fields in the order the keyboard's "next" walks them and a save
+  /// looks for the first gap (`DL-138`).
+  static const List<String> _order = <String>[
+    'street',
+    'house',
+    'apartment',
+    'landmark',
+    'delivery_note',
+    'label',
+  ];
+
+  final Map<String, FocusNode> _focus = <String, FocusNode>{
+    for (final String key in _order) key: FocusNode(),
+  };
+
+  /// Each field's visible label, where a save scrolls to.
+  final Map<String, GlobalKey> _labelKeys = <String, GlobalKey>{
+    for (final String key in _order) key: GlobalKey(),
+  };
+
+  final ScrollController _scroll = ScrollController();
+
+  /// The fields that show their problem: left empty, or a save found them
+  /// wanting.
+  final Set<String> _marked = <String>{};
+
+  /// How many times each field was asked to shake.
+  final Map<String, int> _shakes = <String, int>{};
+
+  /// The save is done and its check shows before the screen closes.
+  bool _saved = false;
   final TextEditingController _label = TextEditingController();
   late final TextEditingController _street = TextEditingController(
     text: widget.address?.street ?? '',
@@ -142,6 +180,61 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   bool get _isNew => widget.address == null;
 
   @override
+  void initState() {
+    super.initState();
+    for (final String key in <String>['street', 'house']) {
+      _focus[key]!.addListener(() => _left(key));
+    }
+  }
+
+  /// Leaving an empty required field says it is needed at once.
+  void _left(String key) {
+    if (_focus[key]!.hasFocus ||
+        _step != _Step.details ||
+        _controller(key).text.trim().isNotEmpty ||
+        _marked.contains(key)) {
+      return;
+    }
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+        if (mounted) {
+          setState(() => _marked.add(key));
+        }
+      });
+    } else if (mounted) {
+      setState(() => _marked.add(key));
+    }
+  }
+
+  TextEditingController _controller(String key) => switch (key) {
+    'street' => _street,
+    'house' => _house,
+    'apartment' => _apartment,
+    'landmark' => _landmark,
+    'delivery_note' => _note,
+    _ => _label,
+  };
+
+  static int _maxOf(String key) => switch (key) {
+    'street' => _streetMax,
+    'house' || 'apartment' => 40,
+    'landmark' => 160,
+    'delivery_note' => 300,
+    _ => 60,
+  };
+
+  /// What is wrong with the field's text, or null.
+  String? _problem(String key, AppLocalizations l10n) {
+    final String value = _controller(key).text.trim();
+    if ((key == 'street' || key == 'house') && value.isEmpty) {
+      return l10n.fieldRequired;
+    }
+    final int max = _maxOf(key);
+    return value.runes.length > max ? l10n.fieldTooLong(max) : null;
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_kind == null) {
@@ -169,6 +262,10 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     ]) {
       controller.dispose();
     }
+    for (final FocusNode node in _focus.values) {
+      node.dispose();
+    }
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -212,7 +309,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
 
   /// Back walks the steps; nothing moves while a save runs.
   void _back(bool didPop) {
-    if (didPop || ref.read(addressFormControllerProvider).isBusy) {
+    if (didPop || _saved || ref.read(addressFormControllerProvider).isBusy) {
       return;
     }
     setState(() {
@@ -222,10 +319,18 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   }
 
   Future<void> _submit() async {
-    if (!(_form.currentState?.validate() ?? false)) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final List<String> gaps = <String>[
+      for (final String key in _order)
+        if ((key != 'label' || _kind == AddressLabelKind.custom) &&
+            _problem(key, l10n) != null)
+          key,
+    ];
+    if (gaps.isNotEmpty) {
+      setState(() => _marked.addAll(gaps));
+      unawaited(_showGap(gaps.first, l10n));
       return;
     }
-    final AppLocalizations l10n = AppLocalizations.of(context);
     final Address? address = widget.address;
     final AddressDraft draft = AddressDraft(
       label: _labelValue(l10n),
@@ -252,6 +357,12 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     if (!mounted || saved == null) {
       return;
     }
+    // The check shows for a moment before the screen closes (`DL-138`).
+    setState(() => _saved = true);
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) {
+      return;
+    }
     // The bar names the address and takes the place of any bar showing, so
     // the name is seen at once (`DL-137`).
     ScaffoldMessenger.of(context)
@@ -275,6 +386,65 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     }
   }
 
+  /// A save found a gap: the list brings the first one in view, then focus
+  /// and a shake point at it; a warning tap and a spoken line say the same
+  /// (`DL-138`).
+  Future<void> _showGap(String key, AppLocalizations l10n) async {
+    final String label = _labelText(key, l10n);
+    unawaited(
+      SystemChannels.platform.invokeMethod<void>(
+        'HapticFeedback.vibrate',
+        'HapticFeedbackType.warningNotification',
+      ),
+    );
+    announce(
+      context,
+      key == 'street' || key == 'house'
+          ? l10n.addressFieldMissingSpoken(label)
+          : _problem(key, l10n) ?? l10n.addressFieldMissingSpoken(label),
+    );
+    final bool still = MediaQuery.disableAnimationsOf(context);
+    final RenderObject? box = _labelKeys[key]!.currentContext
+        ?.findRenderObject();
+    if (_scroll.hasClients) {
+      final RenderAbstractViewport? viewport = box == null
+          ? null
+          : RenderAbstractViewport.maybeOf(box);
+      final double target = viewport == null
+          ? _scroll.position.maxScrollExtent
+          : viewport.getOffsetToReveal(box!, 0).offset - 12;
+      final double offset = target.clamp(
+        _scroll.position.minScrollExtent,
+        _scroll.position.maxScrollExtent,
+      );
+      if (still) {
+        _scroll.jumpTo(offset);
+      } else {
+        await _scroll.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 300),
+          curve: const Cubic(0.2, 0.8, 0.2, 1),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    _focus[key]!.requestFocus();
+    setState(() => _shakes[key] = (_shakes[key] ?? 0) + 1);
+  }
+
+  /// The label a field carries over it, without "необязательно".
+  String _labelText(String key, AppLocalizations l10n) => switch (key) {
+    'street' => l10n.addressFieldStreet,
+    'house' => l10n.addressHouse,
+    'apartment' => l10n.addressFieldApartment,
+    'landmark' => l10n.addressLandmark,
+    'delivery_note' => l10n.addressFieldNote,
+    _ => l10n.addressLabelName,
+  };
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -291,7 +461,9 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
 
     return PopScope(
       canPop:
-          !change.isBusy && (_isNew ? onPoint && !_backToDetails : !onPoint),
+          !change.isBusy &&
+          !_saved &&
+          (_isNew ? onPoint && !_backToDetails : !onPoint),
       onPopInvokedWithResult: (bool didPop, Object? _) => _back(didPop),
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -325,64 +497,61 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
 
   Widget _details(AppLocalizations l10n, MutationState change) {
     final bool custom = _kind == AddressLabelKind.custom;
+    final bool locked = change.isBusy || _saved;
+    // At large text the house and the apartment each take the width.
+    final bool stacked =
+        textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
+    final Widget house = _field(
+      'house',
+      l10n.addressHouse,
+      locked: locked,
+      required: true,
+      action: TextInputAction.next,
+    );
+    final Widget apartment = _field(
+      'apartment',
+      l10n.addressFieldApartment,
+      locked: locked,
+      action: TextInputAction.next,
+    );
     return Form(
-      key: _form,
       child: Column(
         children: <Widget>[
           Expanded(
             child: ListView(
               key: const ValueKey<String>('address-form'),
+              controller: _scroll,
               padding: const EdgeInsets.all(16),
               children: <Widget>[
                 _preview(l10n, change),
                 const SizedBox(height: 16),
                 _field(
                   'street',
-                  _street,
                   l10n.addressFieldStreet,
-                  _streetMax,
-                  enabled: !change.isBusy,
+                  locked: locked,
                   required: true,
+                  action: TextInputAction.next,
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: _field(
-                        'house',
-                        _house,
-                        l10n.addressHouse,
-                        40,
-                        enabled: !change.isBusy,
-                        required: true,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _field(
-                        'apartment',
-                        _apartment,
-                        l10n.addressFieldApartment,
-                        40,
-                        enabled: !change.isBusy,
-                      ),
-                    ),
-                  ],
-                ),
+                if (stacked) ...<Widget>[house, apartment] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: house),
+                      const SizedBox(width: 12),
+                      Expanded(child: apartment),
+                    ],
+                  ),
                 _field(
                   'landmark',
-                  _landmark,
                   l10n.addressLandmark,
-                  160,
-                  enabled: !change.isBusy,
+                  locked: locked,
                   hint: l10n.addressLandmarkHint,
+                  action: TextInputAction.next,
                 ),
                 _field(
                   'delivery_note',
-                  _note,
                   l10n.addressFieldNote,
-                  300,
-                  enabled: !change.isBusy,
+                  locked: locked,
                   hint: l10n.addressNoteHint,
                   maxLines: 3,
                   counter: true,
@@ -398,7 +567,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
                 const SizedBox(height: 8),
                 AddressLabelChips(
                   kind: _kind ?? AddressLabelKind.none,
-                  enabled: !change.isBusy,
+                  enabled: !locked,
                   onChanged: (AddressLabelKind kind) =>
                       setState(() => _kind = kind),
                 ),
@@ -406,10 +575,9 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
                   const SizedBox(height: 14),
                   _field(
                     'label',
-                    _label,
                     l10n.addressLabelName,
-                    60,
-                    enabled: !change.isBusy,
+                    locked: locked,
+                    action: TextInputAction.done,
                   ),
                 ],
               ],
@@ -450,7 +618,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
                       child: InkWell(
                         key: const ValueKey<String>('address-change-point'),
                         borderRadius: BorderRadius.circular(10),
-                        onTap: change.isBusy
+                        onTap: change.isBusy || _saved
                             ? null
                             : () => setState(() {
                                 _backToDetails = _isNew;
@@ -502,92 +670,115 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   }
 
   /// A field of the kit: the label above, a soft fill, radius 14.
+  ///
+  /// An optional field says so in its label; a reader hears the label as one
+  /// line with the field, not apart from it. While [locked] the field keeps
+  /// its look but takes no input (`DL-138`).
   Widget _field(
     String key,
-    TextEditingController controller,
-    String label,
-    int max, {
-    required bool enabled,
+    String label, {
+    required bool locked,
     bool required = false,
     int maxLines = 1,
     String? hint,
     bool counter = false,
+    TextInputAction? action,
   }) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final TextEditingController controller = _controller(key);
+    final int max = _maxOf(key);
+    final int at = _order.indexOf(key);
     OutlineInputBorder border(Color color) => OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(color: color),
     );
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            required ? '$label *' : label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: KitColors.muted,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
-            key: ValueKey<String>('field-$key'),
-            controller: controller,
-            enabled: enabled,
-            maxLines: maxLines,
-            style: const TextStyle(fontSize: 14, color: KitColors.ink),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(fontSize: 14, color: KitColors.muted),
-              filled: true,
-              fillColor: KitColors.field,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 16,
-              ),
-              border: border(KitColors.line),
-              enabledBorder: border(KitColors.line),
-              disabledBorder: border(KitColors.line),
-              focusedBorder: border(KitColors.primary),
-              errorBorder: border(KitColors.danger),
-              focusedErrorBorder: border(KitColors.danger),
-              errorStyle: const TextStyle(
-                fontSize: 12,
-                color: KitColors.danger,
-              ),
-            ),
-            validator: (String? text) {
-              final String value = (text ?? '').trim();
-              if (required && value.isEmpty) {
-                return l10n.fieldRequired;
-              }
-              return value.runes.length > max ? l10n.fieldTooLong(max) : null;
-            },
-          ),
-          if (counter)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
-                  builder:
-                      (BuildContext _, TextEditingValue value, Widget? _) =>
-                          Text(
-                            '${value.text.runes.length} / $max',
-                            key: ValueKey<String>('counter-$key'),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: KitColors.muted,
-                            ),
-                          ),
+      child: Shake(
+        trigger: _shakes[key] ?? 0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            ExcludeSemantics(
+              key: ValueKey<String>('label-of-$key'),
+              child: Text(
+                key: _labelKeys[key],
+                required ? label : l10n.addressOptional(label),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: KitColors.muted,
                 ),
               ),
             ),
-        ],
+            const SizedBox(height: 6),
+            Semantics(
+              label: required
+                  ? l10n.fieldRequiredSpoken(label)
+                  : l10n.fieldOptionalSpoken(label),
+              child: TextFormField(
+                key: ValueKey<String>('field-$key'),
+                controller: controller,
+                focusNode: _focus[key],
+                readOnly: locked,
+                textInputAction: action,
+                onEditingComplete: action == TextInputAction.next
+                    ? () => _focus[_order[at + 1]]!.requestFocus()
+                    : null,
+                autovalidateMode: _marked.contains(key)
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled,
+                maxLines: maxLines,
+                style: const TextStyle(fontSize: 14, color: KitColors.ink),
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: const TextStyle(
+                    fontSize: 14,
+                    color: KitColors.muted,
+                  ),
+                  filled: true,
+                  fillColor: KitColors.field,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 16,
+                  ),
+                  border: border(KitColors.line),
+                  enabledBorder: border(KitColors.line),
+                  disabledBorder: border(KitColors.line),
+                  focusedBorder: border(KitColors.primary),
+                  errorBorder: border(KitColors.danger),
+                  focusedErrorBorder: border(KitColors.danger),
+                  errorStyle: const TextStyle(
+                    fontSize: 12,
+                    color: KitColors.danger,
+                  ),
+                ),
+                validator: (String? _) => _problem(key, l10n),
+              ),
+            ),
+            if (counter)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder:
+                        (BuildContext _, TextEditingValue value, Widget? _) =>
+                            Text(
+                              '${value.text.runes.length} / $max',
+                              key: ValueKey<String>('counter-$key'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: KitColors.muted,
+                              ),
+                            ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -625,12 +816,14 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
               ),
               FilledButton(
                 key: const ValueKey<String>('address-save'),
-                onPressed: change.isBusy ? null : _submit,
+                // Saving and saved keep the green: a grey button would read
+                // as a failure (`DL-138`).
+                onPressed: change.isBusy || _saved ? null : _submit,
                 style: FilledButton.styleFrom(
                   backgroundColor: KitColors.primary,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: KitColors.line,
-                  disabledForegroundColor: KitColors.muted,
+                  disabledBackgroundColor: KitColors.primary,
+                  disabledForegroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(54),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -640,7 +833,33 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: Text(l10n.addressSaveButton),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    if (change.isBusy)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    else if (_saved)
+                      const Icon(Icons.check, size: 20),
+                    if (change.isBusy || _saved) const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        change.isBusy
+                            ? l10n.addressSaving
+                            : _saved
+                            ? l10n.addressSavedButton
+                            : l10n.addressSaveButton,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

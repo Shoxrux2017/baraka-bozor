@@ -1316,6 +1316,32 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressSaveButton => 'Manzilni saqlash';
 
   @override
+  String fieldRequiredSpoken(String label) {
+    return '$label, majburiy maydon';
+  }
+
+  @override
+  String fieldOptionalSpoken(String label) {
+    return '$label, ixtiyoriy';
+  }
+
+  @override
+  String addressFieldMissingSpoken(String label) {
+    return '«$label» maydonini to\'ldiring';
+  }
+
+  @override
+  String addressOptional(String label) {
+    return '$label · ixtiyoriy';
+  }
+
+  @override
+  String get addressSaving => 'Saqlanmoqda…';
+
+  @override
+  String get addressSavedButton => 'Saqlandi';
+
+  @override
   String get addressMapHint =>
       'Xaritani suring: belgi uyingiz kirish joyida tursin';
 

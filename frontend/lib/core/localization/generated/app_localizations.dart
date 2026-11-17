@@ -2456,6 +2456,42 @@ abstract class AppLocalizations {
   /// **'Manzilni saqlash'**
   String get addressSaveButton;
 
+  /// No description provided for @fieldRequiredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label}, majburiy maydon'**
+  String fieldRequiredSpoken(String label);
+
+  /// No description provided for @fieldOptionalSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label}, ixtiyoriy'**
+  String fieldOptionalSpoken(String label);
+
+  /// No description provided for @addressFieldMissingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{label}» maydonini to\'ldiring'**
+  String addressFieldMissingSpoken(String label);
+
+  /// No description provided for @addressOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'{label} · ixtiyoriy'**
+  String addressOptional(String label);
+
+  /// No description provided for @addressSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda…'**
+  String get addressSaving;
+
+  /// No description provided for @addressSavedButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlandi'**
+  String get addressSavedButton;
+
   /// No description provided for @addressMapHint.
   ///
   /// In uz, this message translates to:
