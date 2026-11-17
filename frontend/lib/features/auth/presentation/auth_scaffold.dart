@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/language_menu.dart';
 import '../../../core/theme/app_theme.dart';
@@ -13,13 +14,15 @@ import '../../../core/widgets/wordmark_landing.dart';
 /// title and a subtitle, then the screen's own content. One column that stays
 /// readable on a phone and in a browser window alike, and scrolls rather than
 /// overflows on a small screen or with large text.
-class AuthScaffold extends StatelessWidget {
+class AuthScaffold extends StatefulWidget {
   const AuthScaffold({
     required this.title,
     required this.child,
     this.subtitle,
     this.onBack,
+    this.backLabel,
     this.footer,
+    this.keepVisible,
     this.wordmark = true,
     this.card = false,
     this.wideCard = false,
@@ -42,9 +45,17 @@ class AuthScaffold extends StatelessWidget {
   /// Shows a back arrow top-left that calls this.
   final VoidCallback? onBack;
 
+  /// The back arrow's tooltip and spoken name; by default `back`.
+  final String? backLabel;
+
   /// Pinned to the bottom of the page when there is room, else below the
   /// content.
   final Widget? footer;
+
+  /// The key of the widget that must stay in view above the keyboard: the
+  /// main button with the 12 px below it. After the bottom inset grows, the
+  /// next frame scrolls it into view (`DL-139`).
+  final GlobalKey? keepVisible;
 
   final bool wordmark;
 
@@ -61,12 +72,53 @@ class AuthScaffold extends StatelessWidget {
   final String? tagline;
 
   @override
+  State<AuthScaffold> createState() => _AuthScaffoldState();
+}
+
+class _AuthScaffoldState extends State<AuthScaffold> {
+  static const Curve _curve = Cubic(0.2, 0.8, 0.2, 1);
+
+  double _inset = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final double inset = MediaQuery.viewInsetsOf(context).bottom;
+    final bool grew = inset > _inset;
+    _inset = inset;
+    if (grew && widget.keepVisible != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showButton());
+    }
+  }
+
+  void _showButton() {
+    final BuildContext? target = widget.keepVisible?.currentContext;
+    if (!mounted || target == null || !target.mounted) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      target,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
+      curve: _curve,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final String? tagline = this.tagline;
-    if (wideCard && showsWideCard(context)) {
+    final String? tagline = widget.tagline;
+    final bool wordmark = widget.wordmark;
+    // With the keyboard up and large text the wordmark makes room for the
+    // title and the button (`DL-139`).
+    final bool crowded =
+        _inset > 0 && textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
+    if (widget.wideCard && AuthScaffold.showsWideCard(context)) {
       return _WideCardPage(
-        onBack: onBack,
-        footer: footer,
+        onBack: widget.onBack,
+        backLabel: widget.backLabel,
+        footer: widget.footer,
         above: <Widget>[
           if (wordmark) ...<Widget>[
             const WordmarkLanding(child: BrandWordmark(size: 30)),
@@ -83,17 +135,18 @@ class AuthScaffold extends StatelessWidget {
         ],
         card: _WideCard(
           child: _Header(
-            title: title,
-            subtitle: subtitle,
+            title: widget.title,
+            subtitle: widget.subtitle,
             titleSize: 22,
             gap: 22,
-            child: _CardTheme(child: child),
+            child: _CardTheme(child: widget.child),
           ),
         ),
       );
     }
+    final bool showWordmark = wordmark && !crowded;
     return Scaffold(
-      backgroundColor: card ? _cardPage : Colors.white,
+      backgroundColor: widget.card ? _cardPage : Colors.white,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -105,18 +158,18 @@ class AuthScaffold extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    _TopBar(onBack: onBack),
-                    if (card)
+                    _TopBar(onBack: widget.onBack, backLabel: widget.backLabel),
+                    if (widget.card)
                       _Card(
                         child: _Header(
-                          title: title,
-                          subtitle: subtitle,
+                          title: widget.title,
+                          subtitle: widget.subtitle,
                           spaced: false,
-                          child: child,
+                          child: widget.child,
                         ),
                       )
                     else ...<Widget>[
-                      if (wordmark) ...<Widget>[
+                      if (showWordmark) ...<Widget>[
                         const SizedBox(height: 8),
                         const Center(
                           child: WordmarkLanding(
@@ -124,15 +177,25 @@ class AuthScaffold extends StatelessWidget {
                           ),
                         ),
                       ],
-                      SizedBox(height: wordmark ? 36 : 28),
-                      _Header(title: title, subtitle: subtitle, child: child),
+                      SizedBox(
+                        height: showWordmark
+                            ? 36
+                            : crowded
+                            ? 12
+                            : 28,
+                      ),
+                      _Header(
+                        title: widget.title,
+                        subtitle: widget.subtitle,
+                        child: widget.child,
+                      ),
                     ],
                   ],
                 ),
-                if (footer != null)
+                if (widget.footer != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 24),
-                    child: footer,
+                    child: widget.footer,
                   ),
               ],
             ),
@@ -484,9 +547,10 @@ class _Header extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onBack, this.filled = false});
+  const _TopBar({required this.onBack, this.backLabel, this.filled = false});
 
   final VoidCallback? onBack;
+  final String? backLabel;
 
   /// White circles, for the panel's light page.
   final bool filled;
@@ -502,7 +566,7 @@ class _TopBar extends StatelessWidget {
             child: IconButton(
               key: const ValueKey<String>('auth-back-button'),
               onPressed: onBack,
-              tooltip: AppLocalizations.of(context).back,
+              tooltip: backLabel ?? AppLocalizations.of(context).back,
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.arrow_back, size: 20),
             ),
@@ -555,9 +619,11 @@ class _WideCardPage extends StatelessWidget {
     required this.footer,
     required this.above,
     required this.card,
+    this.backLabel,
   });
 
   final VoidCallback? onBack;
+  final String? backLabel;
   final Widget? footer;
   final List<Widget> above;
   final Widget card;
@@ -578,7 +644,11 @@ class _WideCardPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _TopBar(onBack: onBack, filled: true),
+                      _TopBar(
+                        onBack: onBack,
+                        backLabel: backLabel,
+                        filled: true,
+                      ),
                       // 16 + 24 of padding and the 44 px bar stand above.
                       ConstrainedBox(
                         constraints: BoxConstraints(
