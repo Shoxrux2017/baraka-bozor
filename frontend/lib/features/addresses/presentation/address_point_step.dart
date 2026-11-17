@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/accessibility/announce.dart';
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
@@ -10,6 +14,7 @@ import '../application/addresses_controllers.dart';
 import '../data/device_location.dart';
 import '../domain/address_search.dart';
 import '../domain/addresses.dart';
+import 'address_point_parts.dart';
 import 'map/address_map.dart';
 import 'map/map_pin.dart';
 
@@ -66,6 +71,12 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   static const int _shortest = 3;
   static const int _searchMax = 200;
 
+  /// The wait after the pin came to rest before the address is asked for.
+  static const Duration _lookupWait = Duration(milliseconds: 400);
+
+  /// A rest this near the last looked-up point asks nothing again.
+  static const double _reuseMetres = 15;
+
   final PointMapMover _mover = PointMapMover();
   final TextEditingController _field = TextEditingController();
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
@@ -91,6 +102,9 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   /// The latest search sent; an older answer is not heard.
   int _searchId = 0;
 
+  /// Counts the answers the search gave; the answer comes in anew for each.
+  int _answers = 0;
+
   /// Counts the Customer's touches on the map; an answer sent before the
   /// latest touch is not heard. The map's own camera reports are not touches:
   /// Android sends them too when its permission windows cover the screen.
@@ -100,11 +114,30 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   /// search, "где я".
   int _intent = 0;
 
+  Timer? _lookupTimer;
+
+  /// The latest lookup scheduled; an older answer is not heard.
+  int _lookupId = 0;
+
+  /// The resting pin's address is waited for or on its way.
+  bool _lookupPending = false;
+
+  /// The point the last answer was for, `null` when there is none in hand
+  /// (never asked, or the last ask failed).
+  GeoPoint? _placeAt;
+
+  /// The last answer: what the map names there, `null` when it names nothing.
+  PointAddress? _place;
+
   @override
   void initState() {
     super.initState();
-    if (!widget.placed && ref.read(addressMapProvider).movable) {
-      _fixSilently();
+    if (ref.read(addressMapProvider).movable) {
+      if (widget.placed) {
+        _scheduleLookup();
+      } else {
+        _fixSilently();
+      }
     }
   }
 
@@ -123,17 +156,22 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
 
   @override
   void dispose() {
+    _lookupTimer?.cancel();
     _mover.dispose();
     _field.dispose();
     super.dispose();
   }
 
-  /// The Customer put a finger to move the map: the pin lifts.
+  /// The Customer put a finger to move the map: the pin lifts and the old
+  /// address is no longer the pin's.
   void _moveStarted() {
     _intent++;
+    _lookupTimer?.cancel();
+    _lookupId++;
     setState(() {
       _moving = true;
       _hintGone = true;
+      _lookupPending = false;
     });
   }
 
@@ -148,10 +186,12 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
         _moving = false;
         _placed = true;
         _drops++;
+        _scheduleLookup();
       }
     });
     if (own) {
       HapticFeedback.lightImpact();
+      _announceRest(null);
     }
   }
 
@@ -160,6 +200,81 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     _point = point;
     _placed = true;
     _mover.moveTo(point);
+    _scheduleLookup();
+  }
+
+  /// The pin came to rest on a movable map: asks what is under it 400 ms
+  /// later, unless that is within 15 m of the point already answered.
+  void _scheduleLookup() {
+    _lookupTimer?.cancel();
+    final int id = ++_lookupId;
+    final GeoPoint? at = _placeAt;
+    if (at != null && _metresBetween(at, _point) <= _reuseMetres) {
+      _lookupPending = false;
+      return;
+    }
+    _lookupPending = true;
+    final GeoPoint point = _point;
+    _lookupTimer = Timer(_lookupWait, () => _lookUp(id, point));
+  }
+
+  Future<void> _lookUp(int id, GeoPoint point) async {
+    final String language = Localizations.localeOf(context).languageCode;
+    PointAddress? answer;
+    bool failed = false;
+    try {
+      answer = await ref
+          .read(addressSearchRepositoryProvider)
+          .addressAt(point, language: language);
+    } on ApiFailure {
+      failed = true;
+    }
+    if (!mounted || id != _lookupId) {
+      return;
+    }
+    setState(() {
+      _lookupPending = false;
+      _placeAt = failed ? null : point;
+      _place = failed ? null : answer;
+    });
+  }
+
+  static double _metresBetween(GeoPoint a, GeoPoint b) {
+    double rad(double degrees) => degrees * math.pi / 180;
+    final double lat1 = rad(a.latitudeDegrees);
+    final double lat2 = rad(b.latitudeDegrees);
+    final double dLat = lat2 - lat1;
+    final double dLon = rad(b.longitudeDegrees - a.longitudeDegrees);
+    final double h =
+        math.pow(math.sin(dLat / 2), 2) +
+        math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
+    return 2 * 6371008.8 * math.asin(math.min(1, math.sqrt(h)));
+  }
+
+  /// The address under the resting pin, when the map has answered for it.
+  bool get _answered => _placeAt != null && !_lookupPending && !_moving;
+
+  /// Whether the pin at rest is outside the delivery [zone]; with no zone,
+  /// still loading or failed, nothing is outside.
+  bool _isOutside(ServiceArea? zone, bool movable) =>
+      movable && zone != null && _placed && !_moving && !zone.contains(_point);
+
+  /// Says what a screen reader needs after the pin came to rest: [lead] when
+  /// there is one, then that the pin is outside the zone.
+  void _announceRest(String? lead) {
+    final ServiceArea? zone = ref.read(serviceAreaProvider).value;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final List<String> parts = <String>[
+      ?lead,
+      if (zone != null && !zone.contains(_point))
+        l10n.addressOutsideZoneSpoken(
+          zone.distanceLabel(_point),
+          zone.radiusLabel,
+        ),
+    ];
+    if (parts.isNotEmpty) {
+      announce(context, parts.join('. '));
+    }
   }
 
   Future<void> _submit(String text) async {
@@ -184,11 +299,14 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     if (!mounted || id != _searchId) {
       return;
     }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    bool moved = false;
     setState(() {
       _searching = false;
       if (touches != _touches) {
         return;
       }
+      _answers++;
       if (failed) {
         _search = _Search.unavailable;
       } else if (found == null) {
@@ -196,8 +314,20 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       } else {
         _search = _Search.found;
         _moveTo(found);
+        moved = true;
       }
     });
+    if (touches != _touches) {
+      return;
+    }
+    if (moved) {
+      _announceRest(l10n.addressFoundSpoken);
+    } else {
+      announce(
+        context,
+        failed ? l10n.addressSearchDown : l10n.addressSearchNotFoundAt(query),
+      );
+    }
   }
 
   void _clear() {
@@ -221,25 +351,64 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       return;
     }
     setState(() => _locating = false);
-    if (outcome case LocationFound(point: final GeoPoint here)) {
-      if (touches == _touches) {
-        setState(() => _moveTo(here));
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+    switch (outcome) {
+      case LocationFound(point: final GeoPoint here):
+        if (touches == _touches) {
+          setState(() => _moveTo(here));
+          _announceRest(AppLocalizations.of(context).addressLocatedSpoken);
+        }
+      case LocationFailed(reason: final LocationFailure why):
+        _locationFailed(why);
+    }
+  }
+
+  /// Says why the location failed, with the way out when there is one
+  /// (`DL-138`).
+  void _locationFailed(LocationFailure why) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final DeviceLocation device = ref.read(deviceLocationProvider);
+    final (String, String?, VoidCallback?) face = switch (why) {
+      LocationFailure.deniedForever => (
+        l10n.addressLocationDenied,
+        l10n.addressLocationSettings,
+        device.openAppSettings,
+      ),
+      LocationFailure.serviceOff => (
+        l10n.addressLocationOff,
+        l10n.addressLocationTurnOn,
+        device.openLocationSettings,
+      ),
+      LocationFailure.timedOut => (
+        l10n.addressLocationSlow,
+        l10n.addressLocationAgain,
+        _whereAmI,
+      ),
+      LocationFailure.denied ||
+      LocationFailure.failed => (l10n.addressLocationFailed, null, null),
+    };
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).addressLocationFailed),
+          duration: const Duration(seconds: 4),
+          content: Text(face.$1),
+          action: face.$2 == null
+              ? null
+              : SnackBarAction(label: face.$2!, onPressed: face.$3!),
         ),
       );
-    }
   }
 
   /// Whether the pin is put down: a map without movement takes typed fields
   /// and counts as placed.
   bool _isPlaced(bool movable) => _placed || !movable;
 
-  void _confirm(bool movable) {
-    if (!_isPlaced(movable) || _moving || _locating) {
+  void _confirm(bool movable, ServiceArea? zone) {
+    if (!_isPlaced(movable) ||
+        _isOutside(zone, movable) ||
+        _moving ||
+        _locating) {
       return;
     }
     if (!movable && !(_form.currentState?.validate() ?? false)) {
@@ -250,6 +419,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
         point: _point,
         words: _words,
         mapHeight: _mapArea.currentContext?.size?.height ?? 0,
+        place: movable && _answered ? _place : null,
       ),
     );
   }
@@ -257,17 +427,20 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   @override
   Widget build(BuildContext context) {
     final AddressMap map = ref.watch(addressMapProvider);
+    final ServiceArea? zone = map.movable
+        ? ref.watch(serviceAreaProvider).value
+        : null;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Expanded(
             key: _mapArea,
-            child: map.movable ? _movableMap(map) : _fields(map),
+            child: map.movable ? _movableMap(map, zone) : _fields(map),
           ),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: box.maxHeight * 0.5),
-            child: _panel(map.movable),
+            child: _panel(map.movable, zone),
           ),
         ],
       ),
@@ -288,52 +461,95 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     ),
   );
 
-  Widget _movableMap(AddressMap map) {
+  /// What a reader hears of the map: where the pin is, the address under it
+  /// when the map named one, and how to place it without the map.
+  String _mapSpoken(AppLocalizations l10n) {
+    final PointAddress? place = _answered ? _place : null;
+    return <String>[
+      l10n.addressMapSpoken,
+      if (place != null) l10n.addressMapPinSpoken(place.line),
+      l10n.addressMapWaySpoken,
+    ].join(' ');
+  }
+
+  Widget _movableMap(AddressMap map, ServiceArea? zone) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool hint = !_largeText;
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: (_) {
-            _touches++;
-            _intent++;
-          },
-          child: map.picker(
-            initial: widget.initial,
-            mover: _mover,
-            enabled: true,
-            onMoveStarted: _moveStarted,
-            onMoved: _moved,
-          ),
-        ),
-        Positioned.fill(
-          child: MapPin(lifted: _moving, drops: _drops),
-        ),
-        Positioned(left: 16, right: 16, top: 14, child: _searchField(l10n)),
-        if (!_largeText)
-          Positioned(
-            left: 16,
-            right: 16,
-            top: 14 + 50 + 8,
-            child: IgnorePointer(
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: AnimatedOpacity(
-                  opacity: _hintGone ? 0 : 1,
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  child: _Hint(
-                    _search == _Search.found
-                        ? l10n.addressSearchFound
-                        : l10n.addressMapHint,
-                  ),
+        Semantics(
+          key: const ValueKey<String>('address-point-map'),
+          container: true,
+          excludeSemantics: true,
+          label: _mapSpoken(l10n),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) {
+                  _touches++;
+                  _intent++;
+                },
+                child: map.picker(
+                  initial: widget.initial,
+                  mover: _mover,
+                  enabled: true,
+                  onMoveStarted: _moveStarted,
+                  onMoved: _moved,
+                  zone: zone,
                 ),
               ),
-            ),
+              Positioned.fill(
+                child: MapPin(lifted: _moving, drops: _drops),
+              ),
+            ],
           ),
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          top: 14,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _searchField(l10n),
+              if (_search != _Search.start) ...<Widget>[
+                const SizedBox(height: 8),
+                SearchAnswer(
+                  key: const ValueKey<String>('address-search-result'),
+                  face: switch (_search) {
+                    _Search.found => SearchFace.found,
+                    _Search.notFound => SearchFace.notFound,
+                    _ => SearchFace.unavailable,
+                  },
+                  query: _words ?? '',
+                  serial: _answers,
+                  keptLine: _words != null && widget.keepsWords
+                      ? l10n.addressWordsKept
+                      : null,
+                ),
+              ],
+              if (hint) ...<Widget>[
+                const SizedBox(height: 8),
+                IgnorePointer(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: AnimatedOpacity(
+                      opacity: _hintGone ? 0 : 1,
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                      child: _Hint(l10n.addressMapHint),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
         Positioned(right: 16, bottom: 16, child: _myLocation(l10n)),
       ],
     );
@@ -345,46 +561,77 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
 
   Widget _searchField(AppLocalizations l10n) {
+    final bool canGo = _field.text.trim().length >= _shortest;
     return Material(
       color: Colors.white,
       elevation: 3,
       shadowColor: const Color(0x33000000),
       borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        height: 50,
-        child: TextField(
-          key: const ValueKey<String>('address-search-field'),
-          controller: _field,
-          textInputAction: TextInputAction.search,
-          maxLength: _searchMax,
-          maxLengthEnforcement: MaxLengthEnforcement.enforced,
-          onSubmitted: _submit,
-          onChanged: (_) => setState(() {}),
-          style: const TextStyle(fontSize: 14, color: KitColors.ink),
-          decoration: InputDecoration(
-            hintText: l10n.addressSearchHint,
-            hintStyle: const TextStyle(fontSize: 14, color: KitColors.muted),
-            prefixIcon: const Icon(Icons.search, color: KitColors.muted),
-            suffixIcon: _searching
-                ? const Padding(
-                    key: ValueKey<String>('address-search-busy'),
-                    padding: EdgeInsets.all(14),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: KitColors.primary,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 50),
+        child: Semantics(
+          label: l10n.addressSearchSpoken,
+          child: TextField(
+            key: const ValueKey<String>('address-search-field'),
+            controller: _field,
+            textInputAction: TextInputAction.search,
+            maxLength: _searchMax,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            onSubmitted: _submit,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(fontSize: 14, color: KitColors.ink),
+            decoration: InputDecoration(
+              hintText: l10n.addressSearchHint,
+              hintStyle: const TextStyle(fontSize: 14, color: KitColors.muted),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 14, right: 8),
+                child: Icon(Icons.search, size: 24, color: KitColors.muted),
+              ),
+              prefixIconConstraints: const BoxConstraints(),
+              suffixIcon: _searching
+                  ? const Padding(
+                      key: ValueKey<String>('address-search-busy'),
+                      padding: EdgeInsets.all(14),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: KitColors.primary,
+                        ),
+                      ),
+                    )
+                  : _field.text.isEmpty
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(right: 3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          if (canGo)
+                            _SuffixButton(
+                              key: const ValueKey<String>('address-search-go'),
+                              label: l10n.addressSearchGo,
+                              fill: KitColors.primary,
+                              icon: Icons.arrow_forward,
+                              iconColor: Colors.white,
+                              onTap: () => _submit(_field.text),
+                            ),
+                          _SuffixButton(
+                            key: const ValueKey<String>('address-search-clear'),
+                            label: l10n.addressSearchClear,
+                            icon: Icons.close,
+                            iconColor: KitColors.muted,
+                            onTap: _clear,
+                          ),
+                        ],
+                      ),
                     ),
-                  )
-                : _field.text.isEmpty
-                ? null
-                : IconButton(
-                    key: const ValueKey<String>('address-search-clear'),
-                    tooltip: l10n.addressSearchClear,
-                    icon: const Icon(Icons.close, color: KitColors.muted),
-                    onPressed: _clear,
-                  ),
-            counterText: '',
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              suffixIconConstraints: const BoxConstraints(),
+              counterText: '',
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            ),
           ),
         ),
       ),
@@ -399,23 +646,28 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
         color: KitColors.primary,
         shape: const CircleBorder(),
         elevation: 3,
-        child: Tooltip(
-          message: l10n.addressMyLocation,
-          child: InkWell(
-            key: const ValueKey<String>('address-my-location'),
-            customBorder: const CircleBorder(),
-            onTap: _locating ? null : _whereAmI,
-            child: Center(
-              child: _locating
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.my_location, color: Colors.white),
+        child: Semantics(
+          button: true,
+          excludeSemantics: true,
+          label: l10n.addressMyLocationSpoken,
+          child: Tooltip(
+            message: l10n.addressMyLocation,
+            child: InkWell(
+              key: const ValueKey<String>('address-my-location'),
+              customBorder: const CircleBorder(),
+              onTap: _locating ? null : _whereAmI,
+              child: Center(
+                child: _locating
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.my_location, color: Colors.white),
+              ),
             ),
           ),
         ),
@@ -423,28 +675,50 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     );
   }
 
-  Widget _panel(bool movable) {
+  /// The address row of the panel: a bar while the map looks, the answer
+  /// when it has one, nothing when the ask failed.
+  Widget? _placeRow(AppLocalizations l10n, bool movable) {
+    if (!movable || !_placed) {
+      return null;
+    }
+    const Key key = ValueKey<String>('address-point-place');
+    if (_moving || _lookupPending) {
+      return const PlaceRow(key: key);
+    }
+    if (_placeAt == null) {
+      return null;
+    }
+    final PointAddress? place = _place;
+    if (place == null) {
+      return PlaceRow(
+        key: key,
+        line: l10n.addressPlaceUnknown,
+        sub: l10n.addressPlaceUnknownHint,
+      );
+    }
+    return PlaceRow(
+      key: key,
+      line: place.line,
+      sub: place.houseKnown ? null : l10n.addressPlaceNoHouse,
+    );
+  }
+
+  Widget _panel(bool movable, ServiceArea? zone) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final bool placed = _isPlaced(movable);
+    final bool outside = _isOutside(zone, movable);
     final Address? openedAt = widget.openedAt;
     final String text = movable && !placed && openedAt != null
         ? l10n.addressOpenedAt(openedAt.name)
         : movable && _largeText
         ? l10n.addressPointTextLarge
         : l10n.addressPointText;
-    final Widget? box = switch (_search) {
-      _Search.notFound => _Notice(
-        'address-search-not-found',
-        Icons.travel_explore,
-        l10n.addressSearchNotFound,
-      ),
-      _Search.unavailable => _Notice(
-        'address-search-unavailable',
-        Icons.cloud_off,
-        l10n.addressSearchUnavailable,
-      ),
-      _ => null,
-    };
+    final Widget? place = _placeRow(l10n, movable);
+    final String? why = !placed
+        ? l10n.addressConfirmWhyMove
+        : outside
+        ? l10n.addressConfirmWhyZone
+        : null;
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -470,37 +744,24 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      box ??
-                          Text(
-                            text,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: KitColors.ink2,
-                            ),
-                          ),
-                      if (_words != null && widget.keepsWords) ...<Widget>[
+                      if (place != null) ...<Widget>[
+                        place,
+                        const SizedBox(height: 8),
+                      ],
+                      Text(
+                        text,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.45,
+                          color: KitColors.ink2,
+                        ),
+                      ),
+                      if (outside && zone != null) ...<Widget>[
                         const SizedBox(height: 10),
-                        Row(
-                          key: const ValueKey<String>('address-words-kept'),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            const Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: KitColors.primaryDark,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                l10n.addressWordsKept,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: KitColors.primaryDark,
-                                ),
-                              ),
-                            ),
-                          ],
+                        ZoneNotice(
+                          key: const ValueKey<String>('address-outside-zone'),
+                          distance: zone.distanceLabel(_point),
+                          radius: zone.radiusLabel,
                         ),
                       ],
                     ],
@@ -522,28 +783,76 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                 const SizedBox(height: 8),
               ] else
                 const SizedBox(height: 14),
-              SizedBox(
-                height: 54,
-                child: FilledButton(
-                  key: const ValueKey<String>('address-point-confirm'),
-                  onPressed: placed ? () => _confirm(movable) : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: KitColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: KitColors.line,
-                    disabledForegroundColor: KitColors.muted,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              MergeSemantics(
+                child: Semantics(
+                  hint: why,
+                  child: SizedBox(
+                    height: 54,
+                    child: FilledButton(
+                      key: const ValueKey<String>('address-point-confirm'),
+                      onPressed: placed && !outside
+                          ? () => _confirm(movable, zone)
+                          : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: KitColors.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: KitColors.line,
+                        disabledForegroundColor: KitColors.muted,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: Text(l10n.addressPointConfirm),
                     ),
                   ),
-                  child: Text(l10n.addressPointConfirm),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A 44 x 44 button inside the search field: the green arrow or the grey
+/// cross.
+class _SuffixButton extends StatelessWidget {
+  const _SuffixButton({
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+    this.fill,
+    super.key,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final Color? fill;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      label: label,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Material(
+          color: fill ?? Colors.transparent,
+          borderRadius: BorderRadius.circular(11),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(11),
+            onTap: onTap,
+            child: Icon(icon, size: 24, color: iconColor),
           ),
         ),
       ),
@@ -568,47 +877,11 @@ class _Hint extends StatelessWidget {
         child: Text(
           text,
           key: const ValueKey<String>('address-point-hint'),
-          style: const TextStyle(fontSize: 12, color: KitColors.ink2),
-        ),
-      ),
-    );
-  }
-}
-
-/// The drawing's amber box: the search could not place the address.
-class _Notice extends StatelessWidget {
-  const _Notice(this.keyName, this.icon, this.text);
-
-  final String keyName;
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      key: ValueKey<String>(keyName),
-      decoration: BoxDecoration(
-        color: KitColors.warningWash,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(icon, size: 20, color: KitColors.warning),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.5,
-                  color: KitColors.ink2,
-                ),
-              ),
-            ),
-          ],
+          style: const TextStyle(
+            fontSize: 12,
+            height: 1.4,
+            color: KitColors.ink2,
+          ),
         ),
       ),
     );

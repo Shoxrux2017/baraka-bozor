@@ -1352,20 +1352,99 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressMoveFirst => 'Avval xaritani uyga suring';
 
   @override
-  String get addressSearchFound =>
-      'Belgini tekshiring: kuryer aynan unga keladi';
+  String get addressConfirmWhyMove => 'hozircha yopiq: avval xaritani suring';
+
+  @override
+  String get addressConfirmWhyZone => 'hozircha yopiq: bu yerga yetkazmaymiz';
+
+  @override
+  String get addressPlaceNoHouse => 'Uy aniqlanmadi — belgini binoga qo\'ying';
+
+  @override
+  String get addressPlaceUnknown => 'Manzil aniqlanmadi';
+
+  @override
+  String get addressPlaceUnknownHint => 'Belgini binoga qo\'ying';
+
+  @override
+  String get addressPlaceLooking => 'Manzil qidirilmoqda';
+
+  @override
+  String addressOutsideZone(String distance, String radius) {
+    return 'Bu yerga hozircha yetkazmaymiz: belgigacha $distance km, biz esa $radius km radiusda yetkazamiz. Belgini shaharga yaqinroq suring.';
+  }
+
+  @override
+  String addressOutsideZoneSpoken(String distance, String radius) {
+    return 'Bu yerga hozircha yetkazmaymiz: $distance kilometr, $radius kilometr radiusda yetkazamiz';
+  }
+
+  @override
+  String get addressSearchGo => 'Topish';
+
+  @override
+  String addressSearchFoundAt(String query) {
+    return '«$query» topildi. Belgi uyingizda turganini tekshiring.';
+  }
+
+  @override
+  String addressSearchNotFoundAt(String query) {
+    return '«$query» topilmadi. Xaritani uyga o\'zingiz suring.';
+  }
+
+  @override
+  String get addressSearchDown =>
+      'Qidiruv hozir ishlamayapti. Xaritani o\'zingiz suring.';
+
+  @override
+  String get addressFoundSpoken => 'Manzil topildi. Belgi surildi';
+
+  @override
+  String get addressLocatedSpoken => 'Belgi siz turgan joyda';
+
+  @override
+  String get addressLocationDenied =>
+      'Joylashuvga ruxsat berilmagan. Sozlamalarda ruxsat bering yoki xaritani o\'zingiz suring.';
+
+  @override
+  String get addressLocationSettings => 'Sozlamalar';
+
+  @override
+  String get addressLocationOff => 'Telefonda joylashuv o\'chirilgan.';
+
+  @override
+  String get addressLocationTurnOn => 'Yoqish';
+
+  @override
+  String get addressLocationSlow =>
+      '10 soniyada sizni topa olmadik. Xaritani o\'zingiz suring.';
+
+  @override
+  String get addressLocationAgain => 'Yana bir bor';
+
+  @override
+  String get addressSearchSpoken =>
+      'Manzil so\'z bilan. Topib, belgini suramiz';
+
+  @override
+  String get addressMapSpoken => 'Xarita, belgi markazda.';
+
+  @override
+  String addressMapPinSpoken(String line) {
+    return 'Belgi: $line.';
+  }
+
+  @override
+  String get addressMapWaySpoken =>
+      'Xaritasiz belgi qidiruv yoki «Men qayerdaman» tugmasi bilan qo\'yiladi';
+
+  @override
+  String get addressMyLocationSpoken =>
+      'Men qayerdaman: belgini siz turgan joyga qo\'yish';
 
   @override
   String get addressPointText =>
       'Kuryer belgiga keladi. Xonadon, podyezd va mo\'ljalni keyingi qadamda kiritasiz.';
-
-  @override
-  String get addressSearchNotFound =>
-      'Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o\'zingiz qo\'ying.';
-
-  @override
-  String get addressSearchUnavailable =>
-      'Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o\'zingiz qo\'ying.';
 
   @override
   String get addressWordsKept => 'Yozgan manzilingizni kuryer uchun saqlaymiz';

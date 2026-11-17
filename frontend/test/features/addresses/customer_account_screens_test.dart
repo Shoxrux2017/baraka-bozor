@@ -10,6 +10,7 @@ import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
+import 'package:baraka_bozor/features/addresses/data/device_location.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
@@ -25,6 +26,7 @@ import '../../support/fake_address_map.dart';
 import '../../support/fake_address_search.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_customer_repositories.dart';
+import '../../support/fake_device_location.dart';
 import '../../support/in_memory_stores.dart';
 
 /// The Customer's profile and addresses (W1-13) through the real router,
@@ -66,6 +68,7 @@ void main() {
     bool fakeMap = true,
     Size size = const Size(800, 2000),
     Locale device = const Locale('uz'),
+    FakeDeviceLocation? location,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -81,6 +84,8 @@ void main() {
           profileRepositoryProvider.overrideWithValue(profile),
           addressSearchRepositoryProvider.overrideWithValue(search),
           if (fakeMap) addressMapProvider.overrideWithValue(FakeAddressMap()),
+          if (location != null)
+            deviceLocationProvider.overrideWithValue(location),
         ],
       ),
     );
@@ -979,7 +984,13 @@ void main() {
         ),
       ];
 
-      await openProfile(tester, size: const Size(320, 568));
+      // The search field grows with the text and covers the fake map's
+      // buttons, so the pin is placed by the silent fix instead.
+      await openProfile(
+        tester,
+        size: const Size(320, 568),
+        location: FakeDeviceLocation()..silent = fakeDoor,
+      );
       await tester.scrollUntilVisible(
         byKey('profile-addresses'),
         200,

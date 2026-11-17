@@ -1,7 +1,9 @@
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/data/device_location.dart';
+import 'package:baraka_bozor/features/addresses/domain/address_search.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/address_point_step.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
@@ -58,6 +60,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       ProviderScope(
+        retry: (int count, Object error) => null,
         overrides: [
           addressMapProvider.overrideWithValue(map ?? FakeAddressMap()),
           addressSearchRepositoryProvider.overrideWithValue(search),
@@ -124,7 +127,12 @@ void main() {
     await open(tester);
 
     expect(find.byType(MapPin), findsOneWidget);
-    expect(find.byIcon(Icons.location_on), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (Widget w) => w is Icon && w.icon == Icons.location_on && w.size == 48,
+      ),
+      findsOneWidget,
+    );
 
     await open(tester, map: const PointFieldsAddressMap());
 
@@ -141,7 +149,7 @@ void main() {
     await tester.pump();
 
     expect(target(tester), '41.299512,69.240146');
-    expect(find.text(l10n(tester).addressSearchFound), findsOneWidget);
+    expect(byKey('address-search-result'), findsOneWidget);
     expect(byKey('address-words-kept'), findsOneWidget);
 
     await confirm(tester);
@@ -157,8 +165,11 @@ void main() {
     await type(tester, 'Navoiy 5');
     await tester.pump();
 
-    expect(byKey('address-search-not-found'), findsOneWidget);
-    expect(find.text(l10n(tester).addressSearchNotFound), findsOneWidget);
+    expect(byKey('address-search-result'), findsOneWidget);
+    expect(
+      find.text(l10n(tester).addressSearchNotFoundAt('Navoiy 5')),
+      findsOneWidget,
+    );
     expect(byKey('address-words-kept'), findsOneWidget);
 
     await confirm(tester);
@@ -175,12 +186,12 @@ void main() {
 
     await type(tester, 'Navoiy 5');
     await tester.pump();
-    expect(byKey('address-search-unavailable'), findsOneWidget);
+    expect(find.text(l10n(tester).addressSearchDown), findsOneWidget);
     expect(byKey('address-words-kept'), findsOneWidget);
 
     await type(tester, 'Navoiy 7');
     await tester.pump();
-    expect(byKey('address-search-unavailable'), findsOneWidget);
+    expect(find.text(l10n(tester).addressSearchDown), findsOneWidget);
     await confirm(tester);
     expect(confirmed.single.words, 'Navoiy 7');
   });
@@ -192,7 +203,7 @@ void main() {
     await type(tester, 'Navoiy 5');
     await tester.pump();
 
-    expect(find.text(l10n(tester).addressSearchFound), findsOneWidget);
+    expect(byKey('address-search-result'), findsOneWidget);
     expect(byKey('address-words-kept'), findsNothing);
     await confirm(tester);
     expect(confirmed.single.words, 'Navoiy 5');
@@ -224,12 +235,12 @@ void main() {
     await open(tester);
     await type(tester, 'Navoiy 5');
     await tester.pump();
-    expect(byKey('address-search-not-found'), findsOneWidget);
+    expect(byKey('address-search-result'), findsOneWidget);
 
     await tester.tap(byKey('address-search-clear'));
     await tester.pump();
 
-    expect(byKey('address-search-not-found'), findsNothing);
+    expect(byKey('address-search-result'), findsNothing);
     expect(byKey('address-words-kept'), findsNothing);
     expect(find.text(l10n(tester).addressPointText), findsOneWidget);
     await confirm(tester);
@@ -634,6 +645,461 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  const PointAddress door = PointAddress(
+    line: "Navoiy ko'chasi, 12",
+    houseKnown: true,
+  );
+  const ServiceArea zone = ServiceArea(centre: start, radiusKm: '10.00');
+  const Duration rest = Duration(milliseconds: 400);
+
+  Future<void> moveAndRest(WidgetTester tester, String move) async {
+    await tester.tap(byKey(move));
+    await tester.pump();
+    await tester.pump(rest);
+    await tester.pump();
+  }
+
+  Finder lookingRow() => find.byType(SkeletonBar);
+
+  List<String> spoken(WidgetTester tester) => tester
+      .takeAnnouncements()
+      .map((CapturedAccessibilityAnnouncement a) => a.message)
+      .toList();
+
+  testWidgets('the panel names the address under the pin once the map rests', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    search.places[fakeDoor] = door;
+    await open(tester, locale: const Locale('ru'));
+
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+    expect(lookingRow(), findsOneWidget);
+
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pump();
+    expect(lookingRow(), findsOneWidget);
+    expect(search.lookups, isEmpty, reason: 'waits 400 ms after the rest');
+    await tester.pump(rest);
+    await tester.pump();
+
+    expect(search.lookups, <(GeoPoint, String)>[(fakeDoor, 'ru')]);
+    expect(lookingRow(), findsNothing);
+    expect(find.text("Navoiy ko'chasi, 12"), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(byKey('address-point-place'))
+          .getSemanticsData()
+          .flagsCollection
+          .isLiveRegion,
+      isTrue,
+    );
+    await confirm(tester);
+    expect(confirmed.single.place?.line, "Navoiy ko'chasi, 12");
+    semantics.dispose();
+  });
+
+  testWidgets('the place row reads Ищем адрес while it looks', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await open(tester, locale: const Locale('ru'));
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+
+    expect(
+      tester.getSemantics(byKey('address-point-place')).label,
+      'Ищем адрес',
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('a point without a house says to put the pin on a building', (
+    WidgetTester tester,
+  ) async {
+    search.places[fakeDoor] = const PointAddress(
+      line: "Navoiy ko'chasi",
+      houseKnown: false,
+    );
+    await open(tester, locale: const Locale('ru'));
+    await moveAndRest(tester, 'fake-map-move');
+
+    expect(find.text("Navoiy ko'chasi"), findsOneWidget);
+    expect(
+      find.text('Дом не определили — поставьте метку на здание'),
+      findsOneWidget,
+    );
+    await confirm(tester);
+    expect(confirmed.single.place?.houseKnown, isFalse);
+  });
+
+  testWidgets('nothing known says so', (WidgetTester tester) async {
+    await open(tester, locale: const Locale('ru'));
+    await moveAndRest(tester, 'fake-map-move');
+
+    expect(find.text('Адрес не определили'), findsOneWidget);
+    expect(find.text('Поставьте метку на здание'), findsOneWidget);
+    await confirm(tester);
+    expect(confirmed.single.place, isNull);
+  });
+
+  testWidgets('a failed lookup shows no row and confirm still works', (
+    WidgetTester tester,
+  ) async {
+    for (final ApiFailure failure in const <ApiFailure>[
+      NetworkFailure(),
+      ApiRefusal(ApiError(status: 429, code: 'rate_limited')),
+    ]) {
+      search.placeFailure = failure;
+      await open(tester, locale: const Locale('ru'));
+      await moveAndRest(tester, 'fake-map-move');
+
+      expect(byKey('address-point-place'), findsNothing);
+      expect(lookingRow(), findsNothing);
+      expect(confirmButton(tester).onPressed, isNotNull);
+      await confirm(tester);
+      expect(confirmed.last.point, fakeDoor);
+      expect(confirmed.last.place, isNull);
+    }
+  });
+
+  testWidgets('a late answer for an older point is not shown', (
+    WidgetTester tester,
+  ) async {
+    search.heldPlaces.add(fakeDoor);
+    search.places[fakeFar] = const PointAddress(
+      line: 'Chilonzor 9, 14',
+      houseKnown: true,
+    );
+    await open(tester, locale: const Locale('ru'));
+    await moveAndRest(tester, 'fake-map-move');
+    expect(search.lookups, hasLength(1));
+
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+    search.releasePlace(fakeDoor, door);
+    await tester.pump();
+    expect(find.text("Navoiy ko'chasi, 12"), findsNothing);
+    expect(lookingRow(), findsOneWidget);
+
+    await tester.pump(rest);
+    await tester.pump();
+    expect(find.text("Navoiy ko'chasi, 12"), findsNothing);
+    expect(find.text('Chilonzor 9, 14'), findsOneWidget);
+    await confirm(tester);
+    expect(confirmed.single.place?.line, 'Chilonzor 9, 14');
+  });
+
+  testWidgets('a rest within 15 m asks nothing again', (
+    WidgetTester tester,
+  ) async {
+    search.places[fakeDoor] = door;
+    await open(tester, locale: const Locale('ru'));
+    await moveAndRest(tester, 'fake-map-move');
+    expect(search.lookups, hasLength(1));
+
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pump();
+    expect(lookingRow(), findsNothing, reason: 'the answer is reused');
+    await tester.pump(rest);
+    await tester.pump();
+    expect(search.lookups, hasLength(1));
+    expect(find.text("Navoiy ko'chasi, 12"), findsOneWidget);
+
+    await moveAndRest(tester, 'fake-map-far');
+    expect(search.lookups, hasLength(2));
+  });
+
+  testWidgets('the fields map looks nothing up', (WidgetTester tester) async {
+    await open(tester, map: FakeAddressMap(movable: false));
+    await tester.pump(rest);
+    await tester.pump();
+
+    expect(search.lookups, isEmpty);
+    expect(byKey('address-point-place'), findsNothing);
+  });
+
+  testWidgets('an unplaced pin is not looked up', (WidgetTester tester) async {
+    await open(tester, placed: false);
+    await tester.pump(rest);
+    await tester.pump();
+
+    expect(search.lookups, isEmpty);
+    expect(byKey('address-point-place'), findsNothing);
+    await tester.tap(byKey('fake-map-start'));
+    await tester.pump();
+    await tester.pump(rest);
+    expect(search.lookups, isEmpty, reason: 'still moving');
+  });
+
+  testWidgets('outside the zone the map says how far and confirm waits', (
+    WidgetTester tester,
+  ) async {
+    final FakeAddressMap map = FakeAddressMap();
+    search.area = zone;
+    await open(tester, map: map, locale: const Locale('ru'));
+    await tester.pump();
+    expect(map.zone, isNotNull);
+    tester.takeAnnouncements();
+
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+
+    expect(
+      find.text(
+        'Сюда пока не возим: до метки 11,7 км, а возим в радиусе 10 км. '
+        'Передвиньте метку ближе к городу.',
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('address-outside-zone'), findsOneWidget);
+    expect(confirmButton(tester).onPressed, isNull);
+    expect(find.text(l10n(tester).addressConfirmWhyZone), findsNothing);
+    expect(
+      spoken(tester),
+      contains('Сюда пока не возим: 11,7 километра, возим в радиусе 10'),
+    );
+    await tester.tap(byKey('address-point-confirm'), warnIfMissed: false);
+    await tester.pump();
+    expect(confirmed, isEmpty);
+
+    await tester.tap(byKey('fake-map-move'));
+    await tester.pump();
+    expect(byKey('address-outside-zone'), findsNothing);
+    expect(confirmButton(tester).onPressed, isNotNull);
+    await confirm(tester);
+    expect(confirmed.single.point, fakeDoor);
+  });
+
+  testWidgets('without a zone nothing is outside', (WidgetTester tester) async {
+    search.areaFailure = const NetworkFailure();
+    await open(tester);
+    await tester.pump();
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+
+    expect(byKey('address-outside-zone'), findsNothing);
+    expect(confirmButton(tester).onPressed, isNotNull);
+    await confirm(tester);
+    expect(confirmed.single.point, fakeFar);
+
+    search.areaFailure = null;
+    search.area = null;
+    await open(tester);
+    await tester.pump();
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+    expect(byKey('address-outside-zone'), findsNothing);
+    await confirm(tester);
+    expect(confirmed.last.point, fakeFar);
+  });
+
+  Future<void> enter(WidgetTester tester, String text) async {
+    await tester.enterText(byKey('address-search-field'), text);
+    await tester.pump();
+  }
+
+  testWidgets(
+    'the green arrow searches and the answer stands under the field',
+    (WidgetTester tester) async {
+      search.answers['Chilonzor 9-kvartal, 14'] = found;
+      await open(tester, locale: const Locale('ru'));
+      tester.takeAnnouncements();
+
+      await enter(tester, 'Ch');
+      expect(byKey('address-search-go'), findsNothing);
+      await enter(tester, 'Chilonzor 9-kvartal, 14');
+      expect(byKey('address-search-go'), findsOneWidget);
+      expect(search.queries, isEmpty);
+
+      await tester.tap(byKey('address-search-go'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(search.queries, <String>['Chilonzor 9-kvartal, 14']);
+      expect(
+        find.text(
+          'Нашли: «Chilonzor 9-kvartal, 14». Проверьте, что метка на вашем '
+          'доме.',
+        ),
+        findsOneWidget,
+      );
+      final Text result = tester.widget<Text>(
+        find
+            .descendant(
+              of: byKey('address-search-result'),
+              matching: find.byType(Text),
+            )
+            .first,
+      );
+      final List<TextSpan> bold = <TextSpan>[];
+      result.textSpan!.visitChildren((InlineSpan span) {
+        if (span is TextSpan && span.style?.fontWeight == FontWeight.w700) {
+          bold.add(span);
+        }
+        return true;
+      });
+      expect(bold.single.text, 'Chilonzor 9-kvartal, 14');
+      expect(spoken(tester), contains('Нашли адрес. Метка передвинута'));
+      expect(byKey('address-search-clear'), findsOneWidget);
+    },
+  );
+
+  testWidgets('not found and unavailable are said under the field with the '
+      'kept words', (WidgetTester tester) async {
+    search.answers['Navoiy 5'] = null;
+    search.failures['Navoiy 7'] = const NetworkFailure();
+    await open(tester, locale: const Locale('ru'));
+
+    await enter(tester, 'Navoiy 5');
+    await tester.tap(byKey('address-search-go'));
+    await tester.pump();
+    await tester.pump();
+    expect(
+      find.text('Не нашли «Navoiy 5». Передвиньте карту к дому сами.'),
+      findsOneWidget,
+    );
+    expect(find.text(l10n(tester).addressWordsKept), findsOneWidget);
+
+    await enter(tester, 'Navoiy 7');
+    await tester.tap(byKey('address-search-go'));
+    await tester.pump();
+    await tester.pump();
+    expect(
+      find.text('Поиск сейчас не работает. Передвиньте карту сами.'),
+      findsOneWidget,
+    );
+    expect(find.text(l10n(tester).addressWordsKept), findsOneWidget);
+  });
+
+  group('Где я says why it failed and offers the way out', () {
+    Future<void> fail(WidgetTester tester, LocationFailure why) async {
+      location.outcome = LocationFailed(why);
+      await open(tester, locale: const Locale('ru'));
+      await tester.tap(byKey('address-my-location'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('forever denied opens the settings', (
+      WidgetTester tester,
+    ) async {
+      await fail(tester, LocationFailure.deniedForever);
+      expect(
+        find.text(
+          'Доступ к геолокации запрещён. Разрешите в настройках или '
+          'передвиньте карту сами.',
+        ),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(milliseconds: 750));
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Настройки'));
+      await tester.pump();
+      expect(location.settingsOpened, 1);
+    });
+
+    testWidgets('service off opens the location settings', (
+      WidgetTester tester,
+    ) async {
+      await fail(tester, LocationFailure.serviceOff);
+      expect(find.text('Геолокация на телефоне выключена.'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 750));
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Включить'));
+      await tester.pump();
+      expect(location.locationSettingsOpened, 1);
+    });
+
+    testWidgets('a time out reads again', (WidgetTester tester) async {
+      await fail(tester, LocationFailure.timedOut);
+      expect(
+        find.text('Не нашли вас за 10 секунд. Передвиньте карту сами.'),
+        findsOneWidget,
+      );
+      expect(location.calls, 1);
+      await tester.pump(const Duration(milliseconds: 750));
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Ещё раз'));
+      await tester.pump();
+      expect(location.calls, 2);
+    });
+
+    testWidgets('denied and failed have no action', (
+      WidgetTester tester,
+    ) async {
+      for (final LocationFailure why in const <LocationFailure>[
+        LocationFailure.denied,
+        LocationFailure.failed,
+      ]) {
+        await fail(tester, why);
+        expect(find.text(l10n(tester).addressLocationFailed), findsOneWidget);
+        expect(find.byType(SnackBarAction), findsNothing);
+      }
+    });
+
+    testWidgets('a found place is announced', (WidgetTester tester) async {
+      location.outcome = LocationFound(found);
+      await open(tester, locale: const Locale('ru'));
+      tester.takeAnnouncements();
+      await tester.tap(byKey('address-my-location'));
+      await tester.pump();
+      await tester.pump();
+      expect(spoken(tester), contains('Метка там, где вы'));
+    });
+  });
+
+  testWidgets('the map is one reader stop that names the pin', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    search.places[fakeDoor] = door;
+    await open(tester, locale: const Locale('ru'), placed: false);
+
+    expect(
+      tester.getSemantics(byKey('address-point-map')).label,
+      'Карта, метка в центре. Без карты метку ставят поиском или кнопкой '
+      '«Где я»',
+    );
+    expect(
+      tester.getSemantics(byKey('address-point-confirm')).hint,
+      'недоступна: сначала передвиньте карту',
+    );
+    expect(
+      tester.getSemantics(byKey('address-search-field')).label,
+      contains('Адрес словами. Найдём и передвинем метку'),
+    );
+    expect(
+      tester.getSemantics(byKey('address-my-location')).label,
+      'Где я: поставить метку туда, где вы',
+    );
+
+    await moveAndRest(tester, 'fake-map-move');
+    expect(
+      tester.getSemantics(byKey('address-point-map')).label,
+      "Карта, метка в центре. Метка: Navoiy ko'chasi, 12. Без карты метку "
+      'ставят поиском или кнопкой «Где я»',
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('the off button says why when the pin is outside', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    search.area = zone;
+    await open(tester, locale: const Locale('ru'));
+    await tester.pump();
+    await tester.tap(byKey('fake-map-far'));
+    await tester.pump();
+
+    expect(
+      tester.getSemantics(byKey('address-point-confirm')).hint,
+      'недоступна: сюда не возим',
+    );
+    semantics.dispose();
+  });
+
   for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets('the step holds at 320x640 with text x2 '
         '(${locale.languageCode})', (WidgetTester tester) async {
@@ -643,31 +1109,72 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       search.answers['Navoiy 5'] = null;
-      search.answers['Navoiy 9'] = found;
+      search.answers['Navoiy 9'] = fakeFar;
       search.failures['Navoiy 7'] = const NetworkFailure();
+      search.area = zone;
 
       await open(tester, locale: locale);
+      await tester.pump();
       expect(tester.takeException(), isNull);
 
-      await type(tester, 'Navoiy 5');
+      await enter(tester, 'Navoiy 5');
+      await tester.tap(byKey('address-search-go'));
       await tester.pump();
-      expect(byKey('address-search-not-found'), findsOneWidget);
+      await tester.pump();
+      expect(byKey('address-search-result'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
-      await type(tester, 'Navoiy 7');
+      await enter(tester, 'Navoiy 7');
+      await tester.tap(byKey('address-search-go'));
       await tester.pump();
-      expect(byKey('address-search-unavailable'), findsOneWidget);
+      await tester.pump();
+      expect(find.text(l10n(tester).addressSearchDown), findsOneWidget);
       expect(tester.takeException(), isNull);
 
-      await type(tester, 'Navoiy 9');
+      await enter(tester, 'Navoiy 9');
+      await tester.tap(byKey('address-search-go'));
       await tester.pump();
-      expect(
-        find.text(l10n(tester).addressSearchFound),
-        findsNothing,
-        reason: 'large text has no hint',
-      );
+      await tester.pump();
+      expect(byKey('address-point-hint'), findsNothing);
       expect(byKey('address-words-kept'), findsOneWidget);
+      expect(byKey('address-outside-zone'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (String, TextScaler?) face in <(String, TextScaler?)>[
+    ('at 100 %', null),
+    ('at x2', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets('every face of the map step meets the tap target guideline '
+        '${face.$1}', (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      search.area = zone;
+      search.places[fakeDoor] = door;
+      search.answers['Navoiy 9'] = fakeFar;
+      await open(tester, locale: const Locale('ru'), scaler: face.$2);
+      await tester.pump();
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await moveAndRest(tester, 'fake-map-move');
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await tester.tap(byKey('fake-map-far'));
+      await tester.pump();
+      expect(byKey('address-outside-zone'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await enter(tester, 'Navoiy 9');
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      await tester.tap(byKey('address-search-go'));
+      await tester.pump();
+      await tester.pump();
+      expect(byKey('address-search-result'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      semantics.dispose();
     });
   }
 }

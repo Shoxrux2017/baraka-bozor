@@ -669,10 +669,73 @@
     }
   },
   "addressMoveFirst": "Avval xaritani uyga suring",
-  "addressSearchFound": "Belgini tekshiring: kuryer aynan unga keladi",
+  "addressConfirmWhyMove": "hozircha yopiq: avval xaritani suring",
+  "addressConfirmWhyZone": "hozircha yopiq: bu yerga yetkazmaymiz",
+  "addressPlaceNoHouse": "Uy aniqlanmadi — belgini binoga qo'ying",
+  "addressPlaceUnknown": "Manzil aniqlanmadi",
+  "addressPlaceUnknownHint": "Belgini binoga qo'ying",
+  "addressPlaceLooking": "Manzil qidirilmoqda",
+  "addressOutsideZone": "Bu yerga hozircha yetkazmaymiz: belgigacha {distance} km, biz esa {radius} km radiusda yetkazamiz. Belgini shaharga yaqinroq suring.",
+  "@addressOutsideZone": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
+  "addressOutsideZoneSpoken": "Bu yerga hozircha yetkazmaymiz: {distance} kilometr, {radius} kilometr radiusda yetkazamiz",
+  "@addressOutsideZoneSpoken": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSearchGo": "Topish",
+  "addressSearchFoundAt": "«{query}» topildi. Belgi uyingizda turganini tekshiring.",
+  "@addressSearchFoundAt": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSearchNotFoundAt": "«{query}» topilmadi. Xaritani uyga o'zingiz suring.",
+  "@addressSearchNotFoundAt": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSearchDown": "Qidiruv hozir ishlamayapti. Xaritani o'zingiz suring.",
+  "addressFoundSpoken": "Manzil topildi. Belgi surildi",
+  "addressLocatedSpoken": "Belgi siz turgan joyda",
+  "addressLocationDenied": "Joylashuvga ruxsat berilmagan. Sozlamalarda ruxsat bering yoki xaritani o'zingiz suring.",
+  "addressLocationSettings": "Sozlamalar",
+  "addressLocationOff": "Telefonda joylashuv o'chirilgan.",
+  "addressLocationTurnOn": "Yoqish",
+  "addressLocationSlow": "10 soniyada sizni topa olmadik. Xaritani o'zingiz suring.",
+  "addressLocationAgain": "Yana bir bor",
+  "addressSearchSpoken": "Manzil so'z bilan. Topib, belgini suramiz",
+  "addressMapSpoken": "Xarita, belgi markazda.",
+  "addressMapPinSpoken": "Belgi: {line}.",
+  "@addressMapPinSpoken": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "addressMapWaySpoken": "Xaritasiz belgi qidiruv yoki «Men qayerdaman» tugmasi bilan qo'yiladi",
+  "addressMyLocationSpoken": "Men qayerdaman: belgini siz turgan joyga qo'yish",
   "addressPointText": "Kuryer belgiga keladi. Xonadon, podyezd va mo'ljalni keyingi qadamda kiritasiz.",
-  "addressSearchNotFound": "Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o'zingiz qo'ying.",
-  "addressSearchUnavailable": "Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o'zingiz qo'ying.",
   "addressWordsKept": "Yozgan manzilingizni kuryer uchun saqlaymiz",
   "addressMyLocation": "Men qayerdaman",
   "addressLocationFailed": "Joylashuvingizni aniqlab bo'lmadi. Xaritani o'zingiz suring.",

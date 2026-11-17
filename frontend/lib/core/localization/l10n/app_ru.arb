@@ -603,10 +603,73 @@
     }
   },
   "addressMoveFirst": "Сначала передвиньте карту к дому",
-  "addressSearchFound": "Проверьте метку: курьер приедет точно к ней",
+  "addressConfirmWhyMove": "недоступна: сначала передвиньте карту",
+  "addressConfirmWhyZone": "недоступна: сюда не возим",
+  "addressPlaceNoHouse": "Дом не определили — поставьте метку на здание",
+  "addressPlaceUnknown": "Адрес не определили",
+  "addressPlaceUnknownHint": "Поставьте метку на здание",
+  "addressPlaceLooking": "Ищем адрес",
+  "addressOutsideZone": "Сюда пока не возим: до метки {distance} км, а возим в радиусе {radius} км. Передвиньте метку ближе к городу.",
+  "@addressOutsideZone": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
+  "addressOutsideZoneSpoken": "Сюда пока не возим: {distance} километра, возим в радиусе {radius}",
+  "@addressOutsideZoneSpoken": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSearchGo": "Найти",
+  "addressSearchFoundAt": "Нашли: «{query}». Проверьте, что метка на вашем доме.",
+  "@addressSearchFoundAt": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSearchNotFoundAt": "Не нашли «{query}». Передвиньте карту к дому сами.",
+  "@addressSearchNotFoundAt": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSearchDown": "Поиск сейчас не работает. Передвиньте карту сами.",
+  "addressFoundSpoken": "Нашли адрес. Метка передвинута",
+  "addressLocatedSpoken": "Метка там, где вы",
+  "addressLocationDenied": "Доступ к геолокации запрещён. Разрешите в настройках или передвиньте карту сами.",
+  "addressLocationSettings": "Настройки",
+  "addressLocationOff": "Геолокация на телефоне выключена.",
+  "addressLocationTurnOn": "Включить",
+  "addressLocationSlow": "Не нашли вас за 10 секунд. Передвиньте карту сами.",
+  "addressLocationAgain": "Ещё раз",
+  "addressSearchSpoken": "Адрес словами. Найдём и передвинем метку",
+  "addressMapSpoken": "Карта, метка в центре.",
+  "addressMapPinSpoken": "Метка: {line}.",
+  "@addressMapPinSpoken": {
+    "placeholders": {
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "addressMapWaySpoken": "Без карты метку ставят поиском или кнопкой «Где я»",
+  "addressMyLocationSpoken": "Где я: поставить метку туда, где вы",
   "addressPointText": "Курьер приедет к метке. Квартиру, подъезд и ориентир укажете на следующем шаге.",
-  "addressSearchNotFound": "На карте такого адреса не нашлось. Передвиньте карту и поставьте метку на свой дом сами.",
-  "addressSearchUnavailable": "Поиск адреса сейчас не работает. Передвиньте карту и поставьте метку сами.",
   "addressWordsKept": "Ваш адрес словами сохраним для курьера",
   "addressMyLocation": "Где я",
   "addressLocationFailed": "Не удалось определить, где вы. Передвиньте карту сами.",
