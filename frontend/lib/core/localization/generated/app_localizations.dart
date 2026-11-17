@@ -9481,6 +9481,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Boshqa akkaunt bilan kirish'**
   String get wrongSurfaceOtherAccount;
+
+  /// No description provided for @authOtherNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa raqam kiritish'**
+  String get authOtherNumber;
+
+  /// No description provided for @codeNewCode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kod olish'**
+  String get codeNewCode;
+
+  /// No description provided for @authNoInternet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet yo\'q. Aloqani tekshirib, qayta urining.'**
+  String get authNoInternet;
+
+  /// No description provided for @authNotInTelegram.
+  ///
+  /// In uz, this message translates to:
+  /// **'{phone} raqami Telegramda topilmadi. Kod faqat u yerga keladi: shu raqam bilan Telegramdan ro\'yxatdan o\'ting yoki boshqa raqam kiriting.'**
+  String authNotInTelegram(String phone);
+
+  /// No description provided for @authHourLimit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu raqamga bir soatda {max} ta kod yuborildi. Yangisini {wait} o\'tgach so\'rash mumkin.'**
+  String authHourLimit(int max, String wait);
+
+  /// No description provided for @authAddressLimit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu qurilmadan so\'rovlar juda ko\'p. {wait} o\'tgach qayta urining.'**
+  String authAddressLimit(String wait);
+
+  /// No description provided for @authTooMany.
+  ///
+  /// In uz, this message translates to:
+  /// **'Urinishlar juda ko\'p. {wait} o\'tgach qayta urining.'**
+  String authTooMany(String wait);
+
+  /// No description provided for @waitMinutes.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} daqiqa'**
+  String waitMinutes(int count);
+
+  /// No description provided for @waitSeconds.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} soniya'**
+  String waitSeconds(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -5964,4 +5964,43 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get wrongSurfaceOtherAccount => 'Войти другим аккаунтом';
+
+  @override
+  String get authOtherNumber => 'Ввести другой номер';
+
+  @override
+  String get codeNewCode => 'Получить новый код';
+
+  @override
+  String get authNoInternet => 'Нет интернета. Проверьте связь и повторите.';
+
+  @override
+  String authNotInTelegram(String phone) {
+    return 'Номер $phone не найден в Telegram. Код приходит только туда: зарегистрируйтесь в Telegram с этим номером или введите другой.';
+  }
+
+  @override
+  String authHourLimit(int max, String wait) {
+    return 'На этот номер уже отправили $max кодов за час. Новый можно запросить через $wait.';
+  }
+
+  @override
+  String authAddressLimit(String wait) {
+    return 'Слишком много запросов с этого устройства. Повторите через $wait.';
+  }
+
+  @override
+  String authTooMany(String wait) {
+    return 'Слишком много попыток. Повторите через $wait.';
+  }
+
+  @override
+  String waitMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String waitSeconds(int count) {
+    return '$count с';
+  }
 }

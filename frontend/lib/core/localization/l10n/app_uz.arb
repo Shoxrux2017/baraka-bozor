@@ -4585,5 +4585,59 @@
       }
     }
   },
-  "wrongSurfaceOtherAccount": "Boshqa akkaunt bilan kirish"
+  "wrongSurfaceOtherAccount": "Boshqa akkaunt bilan kirish",
+  "authOtherNumber": "Boshqa raqam kiritish",
+  "codeNewCode": "Yangi kod olish",
+  "authNoInternet": "Internet yo'q. Aloqani tekshirib, qayta urining.",
+  "authNotInTelegram": "{phone} raqami Telegramda topilmadi. Kod faqat u yerga keladi: shu raqam bilan Telegramdan ro'yxatdan o'ting yoki boshqa raqam kiriting.",
+  "@authNotInTelegram": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "authHourLimit": "Bu raqamga bir soatda {max} ta kod yuborildi. Yangisini {wait} o'tgach so'rash mumkin.",
+  "@authHourLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authAddressLimit": "Bu qurilmadan so'rovlar juda ko'p. {wait} o'tgach qayta urining.",
+  "@authAddressLimit": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authTooMany": "Urinishlar juda ko'p. {wait} o'tgach qayta urining.",
+  "@authTooMany": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "waitMinutes": "{count} daqiqa",
+  "@waitMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitSeconds": "{count} soniya",
+  "@waitSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

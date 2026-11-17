@@ -5870,4 +5870,44 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get wrongSurfaceOtherAccount => 'Boshqa akkaunt bilan kirish';
+
+  @override
+  String get authOtherNumber => 'Boshqa raqam kiritish';
+
+  @override
+  String get codeNewCode => 'Yangi kod olish';
+
+  @override
+  String get authNoInternet =>
+      'Internet yo\'q. Aloqani tekshirib, qayta urining.';
+
+  @override
+  String authNotInTelegram(String phone) {
+    return '$phone raqami Telegramda topilmadi. Kod faqat u yerga keladi: shu raqam bilan Telegramdan ro\'yxatdan o\'ting yoki boshqa raqam kiriting.';
+  }
+
+  @override
+  String authHourLimit(int max, String wait) {
+    return 'Bu raqamga bir soatda $max ta kod yuborildi. Yangisini $wait o\'tgach so\'rash mumkin.';
+  }
+
+  @override
+  String authAddressLimit(String wait) {
+    return 'Bu qurilmadan so\'rovlar juda ko\'p. $wait o\'tgach qayta urining.';
+  }
+
+  @override
+  String authTooMany(String wait) {
+    return 'Urinishlar juda ko\'p. $wait o\'tgach qayta urining.';
+  }
+
+  @override
+  String waitMinutes(int count) {
+    return '$count daqiqa';
+  }
+
+  @override
+  String waitSeconds(int count) {
+    return '$count soniya';
+  }
 }

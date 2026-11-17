@@ -3851,5 +3851,59 @@
       }
     }
   },
-  "wrongSurfaceOtherAccount": "Войти другим аккаунтом"
+  "wrongSurfaceOtherAccount": "Войти другим аккаунтом",
+  "authOtherNumber": "Ввести другой номер",
+  "codeNewCode": "Получить новый код",
+  "authNoInternet": "Нет интернета. Проверьте связь и повторите.",
+  "authNotInTelegram": "Номер {phone} не найден в Telegram. Код приходит только туда: зарегистрируйтесь в Telegram с этим номером или введите другой.",
+  "@authNotInTelegram": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "authHourLimit": "На этот номер уже отправили {max} кодов за час. Новый можно запросить через {wait}.",
+  "@authHourLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authAddressLimit": "Слишком много запросов с этого устройства. Повторите через {wait}.",
+  "@authAddressLimit": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "authTooMany": "Слишком много попыток. Повторите через {wait}.",
+  "@authTooMany": {
+    "placeholders": {
+      "wait": {
+        "type": "String"
+      }
+    }
+  },
+  "waitMinutes": "{count} мин",
+  "@waitMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitSeconds": "{count} с",
+  "@waitSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
