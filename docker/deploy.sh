@@ -177,8 +177,11 @@ release_migrations() {
 # release's files lack. Migrations only go forward, so an older release must not
 # run on a newer schema (DL-141 (7)). The release's files are checked out.
 assert_schema_known() {
-  local extra
-  extra="$(comm -23 <(db_migrations) <(release_migrations "$1"))"
+  local db extra
+  # Read first: inside a process substitution a failed read would pass as an
+  # empty table.
+  db="$(db_migrations)" || refuse "the migrations table cannot be read (is the database up?); nothing was changed"
+  extra="$(comm -23 <(printf '%s\n' "$db") <(release_migrations "$1"))"
   if [ -n "$extra" ]; then
     refuse "the database holds migrations that $1 lacks: $(printf '%s' "$extra" | tr '\n' ' '); migrations only go forward, so fix forward with a new tag"
   fi
@@ -187,8 +190,9 @@ assert_schema_known() {
 # assert_schema_complete RELEASE: refuses when a migration of the release is
 # missing from the database, as after restoring an older dump.
 assert_schema_complete() {
-  local missing
-  missing="$(comm -13 <(db_migrations) <(release_migrations "$1"))"
+  local db missing
+  db="$(db_migrations)" || refuse "the migrations table cannot be read (is the database up?); nothing was changed"
+  missing="$(comm -13 <(printf '%s\n' "$db") <(release_migrations "$1"))"
   if [ -n "$missing" ]; then
     refuse "the database lacks migrations of $1: $(printf '%s' "$missing" | tr '\n' ' '); run docker/stack.sh run --rm app php artisan migrate --force first"
   fi

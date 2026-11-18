@@ -240,15 +240,11 @@ grep -q '"code":"service_unavailable"' "$W/body" || fail "2: the body has no ser
 grep -qi '^retry-after: 30' "$W/headers" || fail "2: no Retry-After: 30"
 grep -qi "^access-control-allow-origin: $PANEL_ORIGIN" "$W/headers" || fail "2: no Access-Control-Allow-Origin for the panel"
 # A preflight is answered, not refused (the panel must be able to read the 503).
-PREFLIGHT="$({ curl -sS --max-time 20 --ssl-no-revoke --cacert "$W/root.crt" -X OPTIONS -D - -o /dev/null   -H "Origin: $PANEL_ORIGIN" -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization'   "https://localhost:$PORT/api/v1/auth/staff/login" 2> /dev/null || true; } | tr -d '')"
-printf '%s
-' "$PREFLIGHT" | head -n 1 | grep -q ' 204' || fail "2: a preflight under maintenance did not answer 204"
-printf '%s
-' "$PREFLIGHT" | grep -qi "^access-control-allow-origin: $PANEL_ORIGIN" || fail "2: the preflight has no Allow-Origin"
-printf '%s
-' "$PREFLIGHT" | grep -qi '^access-control-allow-methods: POST' || fail "2: the preflight has no Allow-Methods"
-printf '%s
-' "$PREFLIGHT" | grep -qi '^access-control-allow-headers: authorization' || fail "2: the preflight has no Allow-Headers"
+PREFLIGHT="$({ curl -sS --max-time 20 --ssl-no-revoke --cacert "$W/root.crt" -X OPTIONS -D - -o /dev/null   -H "Origin: $PANEL_ORIGIN" -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization'   "https://localhost:$PORT/api/v1/auth/staff/login" 2> /dev/null || true; } | tr -d '\r')"
+printf '%s\n' "$PREFLIGHT" | head -n 1 | grep -q ' 204' || fail "2: a preflight under maintenance did not answer 204"
+printf '%s\n' "$PREFLIGHT" | grep -qi "^access-control-allow-origin: $PANEL_ORIGIN" || fail "2: the preflight has no Allow-Origin"
+printf '%s\n' "$PREFLIGHT" | grep -qi '^access-control-allow-methods: POST' || fail "2: the preflight has no Allow-Methods"
+printf '%s\n' "$PREFLIGHT" | grep -qi '^access-control-allow-headers: authorization' || fail "2: the preflight has no Allow-Headers"
 http /storage/missing.webp
 [ "$HTTP_CODE" != 503 ] || fail "2: images were answered with 503"
 rm -f "$BB_HOME/maintenance/on"
@@ -332,8 +328,7 @@ run_deploy $T2
 # An older release on a newer schema: refused, naming the migration; clone back.
 run_deploy $T1
 [ "$DEPLOY_CODE" = 2 ] || fail "8: deploying $T1 over $T2 exited $DEPLOY_CODE, not 2"
-printf '%s
-' "$DEPLOY_OUT" | grep -q 'create_deploy_test_marker_table' || fail "8: the refusal does not name the marker migration"
+printf '%s\n' "$DEPLOY_OUT" | grep -q 'create_deploy_test_marker_table' || fail "8: the refusal does not name the marker migration"
 [ "$(git -C "$REPO" rev-parse HEAD)" = "$(git -C "$REPO" rev-parse "$T2^{commit}")" ] || fail "8: the clone is not back on $T2"
 [ ! -e "$BB_HOME/maintenance/on" ] || fail "8: maintenance began"
 ok 8 "refused: a tag off main, a malformed tag, the running tag, an older schema"
@@ -370,11 +365,9 @@ printf '%s\n' "$REPORT" | grep -q 'warning: the last backup was not a success' |
 REPORT="$(report '{"result":"success","finished_at":"not a time"}' "$FINISHED_EPOCH")"
 printf '%s\n' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: an unreadable time does not warn"
 REPORT="$(report '{"result":"success"}' "$FINISHED_EPOCH")"
-printf '%s
-' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: a missing time does not warn"
+printf '%s\n' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: a missing time does not warn"
 REPORT="$(report '{"result":"success","finished_at":""}' "$FINISHED_EPOCH")"
-printf '%s
-' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: an empty time does not warn"
+printf '%s\n' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: an empty time does not warn"
 ok 11 "the backup report: fresh success silent; 30 hours, a failure and an unreadable, empty or missing time warn"
 
 # --- 12. The dump restore of the runbook -----------------------------------------
@@ -393,8 +386,7 @@ bash "$STACK" exec -T db sh -c '
 [ -z "$(db "select to_regclass('public.deploy_test_marker')")" ] || fail "12: the restored schema already has the marker table"
 run_deploy --resume
 [ "$DEPLOY_CODE" = 2 ] || fail "12: --resume on an older schema exited $DEPLOY_CODE, not 2"
-printf '%s
-' "$DEPLOY_OUT" | grep -q 'create_deploy_test_marker_table' || fail "12: the refusal does not name the missing migration"
+printf '%s\n' "$DEPLOY_OUT" | grep -q 'create_deploy_test_marker_table' || fail "12: the refusal does not name the missing migration"
 bash "$STACK" run --rm -T app php artisan migrate --force > /dev/null || fail "12: migrate failed"
 run_deploy --resume
 [ "$DEPLOY_CODE" = 0 ] || fail "12: --resume exited $DEPLOY_CODE"
