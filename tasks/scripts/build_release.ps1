@@ -8,35 +8,25 @@
   the upload key. Prints names and fingerprints only, never a value.
 
   Usage: powershell -File tasks/scripts/build_release.ps1 [-OutDir <path>]
+           [-ApiEnv <.env.name>] [-Apk]
+
+  -ApiEnv  the frontend env file that fixes the API server (default
+           .env.release); never .env.maps or .env.firebase.
+  -Apk     builds a signed APK (barakabozor-<version>-<code>-<api host>.apk)
+           instead of the bundle, for testers (`DL-141` (9)).
 #>
 param(
-    [string]$OutDir
+    [string]$OutDir,
+    [string]$ApiEnv = '.env.release',
+    [switch]$Apk
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# One line per refusal, naming a file or a key and never a value, so a log
-# pasted into a chat cannot leak a secret.
-function Stop-Build([string]$Reason) {
-    Write-Host "build_release: $Reason"
-    exit 1
-}
+. "$PSScriptRoot\release_common.ps1"
 
-# Parsed as Flutter parses an env file: blank and # lines skipped, split at the
-# first '=', both sides trimmed.
-function Read-EnvFile([string]$Path) {
-    $values = @{}
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $values }
-    foreach ($line in Get-Content -LiteralPath $Path) {
-        $text = $line.Trim()
-        if ($text -eq '' -or $text.StartsWith('#')) { continue }
-        $at = $text.IndexOf('=')
-        if ($at -lt 1) { continue }
-        $values[$text.Substring(0, $at).Trim()] = $text.Substring($at + 1).Trim()
-    }
-    return $values
-}
+function Stop-Build([string]$Reason) { Stop-Release 'build_release' $Reason }
 
 # Parsed like the Gradle build reads it: the value starts after the first '='
 # with leading blanks dropped.
@@ -52,6 +42,13 @@ function Read-KeyProperties([string]$Path) {
     return $values
 }
 
+# apksigner prints lower-case hex without colons; keytool prints upper case
+# with colons. The summary keeps keytool's form.
+function Format-Fingerprint([string]$Hex) {
+    $plain = $Hex.Replace(':', '').ToUpperInvariant()
+    return (($plain -split '(?<=\G..)(?!$)') -join ':')
+}
+
 function Get-Fingerprint([string[]]$Output, [string]$Algorithm) {
     foreach ($line in $Output) {
         if ($line -match ('^\s*' + $Algorithm + ':\s*([0-9A-Fa-f:]+)\s*$')) {
@@ -65,19 +62,7 @@ $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $frontend = Join-Path $repo 'frontend'
 
 # Check 1: a bundle must be explained by one commit.
-$dirty = git -C $repo status --porcelain --untracked-files=no
-if ($LASTEXITCODE -ne 0) { Stop-Build 'git status failed' }
-if ($dirty) { Stop-Build 'tracked files have uncommitted changes' }
-# An untracked file under frontend/ can still reach the bundle (an asset, a
-# source file); ignored files are not listed.
-$untracked = git -C $repo status --porcelain -- frontend
-if ($LASTEXITCODE -ne 0) { Stop-Build 'git status failed' }
-if ($untracked) { Stop-Build 'frontend has untracked files' }
-# A release is built from a published commit, so the bundle can be explained
-# by anyone with the repository.
-git -C $repo merge-base --is-ancestor HEAD origin/main
-if ($LASTEXITCODE -ne 0) { Stop-Build 'HEAD is not on origin/main; a release is built from main (run git fetch first)' }
-$commit = (git -C $repo rev-parse HEAD).Trim()
+$commit = Assert-CleanMain $repo 'build_release'
 
 # Check 2: the version code comes only from pubspec.yaml (`DL-116` (2)).
 $versionName = $null
@@ -113,8 +98,9 @@ if (-not (Test-Path -LiteralPath $storeFile -PathType Leaf)) {
 }
 
 # Check 4: a tester's build must never point at the wrong server.
+$apiBase = Read-ApiBase $frontend $ApiEnv 'build_release'
+$apiHost = ([Uri]$apiBase).Host
 $required = [ordered]@{
-    '.env.release'  = @('BB_API_BASE_URL')
     '.env.maps'     = @('GOOGLE_MAPS_API_KEY')
     '.env.firebase' = @('FIREBASE_PROJECT_ID', 'FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_ANDROID_APP_ID', 'FIREBASE_ANDROID_API_KEY')
 }
@@ -125,16 +111,9 @@ foreach ($file in $required.Keys) {
             Stop-Build "frontend/$file has no $name"
         }
     }
-    if ($file -eq '.env.release') {
-        # -cnotmatch: PowerShell's -notmatch ignores case, and /API/V1 is not a route.
-        if ($values['BB_API_BASE_URL'] -cnotmatch '^https://[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}/api/v1$') {
-            Stop-Build 'BB_API_BASE_URL in .env.release must be https://<host>/api/v1'
-        }
-        $apiHost = ([Uri]$values['BB_API_BASE_URL']).Host
-    }
-    elseif ($values.ContainsKey('BB_API_BASE_URL')) {
+    if ($values.ContainsKey('BB_API_BASE_URL')) {
         # Flutter lets a later --dart-define-from-file win, so the server is
-        # fixed by .env.release alone.
+        # fixed by the API env file alone.
         Stop-Build "frontend/$file must not set BB_API_BASE_URL"
     }
 }
@@ -158,24 +137,76 @@ if (-not $keytool -and (Test-Path -LiteralPath (Join-Path $studioJbr 'bin\keytoo
 if (-not $keytool) { Stop-Build 'keytool not found; set JAVA_HOME' }
 
 # Check 6: the build.
+$dartDefines = @('--dart-define-from-file=.env.maps', '--dart-define-from-file=.env.firebase', "--dart-define-from-file=$ApiEnv")
 Push-Location $frontend
 try {
-    flutter build appbundle --release '--dart-define-from-file=.env.maps' '--dart-define-from-file=.env.firebase' '--dart-define-from-file=.env.release'
+    if ($Apk) {
+        flutter build apk --release @dartDefines
+    }
+    else {
+        flutter build appbundle --release @dartDefines
+    }
     $buildExit = $LASTEXITCODE
 }
 finally {
     Pop-Location
 }
 if ($buildExit -ne 0) { Stop-Build 'flutter build failed' }
-$builtBundle = Join-Path $frontend 'build/app/outputs/bundle/release/app-release.aab'
-if (-not (Test-Path -LiteralPath $builtBundle -PathType Leaf)) { Stop-Build 'flutter build failed' }
+if ($Apk) {
+    $builtArtifact = Join-Path $frontend 'build/app/outputs/flutter-apk/app-release.apk'
+    $extension = 'apk'
+}
+else {
+    $builtArtifact = Join-Path $frontend 'build/app/outputs/bundle/release/app-release.aab'
+    $extension = 'aab'
+}
+if (-not (Test-Path -LiteralPath $builtArtifact -PathType Leaf)) { Stop-Build 'flutter build failed' }
 
-# Check 7: the bundle's signer must be the upload key. The password reaches
+# Check 7: the artifact's signer must be the upload key. The password reaches
 # keytool through the environment, never the command line, and is removed again.
-$bundleOutput = @(& $keytool '-J-Duser.language=en' -printcert -jarfile $builtBundle)
-$bundleExit = $LASTEXITCODE
-$bundleSha256 = Get-Fingerprint $bundleOutput 'SHA256'
-$bundleSha1 = Get-Fingerprint $bundleOutput 'SHA1'
+$bundleSha256 = $null
+$bundleSha1 = $null
+$bundleOwner = $null
+if ($Apk) {
+    # keytool -printcert -jarfile reads only v1 signatures; an APK is verified
+    # by apksigner, from the newest build-tools of the Android SDK.
+    $apksigner = $null
+    $sdkRoots = @($env:ANDROID_HOME, $env:ANDROID_SDK_ROOT)
+    if ($env:LOCALAPPDATA) { $sdkRoots += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
+    foreach ($sdk in $sdkRoots) {
+        if (-not $sdk) { continue }
+        $tools = Join-Path $sdk 'build-tools'
+        if (-not (Test-Path -LiteralPath $tools -PathType Container)) { continue }
+        $newest = Get-ChildItem -LiteralPath $tools -Directory |
+            Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'apksigner.bat') } |
+            Sort-Object { try { [Version]$_.Name } catch { [Version]'0.0' } } |
+            Select-Object -Last 1
+        if ($newest) { $apksigner = Join-Path $newest.FullName 'apksigner.bat'; break }
+    }
+    if (-not $apksigner) { Stop-Build 'apksigner.bat not found in the Android SDK build-tools; set ANDROID_HOME' }
+    $bundleOutput = @(& $apksigner verify --print-certs $builtArtifact)
+    $bundleExit = $LASTEXITCODE
+    foreach ($line in $bundleOutput) {
+        if (-not $bundleSha256 -and $line -match '^Signer #1 certificate SHA-256 digest:\s*([0-9A-Fa-f:]+)\s*$') {
+            $bundleSha256 = Format-Fingerprint $Matches[1]
+        }
+        elseif (-not $bundleSha1 -and $line -match '^Signer #1 certificate SHA-1 digest:\s*([0-9A-Fa-f:]+)\s*$') {
+            $bundleSha1 = Format-Fingerprint $Matches[1]
+        }
+        elseif (-not $bundleOwner -and $line -match '^Signer #1 certificate DN:\s*(.*)$') {
+            $bundleOwner = $Matches[1]
+        }
+    }
+}
+else {
+    $bundleOutput = @(& $keytool '-J-Duser.language=en' -printcert -jarfile $builtArtifact)
+    $bundleExit = $LASTEXITCODE
+    $bundleSha256 = Get-Fingerprint $bundleOutput 'SHA256'
+    $bundleSha1 = Get-Fingerprint $bundleOutput 'SHA1'
+    foreach ($line in $bundleOutput) {
+        if ($line -match '^\s*Owner:\s*(.*)$') { $bundleOwner = $Matches[1]; break }
+    }
+}
 $env:BB_RELEASE_STOREPASS = $keys['storePassword']
 try {
     $listOutput = @(& $keytool '-J-Duser.language=en' -list -v -keystore $storeFile -alias $keys['keyAlias'] '-storepass:env' BB_RELEASE_STOREPASS)
@@ -185,28 +216,27 @@ finally {
     Remove-Item Env:BB_RELEASE_STOREPASS -ErrorAction SilentlyContinue
 }
 $keystoreSha256 = Get-Fingerprint $listOutput 'SHA256'
-$bundleOwner = $null
-foreach ($line in $bundleOutput) {
-    if ($line -match '^\s*Owner:\s*(.*)$') { $bundleOwner = $Matches[1]; break }
-}
+# apksigner prints no colons, keytool does: compare the bare hex.
 if ($bundleExit -ne 0 -or $listExit -ne 0 -or -not $bundleSha256 -or -not $keystoreSha256 `
-        -or $bundleSha256 -ne $keystoreSha256 `
+        -or $bundleSha256.Replace(':', '') -ne $keystoreSha256.Replace(':', '') `
         -or ($bundleOwner -and $bundleOwner.StartsWith('CN=Android Debug'))) {
-    Stop-Build 'the bundle is not signed with the upload key'
+    $what = if ($Apk) { 'the APK' } else { 'the bundle' }
+    Stop-Build "$what is not signed with the upload key"
 }
 
-# Output: the bundle named after its version, and a summary that explains it.
+# Output: the artifact named after its version, and a summary that explains it.
 if (-not $OutDir) { $OutDir = Join-Path $frontend 'build/release' }
 $OutDir = (New-Item -ItemType Directory -Force -Path $OutDir).FullName
 $baseName = "barakabozor-$versionName-$versionCode"
-$bundlePath = Join-Path $OutDir "$baseName.aab"
-Copy-Item -LiteralPath $builtBundle -Destination $bundlePath -Force
-$aabSha256 = (Get-FileHash -LiteralPath $bundlePath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($Apk) { $baseName = "$baseName-$apiHost" }
+$artifactPath = Join-Path $OutDir "$baseName.$extension"
+Copy-Item -LiteralPath $builtArtifact -Destination $artifactPath -Force
+$artifactSha256 = (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $summary = @(
     "version=$versionName+$versionCode"
     "commit=$commit"
     "built_at=$([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ', [Globalization.CultureInfo]::InvariantCulture))"
-    "aab_sha256=$aabSha256"
+    "${extension}_sha256=$artifactSha256"
     "api_host=$apiHost"
     "signer_sha1=$bundleSha1"
     "signer_sha256=$bundleSha256"

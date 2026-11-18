@@ -41,6 +41,39 @@
 		file_server
 	}
 
+	# A deploy replaces the app container (DL-141 (6)): while docker/deploy.sh
+	# holds maintenance/on, the API answers the contract's planned-maintenance
+	# envelope (docs/09 section 3). Images above are still served.
+	# The root is named: a bare absolute path is joined to the site root.
+	@maintenance file {
+		root /srv/maintenance
+		try_files /on
+	}
+	handle @maintenance {
+		# A CORS preflight is not the request itself: answer it, so the panel
+		# can read the 503 below.
+		@preflight method OPTIONS
+		handle @preflight {
+			header {
+				Access-Control-Allow-Origin {$CORS_ALLOWED_ORIGINS}
+				Access-Control-Allow-Methods {http.request.header.Access-Control-Request-Method}
+				Access-Control-Allow-Headers {http.request.header.Access-Control-Request-Headers}
+				Access-Control-Max-Age 60
+			}
+			respond 204
+		}
+		handle {
+			header {
+				Retry-After 30
+				Cache-Control no-store
+				Content-Type application/json
+				Access-Control-Allow-Origin {$CORS_ALLOWED_ORIGINS}
+				Access-Control-Expose-Headers Retry-After
+			}
+			respond `{"message":"The service is being updated.","code":"service_unavailable","errors":{},"request_id":"req_{http.request.uuid}"}` 503
+		}
+	}
+
 	handle {
 		rewrite * /index.php
 		reverse_proxy app:9000 {

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\Console\Command\Command;
 use Tests\TestCase;
 
@@ -246,6 +247,33 @@ final class BootstrapFirstAdminCommandTest extends TestCase
             ->assertExitCode(Command::FAILURE);
 
         $this->assertSame(0, User::query()->count());
+    }
+
+    public function test_a_temporary_first_admin_must_replace_the_password_at_the_first_sign_in(): void
+    {
+        Route::middleware(['api', 'protected'])->prefix('api/v1/testing')->group(function (): void {
+            Route::get('protected', fn () => response()->json(['data' => ['ok' => true]]));
+        });
+
+        $this->artisan(self::COMMAND, ['phone' => self::PHONE, '--temporary' => true])
+            ->expectsQuestion('Password', self::PASSWORD)
+            ->expectsQuestion('Confirm password', self::PASSWORD)
+            ->assertExitCode(Command::SUCCESS);
+
+        $admin = User::query()->sole();
+
+        $this->assertTrue($admin->must_change_password);
+        $this->assertNull($admin->password_changed_at);
+        $this->assertTrue(Hash::check(self::PASSWORD, (string) $admin->password));
+
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.must_change_password', true);
+        $this->withToken($token)->getJson('/api/v1/testing/protected')
+            ->assertStatus(403)
+            ->assertJsonPath('code', 'password_change_required');
     }
 
     public function test_the_created_admin_holds_the_instant_it_chose_its_password(): void

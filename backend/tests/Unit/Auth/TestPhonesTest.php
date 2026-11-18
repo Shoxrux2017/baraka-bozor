@@ -43,6 +43,33 @@ final class TestPhonesTest extends TestCase
         new TestPhones(['+998900000099'], '000000', production: true);
     }
 
+    public function test_test_phones_boot_on_staging_with_a_code_nobody_can_guess(): void
+    {
+        $phones = new TestPhones(['+998900000099'], '730154', staging: true);
+
+        $this->assertSame('730154', $phones->codeFor('+998900000099'));
+    }
+
+    #[DataProvider('guessableTestCodes')]
+    public function test_a_guessable_test_code_refuses_to_boot_on_staging(string $code): void
+    {
+        try {
+            new TestPhones(['+998900000099'], $code, staging: true);
+            $this->fail('A guessable code was accepted on staging.');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('LOGIN_CODE_TEST_CODE', $e->getMessage());
+            $this->assertStringNotContainsString($code, $e->getMessage());
+        }
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function guessableTestCodes(): array
+    {
+        return ['zeros' => ['000000'], 'ascending' => ['123456'], 'descending' => ['987654']];
+    }
+
     public function test_a_reviewer_phone_boots_in_production_and_gets_its_own_code(): void
     {
         $phones = new TestPhones([], null, production: true, reviewerPhone: '+998900000077', reviewerCode: '482913');

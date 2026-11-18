@@ -67,8 +67,8 @@ trap cleanup EXIT
 
 random_hex() { openssl rand -hex "$1"; }
 
-rm -rf "$W/repository" "$W/panel"
-mkdir -p "$W/repository" "$W/panel"
+rm -rf "$W/repository" "$W/panel" "$W/maintenance"
+mkdir -p "$W/repository" "$W/panel" "$W/maintenance"
 chmod 0777 "$W/repository"
 
 cat > "$W/stack.env" <<STACK
@@ -84,6 +84,7 @@ BB_HTTPS_PORT=18443
 API_HOST=localhost
 PANEL_HOST=panel.localhost
 PANEL_ROOT=$W/panel
+MAINTENANCE_DIR=$W/maintenance
 EDGE_SUBNET=10.203.41.0/28
 APP_NAME=BarakaBozorBackupTest
 APP_ENV=local

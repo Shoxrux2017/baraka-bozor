@@ -23,7 +23,7 @@ jobs:
   image:
     name: Production image, backup and restore
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Check out the repository
@@ -38,6 +38,12 @@ jobs:
       # (DL-104 (6)). Not a required check.
       - name: Backup, wipe and restore
         run: bash docker/backup/test-cycle.sh
+
+      # Deploys six scratch releases into a scratch server: the maintenance
+      # answer, a dump before each release, a rollback, a failed migration, an
+      # invalid Caddyfile and a dropped session (DL-141). Not a required check.
+      - name: Deploy, maintenance and rollback
+        run: bash docker/deploy-test.sh
 
   backend:
     name: Tests, Pint, PHPStan on PostgreSQL

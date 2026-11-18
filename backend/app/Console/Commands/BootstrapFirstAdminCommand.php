@@ -33,6 +33,11 @@ use Throwable;
  * from the credential leaves this command on any path, and `AGENTS.md` Section 9
  * keeps the SQL and the trace out of the operator's terminal too.
  *
+ * With `--temporary` the account is created with `must_change_password`, as a
+ * new staff account is (`BR-ROLE-005`): the operator who typed the password is
+ * not its holder, so the holder replaces it at the first sign-in. Without the
+ * option the person at the terminal is the holder and nothing is forced.
+ *
  * No password policy is imposed here beyond refusing an empty one. None is
  * locked in `docs/01`–`09`, and inventing a rule the change-password endpoint
  * would then have to match is a decision reserved to the Project Owner;
@@ -47,9 +52,10 @@ final class BootstrapFirstAdminCommand extends Command
      */
     protected $signature = 'bootstrap:first-admin
                             {phone : The Admin phone in E.164, +998 and nine digits}
-                            {--name= : Full name to record on the account}';
+                            {--name= : Full name to record on the account}
+                            {--temporary : Treat the typed password as temporary: the Admin must replace it at the first sign-in}';
 
-    protected $description = 'Create the first Admin account (BR-ROLE-009). Runs once, before any Admin exists.';
+    protected $description = 'Create the first Admin account (BR-ROLE-009). Runs once, before any Admin exists. With --temporary the Admin must replace the password at the first sign-in.';
 
     /** The same shape `users_phone_format_check` enforces. */
     private const PHONE_PATTERN = '/^\+998[0-9]{9}$/';
@@ -109,6 +115,8 @@ final class BootstrapFirstAdminCommand extends Command
             return self::FAILURE;
         }
 
+        $temporary = (bool) $this->option('temporary');
+
         $admin = new User;
 
         // Assigned rather than mass-assigned: `role` and `status` are kept out of
@@ -124,12 +132,11 @@ final class BootstrapFirstAdminCommand extends Command
             'password' => $password,
             'status' => UserStatus::Active,
 
-            // BR-ROLE-005 sets the gate for Staff who receive a server-generated
-            // temporary password they did not choose. This password was chosen by
-            // the person running the command, so a forced change would remedy
-            // nothing.
-            'must_change_password' => false,
-            'password_changed_at' => now(),
+            // BR-ROLE-005 sets the gate for a password its holder did not choose.
+            // Without `--temporary` the person running the command is the
+            // holder, so a forced change would remedy nothing.
+            'must_change_password' => $temporary,
+            'password_changed_at' => $temporary ? null : now(),
             'created_by_user_id' => null,
         ]);
 
