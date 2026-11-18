@@ -130,8 +130,27 @@ BACKUP_ENV_FILE=/opt/barakabozor/backup.env
 BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml
 BACKUP_LOCAL_REPOSITORY=/opt/barakabozor/backup-repo
 BB_BUILDER_PRUNE=1
+DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+LOG_CHANNEL=stderr
+LOG_LEVEL=info
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+SESSION_DRIVER=array
+FILESYSTEM_DISK=local
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+BCRYPT_ROUNDS=12
+LOGIN_CODE_DAILY_LIMIT=500
 ENV
 ```
+
+Every name of `docker/production.env.example` is either in the block above,
+generated below, or listed as left out further down. The fixed lines at the end
+of the block (`DB_HOST=db`, `LOG_CHANNEL=stderr`, the drivers) are the template's
+own; without `DB_HOST=db` the first migration looks for a database on the app's
+own address and fails.
 
 The generated secrets, written straight into the file so that none is shown on
 the terminal (`openssl` and `/dev/urandom` only; the server has no PHP):
@@ -144,6 +163,15 @@ printf 'DB_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> stack.env
 printf 'LOGIN_CODE_TEST_CODE=%06d\n' "$(( $(od -An -N4 -tu4 /dev/urandom) % 1000000 ))" >> stack.env
 ```
 
+Test phones must look random: not a sequence, not round numbers. A code request
+answers differently for a test phone than for any other number, so anyone may
+probe numbers and find the stand's phones; a random number is not found in a few
+guesses. One way to draw a phone:
+
+```text
+printf '+99890%07d\n' "$(( $(od -An -N4 -tu4 /dev/urandom) % 10000000 ))"
+```
+
 The boot refuses a guessable test code (six equal digits, or a run up or down by
 one such as `123456`). The odds are about one in 50,000; if a deploy says so,
 replace the `LOGIN_CODE_TEST_CODE` line with a new draw.
@@ -152,15 +180,16 @@ The Firebase service-account key (`DL-114` (8)) is copied to the server, encoded
 into the file, then destroyed there. From the agent's machine:
 
 ```text
-scp -i ~/.ssh/barakabozor_vps <path to the key file> deploy@<ip>:/opt/barakabozor/fcm.json
+ssh -i ~/.ssh/barakabozor_vps deploy@<ip> 'umask 077; cat > /opt/barakabozor/state/fcm.json' < <path to the key file>
 ```
 
-On the server:
+The file is created with mode 600 inside the private `state/` directory. On the
+server:
 
 ```text
 cd /opt/barakabozor
-printf 'FCM_SERVICE_ACCOUNT=%s\n' "$(base64 -w0 fcm.json)" >> stack.env
-shred -u fcm.json
+printf 'FCM_SERVICE_ACCOUNT=%s\n' "$(base64 -w0 state/fcm.json)" >> stack.env
+shred -u state/fcm.json
 ```
 
 Left out on the stand on purpose: `LOGIN_CODE_REVIEWER_*`, `TELEGRAM_GATEWAY_TOKEN`
@@ -223,13 +252,13 @@ dropped SSH session and writes everything to `state/deploy.log`.
 
 Then the backup role and the repository. `create-role.sh` and `restore.sh` run
 Compose themselves and read the override and the image tag from the
-**environment**, so export them first:
+**environment**; pass them on the line, never `export` them (an exported
+`BB_RELEASE` would outlive the release it names):
 
 ```text
 cd /opt/barakabozor/repo
-export BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml
-export BB_RELEASE="$(cat /opt/barakabozor/state/release)"
-docker/backup/create-role.sh /opt/barakabozor/stack.env
+BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml BB_RELEASE="$(cat /opt/barakabozor/state/release)" \
+  docker/backup/create-role.sh /opt/barakabozor/stack.env
 docker/stack.sh exec backup restic init
 docker/stack.sh exec backup backup.sh
 docker/stack.sh exec backup cat /status/backup.json
@@ -242,10 +271,11 @@ temporary password at a hidden prompt, twice. It needs a terminal, so `ssh -t`
 from the agent's machine:
 
 ```text
-ssh -t -i ~/.ssh/barakabozor_vps deploy@<ip> 'cd /opt/barakabozor/repo && docker/stack.sh run --rm app php artisan bootstrap:first-admin <phone> --name="<full name>"'
+ssh -t -i ~/.ssh/barakabozor_vps deploy@<ip> 'cd /opt/barakabozor/repo && docker/stack.sh run --rm app php artisan bootstrap:first-admin <phone> --name="<full name>" --temporary'
 ```
 
-`<phone>` is the Admin's `+998` number. The temporary password goes to the Owner
+`<phone>` is the Admin's `+998` number. With `--temporary` the Admin must replace
+the password at the first sign-in. The temporary password goes to the Owner
 directly. It is not written to a file, a chat or the shell history (the command
 takes no password argument). The Owner signs in to the panel, is made to change
 it, and enters the business settings.
@@ -271,7 +301,7 @@ BB_API_BASE_URL=https://api.<name>.duckdns.org/api/v1
 `-Identity` defaults to `~/.ssh/barakabozor_vps`. Both scripts refuse a
 modified tree or a HEAD that is not on `origin/main`, and print names, never
 values. The APK is written to `frontend/build/release/` as
-`barakabozor-<version>+<code>-<api host>.apk` after `apksigner` has proved it is
+`barakabozor-<version>-<code>-<api host>.apk` after `apksigner` has proved it is
 signed with the upload key.
 
 `publish_panel.ps1` builds the web panel, uploads it to
@@ -336,8 +366,11 @@ tail -n 80 /opt/barakabozor/state/deploy.log
 docker/deploy.sh --resume
 ```
 
-  `--resume` is refused when the database already holds a migration the running
-  release lacks; then deploy a **fixed tag** (a new tag on `main` with the fix).
+  `--resume` is refused when the database holds a migration the running release
+  lacks (deploy a **fixed tag**, a new tag on `main` with the fix), or lacks one
+  the running release has (run `docker/stack.sh run --rm app php artisan migrate
+  --force` first). A deploy of an older tag, or `--rollback` onto a release that
+  lacks a migration the database holds, is refused the same way.
 - **`--rollback`**: one release further back, only when no migration differs.
 - **A stale lock.** A deploy killed outright leaves `state/deploy.lock`, a
   directory, and the next run says "another deploy holds ...". Check that no
@@ -350,22 +383,31 @@ rmdir /opt/barakabozor/state/deploy.lock
 
 - **The dump as the last resort.** `dumps/` holds the five newest custom-format
   dumps, named `<time>-before-<tag>.dump`. Restoring one replaces the database
-  with its older state, so every change since is lost. With the application
-  stopped and maintenance on:
+  with its older state, so every change since is lost. The schema is dropped and
+  made again first, so nothing newer is left behind to block the restore. With
+  maintenance on and the application stopped:
 
 ```text
 cd /opt/barakabozor/repo
 touch /opt/barakabozor/maintenance/on
 docker/stack.sh stop app worker scheduler
-docker/stack.sh exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner --single-transaction --exit-on-error' < /opt/barakabozor/dumps/<file>.dump
+docker/stack.sh exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c "drop schema public cascade; create schema public;"'
+docker/stack.sh exec -T db sh -c '
+  f="$(mktemp)"
+  cat > "$f" || exit 1
+  code=0
+  pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --single-transaction --exit-on-error "$f" || code=$?
+  rm -f "$f"
+  exit "$code"' < /opt/barakabozor/dumps/<file>.dump
+docker/stack.sh run --rm app php artisan migrate --force
 docker/deploy.sh --resume
 ```
 
-  `--resume` brings the stack up on the running release and turns maintenance off.
-  A dump taken before a deploy holds the schema of the release that was running
-  then, so after restoring one, deploy that release's successor again if its
-  migrations are needed. A night's backup is restored the other way, into a new
-  stack (section 8).
+  The `migrate` line brings an older dump up to the running release (it does
+  nothing when the dump is current); `--resume` refuses until the database has
+  every migration of the running release, then starts the stack and turns
+  maintenance off. This sequence is rehearsed by `docker/deploy-test.sh`. A
+  night's backup is restored the other way, into a new stack (section 8).
 
 ## 8. The live checks
 
@@ -471,16 +513,29 @@ DB_DATABASE=barakabozor
 DB_USERNAME=barakabozor
 BACKUP_ENV_FILE=/opt/barakabozor/backup.env
 BACKUP_LOCAL_REPOSITORY=/opt/barakabozor/backup-repo
+DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+LOG_CHANNEL=stderr
+LOG_LEVEL=info
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+SESSION_DRIVER=array
+FILESYSTEM_DISK=local
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+BCRYPT_ROUNDS=12
+LOGIN_CODE_DAILY_LIMIT=500
 ENV
 printf 'APP_KEY=base64:%s\n' "$(openssl rand -base64 32)" >> "$S"
 printf 'PHONE_FINGERPRINT_KEY=base64:%s\n' "$(openssl rand -base64 32)" >> "$S"
 printf 'DB_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> "$S"
 
 cd /opt/barakabozor/repo
-export BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml
-export BB_RELEASE="$(cat /opt/barakabozor/state/release)"
-docker/backup/restore.sh "$S"
-docker/backup/restore.sh "$S" <snapshot id from the list>
+BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml BB_RELEASE="$(cat /opt/barakabozor/state/release)" \
+  docker/backup/restore.sh "$S"
+BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml BB_RELEASE="$(cat /opt/barakabozor/state/release)" \
+  docker/backup/restore.sh "$S" <snapshot id from the list>
 ```
 
 The first call lists the snapshots; the second restores one. Compare the scratch
@@ -488,7 +543,7 @@ database with the live one (the counts agree up to the changes since the snapsho
 and check that the images came back:
 
 ```text
-SC="docker compose --env-file $S -f docker/compose.prod.yaml -f $BB_COMPOSE_OVERRIDE"
+SC="env BB_RELEASE=$(cat /opt/barakabozor/state/release) docker compose --env-file $S -f docker/compose.prod.yaml -f docker/backup/compose.local-repo.yaml"
 $SC exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c "select count(*) from users"'
 docker/stack.sh exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c "select count(*) from users"'
 $SC exec -T app sh -c 'ls storage/app/public | head'

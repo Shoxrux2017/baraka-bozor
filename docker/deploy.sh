@@ -142,10 +142,11 @@ rollback() {
     newest="$(ls -1 "$BB_HOME/dumps"/*.dump 2> /dev/null | sort -r | head -n 1 || true)"
     refuse "$previous and $current differ in backend/database/migrations; migrations only go forward, so fix forward. The newest dump: ${newest:-none}"
   fi
+  checkout "$previous"
+  assert_schema_known "$previous"
   docker image inspect "barakabozor-app:$previous" > /dev/null 2>&1 \
     || refuse "the image barakabozor-app:$previous is gone; deploy $previous again instead"
 
-  checkout "$previous"
   phase=maintenance
   touch "$maint/on"
   say "maintenance on"
@@ -162,20 +163,44 @@ rollback() {
   say "release $previous is running again"
 }
 
-# resume: the running release back in service after a failed deploy. Refused
-# when the database already holds a migration the running release lacks.
+# The migrations the database records and the ones a release ships, as names.
+db_migrations() {
+  # shellcheck disable=SC2016
+  compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c "select migration from migrations"' \
+    | tr -d '\r' | sort
+}
+release_migrations() {
+  git_repo ls-tree --name-only "$1" backend/database/migrations/ | grep '\.php$' | sed 's|.*/||; s|\.php$||' | sort
+}
+
+# assert_schema_known RELEASE: refuses when the database holds a migration the
+# release's files lack. Migrations only go forward, so an older release must not
+# run on a newer schema (DL-141 (7)). The release's files are checked out.
+assert_schema_known() {
+  local extra
+  extra="$(comm -23 <(db_migrations) <(release_migrations "$1"))"
+  if [ -n "$extra" ]; then
+    refuse "the database holds migrations that $1 lacks: $(printf '%s' "$extra" | tr '\n' ' '); migrations only go forward, so fix forward with a new tag"
+  fi
+}
+
+# assert_schema_complete RELEASE: refuses when a migration of the release is
+# missing from the database, as after restoring an older dump.
+assert_schema_complete() {
+  local missing
+  missing="$(comm -13 <(db_migrations) <(release_migrations "$1"))"
+  if [ -n "$missing" ]; then
+    refuse "the database lacks migrations of $1: $(printf '%s' "$missing" | tr '\n' ' '); run docker/stack.sh run --rm app php artisan migrate --force first"
+  fi
+}
+
+# resume: the running release back in service after a failed deploy.
 resume() {
-  local files extra
   [ -n "$current" ] || refuse "no release is running; deploy a tag instead"
   [ -z "$(git_repo status --porcelain --untracked-files=no)" ] || refuse "tracked files in $BB_REPO are modified"
   compose up -d --no-recreate --wait db
-  files="$(git_repo ls-tree --name-only "$current" backend/database/migrations/ | sed 's|.*/||; s|\.php$||' | sort)"
-  # shellcheck disable=SC2016
-  extra="$(compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c "select migration from migrations"' \
-    | tr -d '\r' | sort | comm -23 - <(printf '%s\n' "$files"))"
-  if [ -n "$extra" ]; then
-    refuse "the database holds migrations that $current lacks: $(printf '%s' "$extra" | tr '\n' ' '); fix forward with a new tag"
-  fi
+  assert_schema_known "$current"
+  assert_schema_complete "$current"
 
   checkout "$current"
   phase=maintenance
@@ -190,6 +215,8 @@ resume() {
 main() {
   trap '' HUP
   umask 077
+  # The release comes from state/release or is set inline where it matters.
+  unset BB_RELEASE
 
   local tag_pattern='^r[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$' old
 
@@ -253,10 +280,13 @@ main() {
   # 2. The tag's files.
   checkout "$tag"
   say "checked out $tag"
+  if [ -n "$current" ]; then
+    assert_schema_known "$tag"
+  fi
 
   # 3. The Caddyfile, before anything running is touched.
   if ! compose run --rm -T --no-deps --entrypoint caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile > /dev/null; then
-    refuse "the Caddyfile of $tag is not valid; $tag was not deployed"
+    refuse "the Caddyfile or the Compose configuration of $tag is not valid; $tag was not deployed"
   fi
 
   # 4. The images.

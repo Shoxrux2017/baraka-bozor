@@ -52,7 +52,8 @@ backup_report() {
   local status="$1" now="$2" result finished epoch age
   result="$(printf '%s' "$status" | sed -n 's/.*"result":"\([a-z]*\)".*/\1/p')"
   finished="$(printf '%s' "$status" | sed -n 's/.*"finished_at":"\([^"]*\)".*/\1/p')"
-  if epoch="$(date -d "$finished" +%s 2> /dev/null)"; then
+  # An empty time is not midnight: date -d "" reads it as today.
+  if [ -n "$finished" ] && epoch="$(date -d "$finished" +%s 2> /dev/null)"; then
     age=$(( (now - epoch) / 3600 ))
     printf 'deploy: backup: %s, finished %s hours ago\n' "${result:-unknown}" "$age"
     if [ "$result" != success ]; then

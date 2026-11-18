@@ -12,7 +12,7 @@
 
   -ApiEnv  the frontend env file that fixes the API server (default
            .env.release); never .env.maps or .env.firebase.
-  -Apk     builds a signed APK (barakabozor-<version>+<code>-<api host>.apk)
+  -Apk     builds a signed APK (barakabozor-<version>-<code>-<api host>.apk)
            instead of the bundle, for testers (`DL-141` (9)).
 #>
 param(

@@ -6,7 +6,9 @@
 #
 # Safe to run again: each step is skipped when it is already done. It keeps the
 # image's own user (ubuntu on Lightsail), adds a `deploy` user for the
-# deployments, closes password logins and opens only ports 22, 80 and 443.
+# deployments, closes password logins and opens only ports 22, 80 and 443. A
+# re-run copies ubuntu's authorized_keys over deploy's again, so a key added to
+# deploy alone is lost.
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
@@ -104,7 +106,10 @@ KbdInteractiveAuthentication no
 PermitRootLogin no
 CONF
 then
-  sshd -t
+  if ! sshd -t; then
+    rm -f /etc/ssh/sshd_config.d/00-barakabozor.conf
+    die "sshd rejects the new SSH settings; they were removed and SSH is unchanged"
+  fi
   systemctl reload ssh
   say "SSH reloaded: keys only"
 fi

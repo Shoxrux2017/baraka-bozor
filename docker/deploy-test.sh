@@ -239,12 +239,22 @@ http /api/v1/catalog/categories
 grep -q '"code":"service_unavailable"' "$W/body" || fail "2: the body has no service_unavailable code"
 grep -qi '^retry-after: 30' "$W/headers" || fail "2: no Retry-After: 30"
 grep -qi "^access-control-allow-origin: $PANEL_ORIGIN" "$W/headers" || fail "2: no Access-Control-Allow-Origin for the panel"
+# A preflight is answered, not refused (the panel must be able to read the 503).
+PREFLIGHT="$({ curl -sS --max-time 20 --ssl-no-revoke --cacert "$W/root.crt" -X OPTIONS -D - -o /dev/null   -H "Origin: $PANEL_ORIGIN" -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization'   "https://localhost:$PORT/api/v1/auth/staff/login" 2> /dev/null || true; } | tr -d '')"
+printf '%s
+' "$PREFLIGHT" | head -n 1 | grep -q ' 204' || fail "2: a preflight under maintenance did not answer 204"
+printf '%s
+' "$PREFLIGHT" | grep -qi "^access-control-allow-origin: $PANEL_ORIGIN" || fail "2: the preflight has no Allow-Origin"
+printf '%s
+' "$PREFLIGHT" | grep -qi '^access-control-allow-methods: POST' || fail "2: the preflight has no Allow-Methods"
+printf '%s
+' "$PREFLIGHT" | grep -qi '^access-control-allow-headers: authorization' || fail "2: the preflight has no Allow-Headers"
 http /storage/missing.webp
 [ "$HTTP_CODE" != 503 ] || fail "2: images were answered with 503"
 rm -f "$BB_HOME/maintenance/on"
 http /up
 [ "$HTTP_CODE" = 200 ] || fail "2: /up answered $HTTP_CODE after maintenance"
-ok 2 "maintenance: 503 envelope with Retry-After and CORS, images served, lifted"
+ok 2 "maintenance: 503 envelope with Retry-After and CORS, preflight 204, images served, lifted"
 
 # --- 3. A release with a migration ---------------------------------------------
 run_deploy $T2
@@ -319,20 +329,31 @@ run_deploy 1.0
 [ "$DEPLOY_CODE" = 2 ] || fail "8: a malformed tag exited $DEPLOY_CODE, not 2"
 run_deploy $T2
 [ "$DEPLOY_CODE" = 2 ] || fail "8: the running tag exited $DEPLOY_CODE, not 2"
-ok 8 "refused: a tag off main, a malformed tag, the running tag"
+# An older release on a newer schema: refused, naming the migration; clone back.
+run_deploy $T1
+[ "$DEPLOY_CODE" = 2 ] || fail "8: deploying $T1 over $T2 exited $DEPLOY_CODE, not 2"
+printf '%s
+' "$DEPLOY_OUT" | grep -q 'create_deploy_test_marker_table' || fail "8: the refusal does not name the marker migration"
+[ "$(git -C "$REPO" rev-parse HEAD)" = "$(git -C "$REPO" rev-parse "$T2^{commit}")" ] || fail "8: the clone is not back on $T2"
+[ ! -e "$BB_HOME/maintenance/on" ] || fail "8: maintenance began"
+ok 8 "refused: a tag off main, a malformed tag, the running tag, an older schema"
 
 # --- 9. A dropped session ------------------------------------------------------
+LOG_OFFSET="$(wc -c < "$BB_HOME/state/deploy.log" | tr -d ' ')"
 set +e
 bash "$DEPLOY" $T3 > /dev/full 2> /dev/null
 HANGUP_CODE=$?
 set -e
 [ "$HANGUP_CODE" = 0 ] || fail "9: deploy.sh with an unwritable stdout exited $HANGUP_CODE"
-grep -q "release $T3 is running" "$BB_HOME/state/deploy.log" || fail "9: state/deploy.log does not hold the run"
+tail -c +$((LOG_OFFSET + 1)) "$BB_HOME/state/deploy.log" > "$W/run.log"
+grep -q "release $T3 is running" "$W/run.log" || fail "9: state/deploy.log does not hold the run"
 [ "$(release release)" = $T3 ] || fail "9: the release is not $T3"
 ok 9 "an unwritable stdout: the deploy finished and state/deploy.log holds it"
 
 # --- 10. The backup warning ----------------------------------------------------
-grep -q 'backup: not running here' "$BB_HOME/state/deploy.log" || fail "10: no 'backup: not running here' in the log"
+# The status branches of a running backup service are covered by step 11; the
+# "no night yet" line needs that service and is not tested here.
+grep -q 'backup: not running here' "$W/run.log" || fail "10: no 'backup: not running here' in the log"
 ok 10 "no backup service: the output says so"
 
 # --- 11. The backup report, with fixed clocks -----------------------------------
@@ -348,6 +369,40 @@ REPORT="$(report "{\"result\":\"failure\",\"finished_at\":\"$FINISHED\",\"step\"
 printf '%s\n' "$REPORT" | grep -q 'warning: the last backup was not a success' || fail "11: a failure does not warn"
 REPORT="$(report '{"result":"success","finished_at":"not a time"}' "$FINISHED_EPOCH")"
 printf '%s\n' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: an unreadable time does not warn"
-ok 11 "the backup report: fresh success silent; 30 hours, a failure and an unreadable time warn"
+REPORT="$(report '{"result":"success"}' "$FINISHED_EPOCH")"
+printf '%s
+' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: a missing time does not warn"
+REPORT="$(report '{"result":"success","finished_at":""}' "$FINISHED_EPOCH")"
+printf '%s
+' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: an empty time does not warn"
+ok 11 "the backup report: fresh success silent; 30 hours, a failure and an unreadable, empty or missing time warn"
+
+# --- 12. The dump restore of the runbook -----------------------------------------
+# DEPLOY.md section 7, with the dump of step 3 (the schema of $T1) while $T3 runs.
+touch "$BB_HOME/maintenance/on"
+bash "$STACK" stop app worker scheduler > /dev/null 2>&1
+bash "$STACK" exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c "drop schema public cascade; create schema public;"' > /dev/null
+# shellcheck disable=SC2016
+bash "$STACK" exec -T db sh -c '
+  f="$(mktemp)"
+  cat > "$f" || exit 1
+  code=0
+  pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --single-transaction --exit-on-error "$f" || code=$?
+  rm -f "$f"
+  exit "$code"' < "$DUMP" || fail "12: pg_restore failed"
+[ -z "$(db "select to_regclass('public.deploy_test_marker')")" ] || fail "12: the restored schema already has the marker table"
+run_deploy --resume
+[ "$DEPLOY_CODE" = 2 ] || fail "12: --resume on an older schema exited $DEPLOY_CODE, not 2"
+printf '%s
+' "$DEPLOY_OUT" | grep -q 'create_deploy_test_marker_table' || fail "12: the refusal does not name the missing migration"
+bash "$STACK" run --rm -T app php artisan migrate --force > /dev/null || fail "12: migrate failed"
+run_deploy --resume
+[ "$DEPLOY_CODE" = 0 ] || fail "12: --resume exited $DEPLOY_CODE"
+[ "$(db "select to_regclass('public.deploy_test_marker')")" = deploy_test_marker ] || fail "12: the marker table is missing after the migrate"
+[ ! -e "$BB_HOME/maintenance/on" ] || fail "12: maintenance is still on"
+[ "$(release release)" = $T3 ] || fail "12: the release changed"
+http /up
+[ "$HTTP_CODE" = 200 ] || fail "12: /up answered $HTTP_CODE"
+ok 12 "the dump restore: schema dropped, restored, --resume refuses until migrate, then $T3 is back"
 
 echo "deploy-test: passed"
