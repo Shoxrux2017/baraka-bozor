@@ -190,7 +190,7 @@ than an hour is recorded as `expired`.
 | `docker/production.env.example` | Every variable the server needs, with no values |
 | `docker/backup/` | The backup image and its scripts, described in "Backups" below |
 | `docker/backup.env.example` | The backup service's own env file, with no values |
-| `docker/deploy.sh` | Deploys a release tag on the server, or `--rollback` (`DL-141` (7)); acts only on the clone at `$BB_HOME/repo` |
+| `docker/deploy.sh` | Deploys a release tag on the server, `--rollback` to the release before, `--resume` to bring the running release back after a failed deploy (`DL-141` (7)); acts only on the clone at `$BB_HOME/repo` |
 | `docker/stack.sh` | Docker Compose for the production stack, with the running release's image tag |
 | `docker/lib-stack.sh` | Sourced by the two above: the server's layout and the `compose` helper |
 | `docker/deploy-test.sh` | Deploys scratch releases into a scratch server: maintenance, dump, rollback, failures (host script) |

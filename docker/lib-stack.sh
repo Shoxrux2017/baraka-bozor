@@ -44,3 +44,24 @@ compose() {
     docker compose "${args[@]}" "$@"
   )
 }
+
+# backup_report JSON NOW_EPOCH: the `backup:` line for the last night's status
+# file, and a warning when it is not a success, is 26 hours old or more, or has a
+# time that cannot be read. NOW_EPOCH is passed in so a test can fix the clock.
+backup_report() {
+  local status="$1" now="$2" result finished epoch age
+  result="$(printf '%s' "$status" | sed -n 's/.*"result":"\([a-z]*\)".*/\1/p')"
+  finished="$(printf '%s' "$status" | sed -n 's/.*"finished_at":"\([^"]*\)".*/\1/p')"
+  if epoch="$(date -d "$finished" +%s 2> /dev/null)"; then
+    age=$(( (now - epoch) / 3600 ))
+    printf 'deploy: backup: %s, finished %s hours ago\n' "${result:-unknown}" "$age"
+    if [ "$result" != success ]; then
+      printf 'deploy: warning: the last backup was not a success\n'
+    fi
+    if [ "$age" -ge 26 ]; then
+      printf 'deploy: warning: the last backup is %s hours old\n' "$age"
+    fi
+  else
+    printf 'deploy: warning: backup: %s, finished at a time that cannot be read\n' "${result:-unknown}"
+  fi
+}

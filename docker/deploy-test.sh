@@ -280,12 +280,28 @@ run_deploy $T4
 [ "$DEPLOY_CODE" = 1 ] || fail "6: deploy.sh $T4 exited $DEPLOY_CODE, not 1"
 [ -e "$BB_HOME/maintenance/on" ] || fail "6: maintenance was lifted after a failed migration"
 printf '%s\n' "$DEPLOY_OUT" | grep -q "$BB_HOME/dumps/" || fail "6: the output does not name the dump"
-printf '%s\n' "$DEPLOY_OUT" | grep -q -- '--rollback' || fail "6: the output does not name --rollback"
+printf '%s\n' "$DEPLOY_OUT" | grep -q -- '--resume' || fail "6: the output does not name --resume"
 [ "$(release release)" = $T2 ] || fail "6: state/release moved"
 http /api/v1/catalog/categories
 [ "$HTTP_CODE" = 503 ] || fail "6: the API answered $HTTP_CODE, not 503, after a failed migration"
-rm -f "$BB_HOME/maintenance/on"
-ok 6 "a failed migration: exit 1, maintenance stays, dump and --rollback named, release $T2"
+# A migration the running release lacks: --resume refuses and names it.
+db "insert into migrations (migration, batch) values ('2999_12_31_000000_not_in_the_release', 99)" > /dev/null
+run_deploy --resume
+[ "$DEPLOY_CODE" = 2 ] || fail "6: --resume with a foreign migration exited $DEPLOY_CODE, not 2"
+printf '%s\n' "$DEPLOY_OUT" | grep -q '2999_12_31_000000_not_in_the_release' || fail "6: the refusal does not name the migration"
+[ -e "$BB_HOME/maintenance/on" ] || fail "6: a refused --resume lifted maintenance"
+db "delete from migrations where migration = '2999_12_31_000000_not_in_the_release'" > /dev/null
+run_deploy --resume
+[ "$DEPLOY_CODE" = 0 ] || fail "6: --resume exited $DEPLOY_CODE"
+[ ! -e "$BB_HOME/maintenance/on" ] || fail "6: --resume left maintenance on"
+[ "$(release release)" = $T2 ] || fail "6: --resume moved state/release"
+RUNNING="$(bash "$STACK" ps --status running --format '{{.Service}}' | tr -d '\r')"
+for service in worker scheduler; do
+  printf '%s\n' "$RUNNING" | grep -qx "$service" || fail "6: $service is not running after --resume"
+done
+http /up
+[ "$HTTP_CODE" = 200 ] || fail "6: /up answered $HTTP_CODE after --resume"
+ok 6 "a failed migration: exit 1, maintenance stays, dump and --resume named; --resume refuses a foreign migration, then restores $T2 with its worker and scheduler"
 
 # --- 7. A Caddyfile that does not validate -------------------------------------
 run_deploy $T5
@@ -318,5 +334,20 @@ ok 9 "an unwritable stdout: the deploy finished and state/deploy.log holds it"
 # --- 10. The backup warning ----------------------------------------------------
 grep -q 'backup: not running here' "$BB_HOME/state/deploy.log" || fail "10: no 'backup: not running here' in the log"
 ok 10 "no backup service: the output says so"
+
+# --- 11. The backup report, with fixed clocks -----------------------------------
+report() { ( . "$REPO/docker/lib-stack.sh"; backup_report "$@" ); }
+FINISHED='2026-11-17T03:00:00+05:00'
+FINISHED_EPOCH="$(date -u -d 2026-11-16T22:00:00Z +%s)"
+REPORT="$(report "{\"result\":\"success\",\"finished_at\":\"$FINISHED\"}" $((FINISHED_EPOCH + 2 * 3600)))"
+printf '%s\n' "$REPORT" | grep -q 'backup: success, finished 2 hours ago' || fail "11: a fresh success is not reported"
+printf '%s\n' "$REPORT" | grep -q warning && fail "11: a fresh success warns"
+REPORT="$(report "{\"result\":\"success\",\"finished_at\":\"$FINISHED\"}" $((FINISHED_EPOCH + 30 * 3600)))"
+printf '%s\n' "$REPORT" | grep -q 'warning: the last backup is 30 hours old' || fail "11: a stale success does not warn about its age"
+REPORT="$(report "{\"result\":\"failure\",\"finished_at\":\"$FINISHED\",\"step\":\"dump\"}" $((FINISHED_EPOCH + 3600)))"
+printf '%s\n' "$REPORT" | grep -q 'warning: the last backup was not a success' || fail "11: a failure does not warn"
+REPORT="$(report '{"result":"success","finished_at":"not a time"}' "$FINISHED_EPOCH")"
+printf '%s\n' "$REPORT" | grep -q 'warning: backup: success, finished at a time that cannot be read' || fail "11: an unreadable time does not warn"
+ok 11 "the backup report: fresh success silent; 30 hours, a failure and an unreadable time warn"
 
 echo "deploy-test: passed"

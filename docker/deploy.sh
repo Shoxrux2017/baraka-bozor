@@ -3,11 +3,13 @@
 # (DL-141 (6), (7)). Run it on the server, as the deploy user:
 #
 #   docker/deploy.sh r2026.11.19.1
-#   docker/deploy.sh --rollback
+#   docker/deploy.sh --rollback   the release before the running one
+#   docker/deploy.sh --resume     the running release, back in service
 #
 # Exit 0: done. Exit 1: a failure; after maintenance began the API keeps
-# answering 503 and the output names the dump and --rollback. Exit 2: a refusal
-# or a usage error; the running release is untouched.
+# answering 503 and the output names the dump and the way out (--resume, or a
+# fixed tag). Exit 2: a refusal or a usage error; the running release is
+# untouched.
 #
 # The whole run is in main(): a checkout may replace this file while it runs.
 # SIGHUP is ignored and the output is mirrored to state/deploy.log, so a dropped
@@ -57,7 +59,14 @@ finish() {
         if [ -n "$dump" ]; then
           say "the database before this deploy: $dump"
         fi
-        say "to go back: docker/deploy.sh --rollback (refused when migrations differ; then fix forward, with the dump as the last resort)"
+        if [ "$mode" = resume ]; then
+          say "run docker/deploy.sh --resume again once the cause is fixed"
+        elif [ -n "$current" ]; then
+          say "to return to the running release $current: docker/deploy.sh --resume; or deploy a fixed tag"
+          say "--rollback only goes one release further back (refused when migrations differ; then fix forward, with the dump as the last resort)"
+        else
+          say "there is no running release: fix the cause and deploy again"
+        fi
         ;;
     esac
   fi
@@ -82,7 +91,7 @@ record_release() {
 
 # Warnings only; a failed check never fails the deploy.
 after_checks() {
-  local url running status result finished epoch age
+  local url running status
   url="$(stack_value APP_URL)"
   if curl -fsS --max-time 10 "$url/up" > /dev/null 2>&1; then
     say "$url/up answers"
@@ -99,20 +108,7 @@ after_checks() {
     say "backup: no night yet"
     return 0
   fi
-  result="$(printf '%s' "$status" | sed -n 's/.*"result":"\([a-z]*\)".*/\1/p')"
-  finished="$(printf '%s' "$status" | sed -n 's/.*"finished_at":"\([^"]*\)".*/\1/p')"
-  if epoch="$(date -d "$finished" +%s 2> /dev/null)"; then
-    age=$(( ( $(date +%s) - epoch ) / 3600 ))
-    say "backup: ${result:-unknown}, finished $age hours ago"
-    if [ "$result" != success ]; then
-      warn "the last backup was not a success"
-    fi
-    if [ "$age" -ge 26 ]; then
-      warn "the last backup is $age hours old"
-    fi
-  else
-    warn "backup: ${result:-unknown}, finished at a time that cannot be read"
-  fi
+  backup_report "$status" "$(date +%s)"
 }
 
 # prune_images CURRENT PREVIOUS: only release-tagged images go, so other tags
@@ -166,6 +162,31 @@ rollback() {
   say "release $previous is running again"
 }
 
+# resume: the running release back in service after a failed deploy. Refused
+# when the database already holds a migration the running release lacks.
+resume() {
+  local files extra
+  [ -n "$current" ] || refuse "no release is running; deploy a tag instead"
+  [ -z "$(git_repo status --porcelain --untracked-files=no)" ] || refuse "tracked files in $BB_REPO are modified"
+  compose up -d --no-recreate --wait db
+  files="$(git_repo ls-tree --name-only "$current" backend/database/migrations/ | sed 's|.*/||; s|\.php$||' | sort)"
+  # shellcheck disable=SC2016
+  extra="$(compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c "select migration from migrations"' \
+    | tr -d '\r' | sort | comm -23 - <(printf '%s\n' "$files"))"
+  if [ -n "$extra" ]; then
+    refuse "the database holds migrations that $current lacks: $(printf '%s' "$extra" | tr '\n' ' '); fix forward with a new tag"
+  fi
+
+  checkout "$current"
+  phase=maintenance
+  BB_RELEASE="$current" compose up -d --wait --wait-timeout 180
+  compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+  rm -f "$maint/on"
+  phase=post
+  say "maintenance off"
+  say "release $current is running again"
+}
+
 main() {
   trap '' HUP
   umask 077
@@ -173,13 +194,17 @@ main() {
   local tag_pattern='^r[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$' old
 
   case "${1:-}" in
+    --resume)
+      [ "$#" = 1 ] || refuse "usage: docker/deploy.sh <tag> | --rollback | --resume"
+      mode=resume
+      ;;
     --rollback)
-      [ "$#" = 1 ] || refuse "usage: docker/deploy.sh <tag> | --rollback"
+      [ "$#" = 1 ] || refuse "usage: docker/deploy.sh <tag> | --rollback | --resume"
       mode=rollback
       ;;
-    "" | -*) refuse "usage: docker/deploy.sh <tag> | --rollback" ;;
+    "" | -*) refuse "usage: docker/deploy.sh <tag> | --rollback | --resume" ;;
     *)
-      [ "$#" = 1 ] || refuse "usage: docker/deploy.sh <tag> | --rollback"
+      [ "$#" = 1 ] || refuse "usage: docker/deploy.sh <tag> | --rollback | --resume"
       tag="$1"
       ;;
   esac
@@ -203,10 +228,14 @@ main() {
   tee_pid=$!
 
   current="$(current_release)"
-  say "$(date -u +%Y-%m-%dT%H:%M:%SZ) start: ${tag:-rollback} (running: ${current:-none})"
+  say "$(date -u +%Y-%m-%dT%H:%M:%SZ) start: ${tag:-$mode} (running: ${current:-none})"
 
   if [ "$mode" = rollback ]; then
     rollback
+    return 0
+  fi
+  if [ "$mode" = resume ]; then
+    resume
     return 0
   fi
 
