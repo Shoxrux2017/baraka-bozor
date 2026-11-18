@@ -186,10 +186,14 @@ than an hour is recorded as `expired`.
 | `docker/php-fpm.prod.conf` | The FPM pool: the container's environment, no access log, 12 workers |
 | `docker/entrypoint.prod.sh` | Runs `php artisan optimize`, then the container's process |
 | `docker/compose.prod.yaml` | `caddy`, `app`, `worker`, `scheduler` and `db`; only Caddy publishes ports |
-| `docker/caddy/Caddyfile` | The API host, the panel host and the images |
+| `docker/caddy/Caddyfile` | The API host, the panel host and the images; while `maintenance/on` exists the API host answers `503 service_unavailable` (`DL-141` (6)) |
 | `docker/production.env.example` | Every variable the server needs, with no values |
 | `docker/backup/` | The backup image and its scripts, described in "Backups" below |
 | `docker/backup.env.example` | The backup service's own env file, with no values |
+| `docker/deploy.sh` | Deploys a release tag on the server, or `--rollback` (`DL-141` (7)); acts only on the clone at `$BB_HOME/repo` |
+| `docker/stack.sh` | Docker Compose for the production stack, with the running release's image tag |
+| `docker/lib-stack.sh` | Sourced by the two above: the server's layout and the `compose` helper |
+| `docker/deploy-test.sh` | Deploys scratch releases into a scratch server: maintenance, dump, rollback, failures (host script) |
 
 The development `app.Dockerfile` and `compose.yaml` stay for development and CI.
 The production image holds no Composer and no tests.

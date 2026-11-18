@@ -144,7 +144,11 @@ services:
       PANEL_HOST: ${PANEL_HOST:?PANEL_HOST is required}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The directory, not the file: a checked-out Caddyfile is then seen by
+      # `caddy reload` (docker/deploy.sh).
+      - ./caddy:/etc/caddy:ro
+      # deploy.sh creates the file `on` here during a deploy (DL-141 (6)).
+      - ${MAINTENANCE_DIR:?MAINTENANCE_DIR must be the directory deploy.sh marks during a deploy}:/srv/maintenance:ro
       # The certificates: losing them meets Let's Encrypt's rate limits.
       - caddy-data:/data
       - caddy-config:/config
