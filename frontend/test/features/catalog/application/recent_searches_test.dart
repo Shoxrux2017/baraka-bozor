@@ -196,4 +196,7 @@ class _ThrowingStore implements PreferenceStore {
       throw PlatformException(code: 'write');
     }
   }
+
+  @override
+  Future<void> remove(String key) async {}
 }

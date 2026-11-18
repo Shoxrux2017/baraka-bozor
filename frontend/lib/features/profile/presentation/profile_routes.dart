@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/routing/fading_page.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'account_deleted_screen.dart';
 import 'delete_account_screen.dart';
@@ -38,8 +39,11 @@ final FeatureRoutes profileRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.accountDeleted,
       name: 'account-deleted',
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, const AccountDeletedScreen(), entry: true),
+      pageBuilder: (BuildContext context, GoRouterState state) => fadingPage(
+        state,
+        const AccountDeletedScreen(),
+        reduced: MediaQuery.disableAnimationsOf(context),
+      ),
     ),
   ],
 );

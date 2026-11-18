@@ -4951,21 +4951,71 @@ class AppLocalizationsUz extends AppLocalizations {
   String get deleteErasedAddresses => 'Manzillar';
 
   @override
-  String get deleteErasedFavorites => 'Sevimlilar va savat';
+  String get deleteSubtitle => 'Bu butunlay — akkauntni qaytarib bo\'lmaydi.';
+
+  @override
+  String get deleteErasedFavorites => 'Sevimlilar';
+
+  @override
+  String get deleteErasedCart => 'Savat';
 
   @override
   String get deleteKeptHeading => 'Qoladi';
 
   @override
   String get deleteKeptOrders =>
-      'Buyurtmalar tarixi — ism va telefonsiz, hisob uchun';
+      'Buyurtmalar — ism, telefon va manzilsiz, hisob uchun';
 
   @override
-  String get deleteNote =>
-      'Akkauntni qaytarib bo\'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.';
+  String get deleteAgain =>
+      'Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.';
 
   @override
-  String get deleteConfirm => 'O\'chirish';
+  String get deleteErasedSpoken =>
+      'O\'chiriladi: ism va telefon raqami, manzillar, sevimlilar, savat';
+
+  @override
+  String get deleteKeptSpoken =>
+      'Qoladi: buyurtmalar — ism, telefon va manzilsiz, hisob uchun';
+
+  @override
+  String get deleteGetCode => 'O\'chirish uchun kod olish';
+
+  @override
+  String get deleteKeep => 'Akkauntni qoldirish';
+
+  @override
+  String deleteCodeWillCome(String phone) {
+    return 'O\'chirish kodi Telegramga $phone raqamiga keladi';
+  }
+
+  @override
+  String get deleteSendOffline => 'Aloqa yo\'q — kod yuborilmadi';
+
+  @override
+  String get deleteEnterCode => 'Telegramdagi kodni kiriting';
+
+  @override
+  String get deleteEnterCodeOther => 'Kodni kiriting';
+
+  @override
+  String get deleteDeleting => 'Akkaunt o\'chirilmoqda…';
+
+  @override
+  String get deleteCheckingSpoken => 'Akkaunt o\'chirilganini tekshiryapmiz…';
+
+  @override
+  String get deleteOffline => 'Aloqa yo\'q — akkaunt o\'chirilmadi';
+
+  @override
+  String deleteNoCodeText(String phone) {
+    return 'Kod Telegramga $phone raqamiga xabar bo\'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda.';
+  }
+
+  @override
+  String deleteNoCodeTextOther(String phone) {
+    return 'Kod $phone raqamiga keladi.';
+  }
 
   @override
   String get deleteBlockedTitle => 'Hozir o\'chirib bo\'lmaydi';
@@ -4995,7 +5045,10 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get deletedBody =>
-      'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.';
+      'Ism, telefon raqami, manzillar va sevimlilar o\'chirildi. Buyurtmalar qoldi — ismsiz, hisob uchun.';
+
+  @override
+  String get deletedThanks => 'Biz bilan bo\'lganingiz uchun rahmat.';
 
   @override
   String shopperMarketPer(String price, String unit) {

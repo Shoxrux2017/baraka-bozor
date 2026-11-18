@@ -5007,21 +5007,71 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deleteErasedAddresses => 'Адреса';
 
   @override
-  String get deleteErasedFavorites => 'Избранное и корзину';
+  String get deleteSubtitle => 'Это навсегда — вернуть аккаунт нельзя.';
+
+  @override
+  String get deleteErasedFavorites => 'Избранное';
+
+  @override
+  String get deleteErasedCart => 'Корзина';
 
   @override
   String get deleteKeptHeading => 'Останется';
 
   @override
   String get deleteKeptOrders =>
-      'История заказов — без имени и телефона, для учёта';
+      'Заказы — без имени, телефона и адреса, для учёта';
 
   @override
-  String get deleteNote =>
-      'Вернуть аккаунт нельзя. С этим номером можно войти снова — как новый покупатель.';
+  String get deleteAgain =>
+      'С этим номером можно войти снова — как новый покупатель.';
 
   @override
-  String get deleteConfirm => 'Удалить';
+  String get deleteErasedSpoken =>
+      'Сотрём: имя и номер телефона, адреса, избранное, корзина';
+
+  @override
+  String get deleteKeptSpoken =>
+      'Останется: заказы — без имени, телефона и адреса, для учёта';
+
+  @override
+  String get deleteGetCode => 'Получить код для удаления';
+
+  @override
+  String get deleteKeep => 'Оставить аккаунт';
+
+  @override
+  String deleteCodeWillCome(String phone) {
+    return 'Код для удаления придёт в Telegram на $phone';
+  }
+
+  @override
+  String get deleteSendOffline => 'Нет связи — код не отправлен';
+
+  @override
+  String get deleteEnterCode => 'Введите код из Telegram';
+
+  @override
+  String get deleteEnterCodeOther => 'Введите код';
+
+  @override
+  String get deleteDeleting => 'Удаляем аккаунт…';
+
+  @override
+  String get deleteCheckingSpoken => 'Проверяем, удалён ли аккаунт…';
+
+  @override
+  String get deleteOffline => 'Нет связи — аккаунт не удалён';
+
+  @override
+  String deleteNoCodeText(String phone) {
+    return 'Код приходит сообщением в Telegram на номер $phone. Откройте Telegram на этом телефоне: код — в самом новом сообщении.';
+  }
+
+  @override
+  String deleteNoCodeTextOther(String phone) {
+    return 'Код приходит на номер $phone.';
+  }
 
   @override
   String get deleteBlockedTitle => 'Сейчас удалить нельзя';
@@ -5050,7 +5100,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deletedTitle => 'Аккаунт удалён';
 
   @override
-  String get deletedBody => 'Ваши данные стёрты.\nСпасибо, что были с нами.';
+  String get deletedBody =>
+      'Имя, номер телефона, адреса и избранное стёрты. Заказы остались — без имени, для учёта.';
+
+  @override
+  String get deletedThanks => 'Спасибо, что были с нами.';
 
   @override
   String shopperMarketPer(String price, String unit) {

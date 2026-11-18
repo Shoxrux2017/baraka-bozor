@@ -68,30 +68,77 @@ class _NoCodeBody extends ConsumerWidget {
     final bool telegram =
         RequestedCodeChannel.of(state.requested?.channel) ==
         RequestedCodeChannel.telegram;
-    final bool sending = state.running == CodeLoginAction.resend;
 
-    final ApiFailure? failure = state.failedAction == CodeLoginAction.resend
-        ? state.failure
-        : null;
+    return NoCodeSheetBody(
+      text: telegram
+          ? l10n.codeNotArrivedText(phone)
+          : l10n.codeNotArrivedTextOther(phone),
+      phone: state.phone ?? '',
+      sending: state.running == CodeLoginAction.resend,
+      resendInSeconds: state.resendInSeconds,
+      canResend: state.canResend,
+      failure: state.failedAction == CodeLoginAction.resend
+          ? state.failure
+          : null,
+      place: AuthNoticePlace.code,
+      onResend: () => _resend(context, ref),
+      onChangePhone: onChangePhone,
+    );
+  }
+}
+
+/// The body of a «Не пришёл код?» sheet (`DL-139`, shared by the account
+/// deletion in `DL-140`): [text] on where to look, a notice for a refused
+/// [failure], the resend button and, only with [onChangePhone], «Изменить
+/// номер». [phone] is the E.164 number the code went to. A notice's retry
+/// calls [onResend].
+class NoCodeSheetBody extends StatelessWidget {
+  const NoCodeSheetBody({
+    required this.text,
+    required this.phone,
+    required this.sending,
+    required this.resendInSeconds,
+    required this.canResend,
+    required this.failure,
+    required this.place,
+    required this.onResend,
+    this.onChangePhone,
+    super.key,
+  });
+
+  final String text;
+  final String phone;
+  final bool sending;
+  final int resendInSeconds;
+  final bool canResend;
+  final ApiFailure? failure;
+  final AuthNoticePlace place;
+  final VoidCallback onResend;
+  final VoidCallback? onChangePhone;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ApiFailure? shown = failure;
     final bool hourLimit =
-        failure is ApiRefusal &&
-        failure.code == 'rate_limited' &&
-        failure.error.details['limit'] == 'phone_hourly';
+        shown is ApiRefusal &&
+        shown.code == 'rate_limited' &&
+        shown.error.details['limit'] == 'phone_hourly';
 
     final SubmitFace face;
     final String label;
     if (sending) {
       face = SubmitFace.busy;
       label = l10n.sendingCode;
-    } else if (state.resendInSeconds > 0) {
+    } else if (resendInSeconds > 0) {
       face = SubmitFace.off;
-      label = l10n.resendIn(formatCountdown(state.resendInSeconds));
+      label = l10n.resendIn(formatCountdown(resendInSeconds));
     } else if (hourLimit) {
       face = SubmitFace.off;
       label = l10n.resendCode;
     } else {
       // Off too when a lock started while the sheet was open.
-      face = state.canResend ? SubmitFace.ready : SubmitFace.off;
+      face = canResend ? SubmitFace.ready : SubmitFace.off;
       label = l10n.resendCode;
     }
 
@@ -104,30 +151,23 @@ class _NoCodeBody extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              telegram
-                  ? l10n.codeNotArrivedText(phone)
-                  : l10n.codeNotArrivedTextOther(phone),
+              text,
               style: const TextStyle(
                 fontSize: 14,
                 height: 1.5,
                 color: KitColors.ink2,
               ),
             ),
-            if (failure != null)
+            if (shown != null)
               AuthNotice(
-                view: authNoticeOf(
-                  l10n,
-                  failure,
-                  phone: state.phone ?? '',
-                  place: AuthNoticePlace.code,
-                ),
+                view: authNoticeOf(l10n, shown, phone: phone, place: place),
                 onAction: (AuthNoticeAction action) {
                   switch (action) {
                     case AuthNoticeAction.retry:
-                      _resend(context, ref);
+                      onResend();
                     case AuthNoticeAction.changeNumber:
                       if (!sending) {
-                        onChangePhone();
+                        onChangePhone?.call();
                       }
                     case AuthNoticeAction.otherNumber ||
                         AuthNoticeAction.newCode:
@@ -140,22 +180,24 @@ class _NoCodeBody extends ConsumerWidget {
               buttonKey: const ValueKey<String>('resend-button'),
               face: face,
               label: label,
-              onPressed: () => _resend(context, ref),
+              onPressed: onResend,
             ),
-            const SizedBox(height: 6),
-            TextButton(
-              key: const ValueKey<String>('no-code-change-phone'),
-              onPressed: sending ? null : onChangePhone,
-              style: TextButton.styleFrom(
-                foregroundColor: KitColors.primaryDark,
-                minimumSize: const Size.fromHeight(50),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+            if (onChangePhone case final VoidCallback change) ...<Widget>[
+              const SizedBox(height: 6),
+              TextButton(
+                key: const ValueKey<String>('no-code-change-phone'),
+                onPressed: sending ? null : change,
+                style: TextButton.styleFrom(
+                  foregroundColor: KitColors.primaryDark,
+                  minimumSize: const Size.fromHeight(50),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                child: Text(l10n.changePhone),
               ),
-              child: Text(l10n.changePhone),
-            ),
+            ],
           ],
         ),
       ),

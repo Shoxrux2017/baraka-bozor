@@ -3662,11 +3662,46 @@
   "deleteErasedHeading": "O'chiriladi",
   "deleteErasedName": "Ism va telefon raqami",
   "deleteErasedAddresses": "Manzillar",
-  "deleteErasedFavorites": "Sevimlilar va savat",
+  "deleteSubtitle": "Bu butunlay — akkauntni qaytarib bo'lmaydi.",
+  "deleteErasedFavorites": "Sevimlilar",
+  "deleteErasedCart": "Savat",
   "deleteKeptHeading": "Qoladi",
-  "deleteKeptOrders": "Buyurtmalar tarixi — ism va telefonsiz, hisob uchun",
-  "deleteNote": "Akkauntni qaytarib bo'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.",
-  "deleteConfirm": "O'chirish",
+  "deleteKeptOrders": "Buyurtmalar — ism, telefon va manzilsiz, hisob uchun",
+  "deleteAgain": "Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.",
+  "deleteErasedSpoken": "O'chiriladi: ism va telefon raqami, manzillar, sevimlilar, savat",
+  "deleteKeptSpoken": "Qoladi: buyurtmalar — ism, telefon va manzilsiz, hisob uchun",
+  "deleteGetCode": "O'chirish uchun kod olish",
+  "deleteKeep": "Akkauntni qoldirish",
+  "deleteCodeWillCome": "O'chirish kodi Telegramga {phone} raqamiga keladi",
+  "@deleteCodeWillCome": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSendOffline": "Aloqa yo'q — kod yuborilmadi",
+  "deleteEnterCode": "Telegramdagi kodni kiriting",
+  "deleteEnterCodeOther": "Kodni kiriting",
+  "deleteDeleting": "Akkaunt o'chirilmoqda…",
+  "deleteCheckingSpoken": "Akkaunt o'chirilganini tekshiryapmiz…",
+  "deleteOffline": "Aloqa yo'q — akkaunt o'chirilmadi",
+  "deleteNoCodeText": "Kod Telegramga {phone} raqamiga xabar bo'lib keladi. Shu telefonda Telegramni oching: kod eng yangi xabarda.",
+  "@deleteNoCodeText": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteNoCodeTextOther": "Kod {phone} raqamiga keladi.",
+  "@deleteNoCodeTextOther": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "deleteBlockedTitle": "Hozir o'chirib bo'lmaydi",
   "deleteBlockedBody": "№ {number} buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o'chirish mumkin.",
   "@deleteBlockedBody": {
@@ -3682,7 +3717,8 @@
   "deleteCodeHeading": "O'chirishni tasdiqlang",
   "profileDeleteAccount": "Akkauntni o'chirish",
   "deletedTitle": "Akkaunt o'chirildi",
-  "deletedBody": "Ma'lumotlaringiz o'chirildi.\nBiz bilan bo'lganingiz uchun rahmat.",
+  "deletedBody": "Ism, telefon raqami, manzillar va sevimlilar o'chirildi. Buyurtmalar qoldi — ismsiz, hisob uchun.",
+  "deletedThanks": "Biz bilan bo'lganingiz uchun rahmat.",
   "shopperMarketPer": "Bozor narxi: {price} / {unit}",
   "@shopperMarketPer": {
     "placeholders": {

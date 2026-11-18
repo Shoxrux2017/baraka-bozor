@@ -31,7 +31,6 @@ class CodeBoxes extends StatefulWidget {
     required this.invalidMessage,
     this.onSubmitted,
     this.enabled = true,
-    this.accent = KitColors.primary,
     this.look = CodeBoxesLook.entry,
     this.misses = 0,
     this.onCompleted,
@@ -45,9 +44,6 @@ class CodeBoxes extends StatefulWidget {
 
   /// Off while the phone is locked: nothing can be typed or submitted.
   final bool enabled;
-
-  /// The colour of the box in focus, the filled ones and the caret.
-  final Color accent;
 
   /// How the boxes look; while it is [CodeBoxesLook.wrong] the field refuses
   /// edits and keeps its focus.
@@ -335,7 +331,6 @@ class _CodeBoxesState extends State<CodeBoxes> with TickerProviderStateMixin {
       caretOn: _caretOn,
       highlighted: i < code.length || (focused && i == code.length),
       failed: failed,
-      accent: widget.accent,
       look: widget.look,
       pulse: widget.look == CodeBoxesLook.checking
           ? Curves.easeInOut.transform(_pulse.value)
@@ -405,7 +400,6 @@ class _Box extends StatelessWidget {
     required this.caretOn,
     required this.highlighted,
     required this.failed,
-    required this.accent,
     required this.look,
     required this.pulse,
     required this.popScale,
@@ -420,7 +414,6 @@ class _Box extends StatelessWidget {
   final bool caretOn;
   final bool highlighted;
   final bool failed;
-  final Color accent;
   final CodeBoxesLook look;
 
   /// 0 … 1 along the checking pulse.
@@ -449,7 +442,7 @@ class _Box extends StatelessWidget {
         : checking
         ? Color.lerp(KitColors.line, KitColors.pulseEdge, pulse)!
         : highlighted
-        ? accent
+        ? KitColors.primary
         : KitColors.line;
     final bool thick = wrong || right || (highlighted && !checking);
     final String? digit = this.digit;
@@ -479,7 +472,7 @@ class _Box extends StatelessWidget {
         key: const ValueKey<String>('code-caret'),
         width: 2,
         height: 26,
-        color: accent,
+        color: KitColors.primary,
       );
     }
     return Container(

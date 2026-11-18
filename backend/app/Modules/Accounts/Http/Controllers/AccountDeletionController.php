@@ -47,19 +47,18 @@ final class AccountDeletionController extends Controller
     public function destroy(DeleteAccountRequest $request, LoginCodeCheck $check, EraseCustomer $erase): Response
     {
         $customer = $this->customer($request);
-        // Before the code is spent: an order that blocks the deletion must not
-        // cost the Customer a code.
-        $this->refuseWhileUnfinished($customer);
+        $phone = $this->phone($customer);
+        $code = (string) $request->validated('code');
 
+        // The code is spent inside the erasure, under its locks and after its
+        // unfinished-order check, so a blocking order never costs it (`DL-140`).
         try {
-            $check->consume($this->phone($customer), (string) $request->validated('code'), LoginChallenge::PURPOSE_ACCOUNT_DELETION);
+            $erase->erase($customer, $customer, fn () => $check->consume($phone, $code, LoginChallenge::PURPOSE_ACCOUNT_DELETION));
         } catch (LoginCodeRefused $refusal) {
             throw $refusal->apiCode === 'code_locked'
                 ? ApiException::tooManyRequests('code_locked', $refusal->retryAfterSeconds ?? LoginCodePolicy::LOCK_SECONDS)
                 : ApiException::unprocessable($refusal->apiCode, $refusal->attemptsLeft === null ? [] : ['attempts_left' => $refusal->attemptsLeft]);
         }
-
-        $erase->erase($customer, $customer);
 
         return response()->noContent();
     }
@@ -69,10 +68,7 @@ final class AccountDeletionController extends Controller
         $order = UnfinishedOrders::oldest($customer);
 
         if ($order !== null) {
-            throw ApiException::conflict('account_has_unfinished_orders', [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-            ]);
+            throw ApiException::conflict('account_has_unfinished_orders', UnfinishedOrders::details($order));
         }
     }
 

@@ -20,6 +20,11 @@ class FakeAccountDeletionRepository implements AccountDeletionRepository {
   int requests = 0;
   Completer<void>? hold;
 
+  /// What [stillExists] answers, unless a failure is queued.
+  bool exists = true;
+  final List<ApiFailure> existsFailures = <ApiFailure>[];
+  int checks = 0;
+
   @override
   Future<RequestedCode> requestCode() async {
     requests++;
@@ -38,16 +43,35 @@ class FakeAccountDeletionRepository implements AccountDeletionRepository {
       throw deleteFailures.removeAt(0);
     }
   }
+
+  @override
+  Future<bool> stillExists() async {
+    checks++;
+    await hold?.future;
+    if (existsFailures.isNotEmpty) {
+      throw existsFailures.removeAt(0);
+    }
+    return exists;
+  }
 }
 
-ApiRefusal unfinishedRefusal({String id = 'o-1', int number = 1021}) =>
-    ApiRefusal(
-      ApiError(
-        status: 409,
-        code: 'account_has_unfinished_orders',
-        details: <String, Object?>{'order_id': id, 'order_number': number},
-      ),
-    );
+ApiRefusal unfinishedRefusal({
+  String id = 'o-1',
+  int number = 1021,
+  String? status,
+  int? itemCount,
+}) => ApiRefusal(
+  ApiError(
+    status: 409,
+    code: 'account_has_unfinished_orders',
+    details: <String, Object?>{
+      'order_id': id,
+      'order_number': number,
+      'status': ?status,
+      'item_count': ?itemCount,
+    },
+  ),
+);
 
 ApiRefusal lockedRefusal({int? retryAfter}) => ApiRefusal(
   const ApiError(status: 429, code: 'code_locked'),

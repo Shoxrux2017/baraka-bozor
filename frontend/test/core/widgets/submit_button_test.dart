@@ -14,6 +14,7 @@ Widget _app(
   VoidCallback? onOffTap,
   String? offHint,
   bool reduced = false,
+  Color fill = KitColors.primary,
 }) {
   return MaterialApp(
     home: Builder(
@@ -28,6 +29,7 @@ Widget _app(
               onOffTap: onOffTap,
               offHint: offHint,
               buttonKey: _key,
+              fill: fill,
             ),
           ),
         ),
@@ -156,5 +158,20 @@ void main() {
     await g.up();
     await tester.pump(const Duration(milliseconds: 100));
     expect(scale(), 1);
+  });
+
+  testWidgets('a red submit button fills ready and busy with its colour', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(SubmitFace.ready, onPressed: () {}, fill: KitColors.danger),
+    );
+    expect(_fill(tester, WidgetState.focused), KitColors.danger);
+
+    await tester.pumpWidget(_app(SubmitFace.busy, fill: KitColors.danger));
+    expect(_fill(tester, WidgetState.disabled), KitColors.danger);
+
+    await tester.pumpWidget(_app(SubmitFace.off, fill: KitColors.danger));
+    expect(_fill(tester, WidgetState.disabled), KitColors.buttonOff);
   });
 }

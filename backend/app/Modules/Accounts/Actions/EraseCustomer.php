@@ -12,7 +12,9 @@ use App\Models\Order;
 use App\Models\User;
 use App\Modules\Accounts\BlockedPhones;
 use App\Modules\Accounts\UnfinishedOrders;
+use App\Modules\Auth\LoginCodeRefused;
 use App\Modules\Orders\CustomerCart;
+use Closure;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -28,6 +30,10 @@ use Illuminate\Support\Facades\DB;
  * user row, and the unfinished-order check is made again under them. An order
  * is therefore either placed before the erasure takes the lock, and refuses it,
  * or after it, and finds the tokens gone.
+ *
+ * The deletion code is spent last (`DL-140`): the caller's consent runs under
+ * the same locks, after the unfinished-order check and before any row changes,
+ * so an order that blocks the erasure never costs the code.
  */
 final class EraseCustomer
 {
@@ -35,12 +41,20 @@ final class EraseCustomer
     private const NOTE_KEYS = ['delivery_time_note', 'customer_note'];
 
     /**
+     * @param  Closure|null  $consent  runs under the locks once nothing blocks
+     *                                 the erasure; a `LoginCodeRefused` it throws
+     *                                 is rethrown after the commit, nothing erased
+     *
      * @throws ApiException `account_has_unfinished_orders` (409), or not found
      *                      for an account that is not an erasable Customer
+     * @throws LoginCodeRefused
      */
-    public function erase(User $customer, User $actor): void
+    public function erase(User $customer, User $actor, ?Closure $consent = null): void
     {
-        DB::transaction(function () use ($customer, $actor): void {
+        /** @var LoginCodeRefused|null $refusal */
+        $refusal = null;
+
+        DB::transaction(function () use ($customer, $actor, $consent, &$refusal): void {
             CustomerCart::lock($customer);
 
             $locked = User::query()->whereKey($customer->id)->lockForUpdate()->first();
@@ -52,10 +66,17 @@ final class EraseCustomer
             $unfinished = UnfinishedOrders::oldest($locked);
 
             if ($unfinished !== null) {
-                throw ApiException::conflict('account_has_unfinished_orders', [
-                    'order_id' => $unfinished->id,
-                    'order_number' => $unfinished->order_number,
-                ]);
+                throw ApiException::conflict('account_has_unfinished_orders', UnfinishedOrders::details($unfinished));
+            }
+
+            // The refused code's count must commit, so the refusal leaves the
+            // closure as a value, not as an exception that rolls it back.
+            try {
+                $consent?->__invoke();
+            } catch (LoginCodeRefused $refused) {
+                $refusal = $refused;
+
+                return;
             }
 
             // A blocked account's number stays refused after the erasure
@@ -66,6 +87,10 @@ final class EraseCustomer
 
             $this->eraseRows($locked, $actor);
         });
+
+        if ($refusal !== null) {
+            throw $refusal;
+        }
 
         $customer->refresh();
     }

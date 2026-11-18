@@ -94,7 +94,7 @@ Not multi-tenant. No tenant, market or city ownership columns.
 
 **Tokens:** bearer on every surface, including the web panel; 30 days sliding from last use; several per account; all deleted on blocking, and status re-checked on every request. Sanctum's SPA cookie mode and CSRF are not used; the web panel's origin is allowed by CORS configuration.
 
-**Two sessions on one device** for Customer mode: the client keeps a staff slot and a customer slot and sends the token of the active mode. A refused token ends only its own session. A logout runs the session-end hooks first, while the session still works — the push registrar revokes that session's device — waits for each at most five seconds, and a second logout of the same slot joins the running one (`DL-32`).
+**Two sessions on one device** for Customer mode: the client keeps a staff slot and a customer slot and sends the token of the active mode. A refused token ends only its own session. A logout runs the session-end hooks first, while the session still works — the push registrar revokes that session's device — waits for each at most five seconds, and a second logout of the same slot joins the running one (`DL-32`). One request option, `keepOnUnauthenticated`, keeps the session on `401 authentication_required` (`401 account_blocked` still drops it): only the account deletion (`POST /customer/account/delete`) and its check (`GET /customer/profile`) use it, because for them that answer means the account is already deleted (`DL-140`).
 
 ## 9. Authorization Layers
 
