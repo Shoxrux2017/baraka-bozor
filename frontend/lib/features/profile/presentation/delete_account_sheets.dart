@@ -636,7 +636,7 @@ class _TelegramLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String shown = formatPhone(phone).replaceAll(' ', ' ');
+    final String shown = formatPhone(phone).replaceAll(' ', '\u00A0');
     final String text = l10n.deleteCodeWillCome(shown);
     final int at = text.indexOf(shown);
     const TextStyle base = TextStyle(

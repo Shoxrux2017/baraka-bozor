@@ -9,6 +9,8 @@ import 'package:baraka_bozor/features/addresses/application/delivery_address.dar
 import 'package:baraka_bozor/features/catalog/application/recent_searches.dart';
 import 'package:baraka_bozor/features/profile/application/account_deletion_controller.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
+import 'package:baraka_bozor/core/storage/preference_store.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -224,6 +226,119 @@ void main() {
     expect(own.read(sessionControllerProvider).value, isA<SignedOut>());
   });
 
+  Future<ProviderContainer> signedInContainer(
+    PreferenceStore preferences,
+    InMemoryTokenStore tokens,
+  ) async {
+    tokens.tokens[SessionSlot.customer] = 'c';
+    final FakeAuthRepository auth = FakeAuthRepository();
+    auth.identities[SessionSlot.customer] = user(id: 'c');
+    final ProviderContainer own = ProviderContainer(
+      overrides: [
+        accountDeletionRepositoryProvider.overrideWithValue(repository),
+        tokenStoreProvider.overrideWithValue(tokens),
+        authRepositoryProvider.overrideWithValue(auth),
+        preferenceStoreProvider.overrideWithValue(preferences),
+      ],
+    );
+    addTearDown(own.dispose);
+    await own.read(sessionControllerProvider.future);
+    return own;
+  }
+
+  test('a store that fails to remove still ends with the session '
+      'dropped', () async {
+    final InMemoryTokenStore tokens = InMemoryTokenStore();
+    final ProviderContainer own = await signedInContainer(
+      _FailingPreferenceStore(),
+      tokens,
+    );
+    final List<Object> reported = <Object>[];
+    final FlutterExceptionHandler? previous = FlutterError.onError;
+    FlutterError.onError = (FlutterErrorDetails d) => reported.add(d.exception);
+    addTearDown(() => FlutterError.onError = previous);
+
+    await own
+        .read(accountDeletionControllerProvider.notifier)
+        .forgetAccount('c');
+
+    expect(tokens.tokens.containsKey(SessionSlot.customer), isFalse);
+    expect(own.read(sessionControllerProvider).value, isA<SignedOut>());
+    expect(reported, isNotEmpty);
+  });
+
+  test('no account id still drops the Customer session', () async {
+    final InMemoryTokenStore tokens = InMemoryTokenStore();
+    final ProviderContainer own = await signedInContainer(
+      InMemoryPreferenceStore(),
+      tokens,
+    );
+
+    await own
+        .read(accountDeletionControllerProvider.notifier)
+        .forgetAccount(null);
+
+    expect(tokens.tokens.containsKey(SessionSlot.customer), isFalse);
+    expect(own.read(sessionControllerProvider).value, isA<SignedOut>());
+  });
+
+  for (final (String name, ApiFailure failure) in <(String, ApiFailure)>[
+    ('a 504', const ApiRefusal(ApiError(status: 504, code: 'gateway_timeout'))),
+    ('a 502', const ApiRefusal(ApiError(status: 502, code: 'bad_gateway'))),
+    ('a 503', const ApiRefusal(ApiError(status: 503, code: 'unavailable'))),
+    ('a gateway page', const MalformedResponseFailure(status: 502)),
+  ]) {
+    test('$name on the delete runs the check: gone means deleted', () async {
+      await controller().requestCode();
+      repository.deleteFailures.add(failure);
+      repository.existsFailures.add(
+        const ApiRefusal(
+          ApiError(status: 401, code: 'authentication_required'),
+        ),
+      );
+
+      expect(await controller().delete('123456'), DeletionOutcome.deleted);
+      expect(repository.checks, 1);
+    });
+
+    test('$name on the delete then a living account keeps the code and '
+        'offers Повторить', () async {
+      await controller().requestCode();
+      repository.deleteFailures.add(failure);
+      repository.exists = true;
+
+      expect(await controller().delete('123456'), DeletionOutcome.refused);
+
+      expect(repository.checks, 1);
+      expect(state().offline, isTrue);
+      expect(state().failedAction, DeletionAction.delete);
+      expect(state().entryOpen, isTrue);
+    });
+  }
+
+  test('a 500 on the delete is a server error without a check', () async {
+    await controller().requestCode();
+    repository.deleteFailures.add(
+      const ApiRefusal(ApiError(status: 500, code: 'server_error')),
+    );
+
+    expect(await controller().delete('123456'), DeletionOutcome.refused);
+
+    expect(repository.checks, 0);
+    expect(state().failure, isA<ApiRefusal>());
+  });
+
+  test('a gateway answer to the code request is not checked', () async {
+    repository.requestFailures.add(
+      const ApiRefusal(ApiError(status: 504, code: 'gateway_timeout')),
+    );
+
+    expect(await controller().requestCode(), isFalse);
+
+    expect(repository.checks, 0);
+    expect(state().failure, isA<ApiRefusal>());
+  });
+
   test('a right code deletes', () async {
     await controller().requestCode();
 
@@ -310,4 +425,12 @@ void main() {
     expect(state().resendInSeconds, 0);
     await tester.pump(const Duration(seconds: 60));
   });
+}
+
+/// A preference store whose removals fail, like a secure store that throws.
+class _FailingPreferenceStore extends InMemoryPreferenceStore {
+  @override
+  Future<void> remove(String key) async {
+    throw StateError('keystore unavailable');
+  }
 }

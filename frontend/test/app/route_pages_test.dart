@@ -13,7 +13,6 @@ const Set<String> _entryNames = <String>{
   'customer-name',
   'session-unreachable',
   'wrong-surface',
-  'account-deleted',
   'shopper-done',
   'catalog-home',
   'customer-favorites',
@@ -35,6 +34,8 @@ const Set<String> _entryNames = <String>{
 };
 
 const Set<String> _risingNames = <String>{'customer-order-rate'};
+
+const Set<String> _fadingNames = <String>{'account-deleted'};
 
 const Set<String> _pageNames = <String>{
   'customer-code',
@@ -128,7 +129,7 @@ void main() {
   });
 
   testWidgets(
-    'the flat routes stand in place, the rating rises and the rest slide in',
+    'the flat routes stand in place, the rating rises, the deleted page fades and the rest slide in',
     (WidgetTester tester) async {
       await tester.pumpWidget(const SizedBox());
       final BuildContext context = tester.element(find.byType(SizedBox));
@@ -137,6 +138,7 @@ void main() {
       final Set<String> standing = <String>{};
       final Set<String> sliding = <String>{};
       final Set<String> rising = <String>{};
+      final Set<String> fading = <String>{};
       for (final RouteBase route in _all(router)) {
         if (route is! GoRoute || route.pageBuilder == null) {
           continue;
@@ -149,7 +151,11 @@ void main() {
         if (page is NoTransitionPage) {
           standing.add(name);
         } else if (page is CustomTransitionPage) {
-          rising.add(name);
+          if (page.fullscreenDialog) {
+            rising.add(name);
+          } else {
+            fading.add(name);
+          }
         } else {
           expect(page, isA<MaterialPage<dynamic>>(), reason: name);
           sliding.add(name);
@@ -158,6 +164,7 @@ void main() {
       expect(standing, _entryNames);
       expect(sliding, _pageNames);
       expect(rising, _risingNames);
+      expect(fading, _fadingNames);
     },
   );
 
@@ -236,6 +243,49 @@ void main() {
         expect(rising.reverseTransitionDuration, Duration(milliseconds: down));
         expect(rising.name, 'customer-order-rate');
         expect(rising.restorationId, isNotNull);
+      },
+    );
+  }
+
+  for (final (bool reduced, int up) in <(bool, int)>[
+    (false, 320),
+    (true, 200),
+  ]) {
+    testWidgets(
+      'the deleted account page fades in${reduced ? ' (reduced)' : ''}',
+      (WidgetTester tester) async {
+        late BuildContext context;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(disableAnimations: reduced),
+            child: Builder(
+              builder: (BuildContext c) {
+                context = c;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+        final GoRouter router = buildRouter();
+        addTearDown(router.dispose);
+        final GoRoute route = _all(router)
+            .whereType<GoRoute>()
+            .firstWhere((GoRoute r) => r.name == 'account-deleted');
+        final Page<dynamic> page = route.pageBuilder!(
+          context,
+          _stateFor(router, route.name, route.path),
+        );
+        expect(page, isA<CustomTransitionPage<dynamic>>());
+        final CustomTransitionPage<dynamic> fading =
+            page as CustomTransitionPage<dynamic>;
+        expect(fading.fullscreenDialog, isFalse);
+        expect(fading.transitionDuration, Duration(milliseconds: up));
+        expect(
+          fading.reverseTransitionDuration,
+          const Duration(milliseconds: 200),
+        );
+        expect(fading.name, 'account-deleted');
+        expect(fading.restorationId, isNotNull);
       },
     );
   }

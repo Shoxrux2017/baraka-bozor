@@ -25,6 +25,7 @@ import '../../auth/presentation/code_entry.dart';
 import '../../auth/presentation/lock_card.dart';
 import '../../auth/presentation/rise_in.dart';
 import '../application/account_deletion_controller.dart';
+import '../domain/account_deletion.dart';
 import 'delete_account_sheets.dart';
 import 'deletion_no_code_sheet.dart';
 
@@ -59,6 +60,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   /// The «Не пришёл код?» sheet is open and shows a refused resend itself.
   bool _sheetOpen = false;
+
+  /// An order that stops the deletion arrived while the «Не пришёл код?»
+  /// sheet was open: it closes first, then this one shows.
+  UnfinishedOrder? _blockedBehindSheet;
 
   late final AppLifecycleListener _lifecycle;
 
@@ -141,6 +146,22 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     if (sent) {
       _code.clear();
     }
+    final UnfinishedOrder? blocked = _blockedBehindSheet;
+    if (blocked != null) {
+      _blockedBehindSheet = null;
+      await showUnfinishedOrderSheet(context, blocked, leaveScreen: true);
+    }
+  }
+
+  /// Whichever call the server answered with `409`, the Customer is told
+  /// which order stops the deletion; one sheet at a time.
+  void _showBlocked(UnfinishedOrder order) {
+    if (_sheetOpen) {
+      _blockedBehindSheet = order;
+      Navigator.of(context).pop(false);
+      return;
+    }
+    unawaited(showUnfinishedOrderSheet(context, order, leaveScreen: true));
   }
 
   void _onWrongCode(AccountDeletionState state) {
@@ -164,6 +185,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   void _onFlowChange(AccountDeletionState before, AccountDeletionState now) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final UnfinishedOrder? order = now.unfinished;
+    if (order != null && !identical(order, before.unfinished)) {
+      _showBlocked(order);
+    }
     if (now.locked && !before.locked) {
       _redTimer?.cancel();
       _red = false;
@@ -291,15 +316,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         // the page is open to a signed-out phone.
         unawaited(HapticFeedback.successNotification());
         context.go(AppPaths.accountDeleted);
-        if (account != null) {
-          await controller.forgetAccount(account);
-        }
-      case DeletionOutcome.unfinished:
-        final order = ref.read(accountDeletionControllerProvider).unfinished;
-        if (order != null) {
-          await showUnfinishedOrderSheet(context, order, leaveScreen: true);
-        }
-      case DeletionOutcome.refused:
+        await controller.forgetAccount(account);
+      case DeletionOutcome.unfinished || DeletionOutcome.refused:
+        // The blocked-order sheet is shown by the state listener.
         break;
     }
   }

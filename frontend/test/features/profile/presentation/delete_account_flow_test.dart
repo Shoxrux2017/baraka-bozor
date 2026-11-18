@@ -318,6 +318,116 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('Оставить аккаунт sends nothing', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(byKey('delete-cancel'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-account-sheet'), findsNothing);
+      expect(deletion.requests, 0);
+      await finish(tester);
+    });
+
+    testWidgets('two quick taps request one code', (tester) async {
+      final Completer<void> hold = Completer<void>();
+      deletion.hold = hold;
+      await openSheet(tester);
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pump();
+      await tester.tap(byKey('delete-confirm'), warnIfMissed: false);
+      await tester.pump();
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      expect(deletion.requests, 1);
+      await finish(tester);
+    });
+
+    testWidgets('after a late answer is ignored the new sheet requests and '
+        'opens the code screen', (tester) async {
+      final Completer<void> hold = Completer<void>();
+      deletion.hold = hold;
+      await openSheet(tester, size: phone);
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pump();
+      await tester.tap(byKey('delete-cancel'));
+      await tester.pumpAndSettle();
+      unawaited(showDeleteAccountSheet(host(tester)));
+      await tester.pumpAndSettle();
+
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('delete-account-screen'), findsNothing);
+      expect(byKey('delete-account-sheet'), findsOneWidget);
+
+      deletion.hold = null;
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pumpAndSettle();
+
+      expect(deletion.requests, 2);
+      expect(byKey('delete-account-screen'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('a late 409 of a closed sheet does not block the new one', (
+      tester,
+    ) async {
+      final Completer<void> hold = Completer<void>();
+      deletion.hold = hold;
+      deletion.requestFailures.add(unfinishedRefusal());
+      await openSheet(tester, size: phone);
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pump();
+      await tester.tap(byKey('delete-cancel'));
+      await tester.pumpAndSettle();
+      unawaited(showDeleteAccountSheet(host(tester)));
+      await tester.pumpAndSettle();
+
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-account-sheet'), findsOneWidget);
+      expect(byKey('delete-unfinished-sheet'), findsNothing);
+      expect(
+        tester.widget<FilledButton>(byKey('delete-confirm')).onPressed,
+        isNotNull,
+      );
+      await finish(tester);
+    });
+
+    for (final String road in <String>['the scrim', 'system back']) {
+      testWidgets('while sending $road closes the sheet and the late answer '
+          'changes nothing', (tester) async {
+        final Completer<void> hold = Completer<void>();
+        deletion.hold = hold;
+        await openSheet(tester, size: phone);
+
+        await tester.tap(byKey('delete-confirm'));
+        await tester.pump();
+        expect(find.text('Отправляем код…'), findsOneWidget);
+
+        if (road == 'the scrim') {
+          await tester.tapAt(const Offset(195, 20));
+        } else {
+          await tester.binding.handlePopRoute();
+        }
+        await tester.pumpAndSettle();
+        expect(byKey('delete-account-sheet'), findsNothing);
+
+        hold.complete();
+        await tester.pumpAndSettle();
+
+        expect(byKey('delete-account-screen'), findsNothing);
+        expect(byKey('delete-account-sheet'), findsNothing);
+        expect(byKey('delete-unfinished-sheet'), findsNothing);
+        await finish(tester);
+      });
+    }
+
     testWidgets('offline the strip offers Повторить', (tester) async {
       deletion.requestFailures.add(const NetworkFailure());
       await openSheet(tester);
@@ -1114,6 +1224,47 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(byKey('delete-account-screen'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('a resend answered 409 shows the blocked face', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      deletion.deleteFailures.add(lockedRefusal(retryAfter: 1));
+      await type(tester, '123456');
+      await tester.tap(byKey('delete-submit'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(buttonText('Получить новый код'), findsOneWidget);
+
+      deletion.requestFailures.add(unfinishedRefusal(number: 1077));
+      await tester.tap(byKey('delete-submit'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-unfinished-sheet'), findsOneWidget);
+      expect(find.text('Заказ № 1077'), findsOneWidget);
+      await tester.tap(byKey('delete-understood'));
+      await tester.pumpAndSettle();
+      expect(byKey('delete-account-screen'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('a resend of the no-code sheet answered 409 shows one '
+        'blocked face', (tester) async {
+      await openCodeScreen(tester, size: phone);
+      await tester.tap(byKey('code-no-code'));
+      await tester.pumpAndSettle();
+      expect(byKey('delete-no-code-sheet'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      deletion.requestFailures.add(unfinishedRefusal(number: 1077));
+      await tester.tap(byKey('resend-button'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('delete-no-code-sheet'), findsNothing);
+      expect(byKey('delete-unfinished-sheet'), findsOneWidget);
+      expect(find.text('Заказ № 1077'), findsOneWidget);
       await finish(tester);
     });
 

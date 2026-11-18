@@ -203,7 +203,7 @@ class AccountDeletionController extends Notifier<AccountDeletionState> {
       if (_isGone(failure)) {
         return _deleted();
       }
-      if (failure is NetworkFailure && failure.mayHaveArrived) {
+      if (_mayHaveArrived(failure)) {
         return _check(generation);
       }
       return _fail(generation, failure, DeletionAction.delete)
@@ -221,15 +221,34 @@ class AccountDeletionController extends Notifier<AccountDeletionState> {
     return _deleted();
   }
 
-  /// Forgets what the device kept for [account] and drops the Customer
-  /// session; the account is gone on the server.
-  Future<void> forgetAccount(String account) async {
-    final store = ref.read(preferenceStoreProvider);
-    await store.remove(RecentSearches.preferenceKey(account));
-    await store.remove(DeliveryAddressChoice.preferenceKey(account));
-    await ref
-        .read(sessionControllerProvider.notifier)
-        .dropSession(SessionSlot.customer);
+  /// Forgets what the device kept for [account] (none when the id is
+  /// unknown) and drops the Customer session. The account is gone on the
+  /// server, so a key that cannot be removed is reported and left: it is
+  /// harmless, and the session is dropped either way.
+  Future<void> forgetAccount(String? account) async {
+    try {
+      if (account != null) {
+        final store = ref.read(preferenceStoreProvider);
+        for (final String key in <String>[
+          RecentSearches.preferenceKey(account),
+          DeliveryAddressChoice.preferenceKey(account),
+        ]) {
+          try {
+            await store.remove(key);
+          } catch (error, stackTrace) {
+            reportUnexpectedError(
+              error,
+              stackTrace,
+              'while forgetting a key of the deleted account',
+            );
+          }
+        }
+      }
+    } finally {
+      await ref
+          .read(sessionControllerProvider.notifier)
+          .dropSession(SessionSlot.customer);
+    }
   }
 
   /// The answer to the delete was lost: asks whether the account is still
@@ -264,6 +283,23 @@ class AccountDeletionController extends Notifier<AccountDeletionState> {
       failedAction: DeletionAction.delete,
     );
     return DeletionOutcome.refused;
+  }
+
+  /// The delete's answer was lost, or only a gateway answered for the server
+  /// (`502`–`504`, or a page that is not the API's): the erasure may have
+  /// committed, so the account is asked about before anything is said.
+  bool _mayHaveArrived(ApiFailure failure) {
+    if (failure is NetworkFailure) {
+      return failure.mayHaveArrived;
+    }
+    if (failure is ApiRefusal) {
+      return failure.status >= 502 && failure.status <= 504;
+    }
+    if (failure is MalformedResponseFailure) {
+      final int? status = failure.status;
+      return status == null || status >= 500;
+    }
+    return false;
   }
 
   /// A `401 authentication_required` from the deletion's own calls: the
