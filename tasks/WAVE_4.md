@@ -20,9 +20,10 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 
 | Gate | Needed by | What the Owner does |
 |---|---|---|
-| VPS in Uzbekistan and a domain | W4-5 | Picks the provider (interview 10.2). Ubuntu 24.04 LTS, 2 vCPU, 4 GB RAM, 40 GB SSD or more, a public IPv4 address, ports 80 and 443 open. Adds the agent's SSH public key. Registers a domain and points `api.` and `panel.` at the server's address |
-| Backup storage in Uzbekistan | W4-5 | A second place, apart from the VPS: an SFTP account or an S3-compatible bucket at another provider or another data centre, about 20 GB. The copies hold Customer data, so they stay in Uzbekistan (ZRU-547 art. 27-1) |
-| Telegram Gateway | W4-4 (verification), W4-5 | Signs in at gateway.telegram.org with their Telegram account and fills in the business details. Copies the API token from the account's API page and, at W4-5, restricts it to the server's IP address. Funds the balance through "Add Funds on Fragment", the only way Telegram's guide names; Fragment probably takes TON, which the Owner checks with their accountant. A code costs $0.01 and an undelivered one is refunded. Codes sent to the account's own number are free, which is how W4-4 is verified |
+| The server | W4-5 step 1 | AWS Lightsail in Frankfurt, Ubuntu 24.04, the 4 GB bundle with IPv4, a static IP, the firewall on 22, 80 and 443, the agent's SSH public key; a free DuckDNS name pointed at it (`DL-141` (1), (2)). The clicks are in `docker/DEPLOY.md`. The provider of the pilot is settled by `DL-141` (1) |
+| The domain | W4-5 step 2 | Registers a `.uz` domain (`barakabozor.uz` is taken) and points `api.` and `panel.` at the server's address |
+| Backup storage | W4-5 step 2 | A second place, apart from the server: an SFTP account or an S3-compatible bucket at another provider, about 20 GB. The stand's copies stay on its own disk (`DL-141` (5)). Since Cabinet resolution No. 415 of 2026-07-29 the copies may sit in a country on its list |
+| Telegram Gateway | W4-4 (verification), W4-5 step 2 | Signs in at gateway.telegram.org with their Telegram account and fills in the business details. Copies the API token from the account's API page and, at W4-5, restricts it to the server's IP address. Funds the balance through "Add Funds on Fragment", the only way Telegram's guide names; Fragment probably takes TON, which the Owner checks with their accountant. A code costs $0.01 and an undelivered one is refunded. Codes sent to the account's own number are free, which is how W4-4 is verified |
 | Google Play | W4-6 | A personal developer account ($25 once, identity check by document); the store shows the Owner's own name as the developer until the account moves to the legal entity. Twelve testers with Google accounts who stay opted in for fourteen days without a break; below twelve, the count starts again. The Owner submits what the agent prepares: the listing, the data-safety answers, the content rating, the reviewers' access |
 | Firebase | W4-8 (verification), W4-5, W4-9 | A Firebase project on the Owner's Google account (the free plan is enough). An Android app registered with the package `uz.barakabozor.app`, and a service-account key for the server. Both files are saved outside the repository, never sent in chat. W4-5 needs the service-account key too: its base64 goes into the server's env file as `FCM_SERVICE_ACCOUNT` (`DL-114` (8)) |
 | Google Maps keys for the release | W4-6 | The app's key from kit stage 4b (`DL-86`) gains the SHA-1 of the upload key and of Play's app-signing key; the server's Geocoding key is restricted to the VPS's address |
@@ -44,7 +45,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Merged (#114); verified, the no-Telegram answer at W4-5 (`DL-111` (3)) |
-| W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
+| W4-5 | First deployment to the Owner's VPS; the web panel published | Step 1: the server. Step 2: domain, backup storage, Telegram | Step 1 (the test stand) in progress; step 2 before W4-6's upload (`DL-141`) |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Preparation merged (#120, `DL-116`); the upload waits for W4-5 and the Play account |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Merged (#116) |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Merged (#118); verified on the Owner's project (`DL-114` (4)) |
@@ -120,7 +121,18 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The reviewer phone of `DL-105`: its own setting and fixed code beside the test phones, allowed in production and refused at boot when its code is the development code; it never receives a staff step, and no Shopper or Courier account can be created on it. `BR-ROLE-011`, `docs/09` section 6 and `AGENTS.md` section 5 are updated with it.
 - Verified with the Owner's token on the Owner's own number, which costs nothing. Until then the driver stays `fake` locally. Done on 2026-10-24 (`DL-111`): the code arrived and signed in, and an unallocated number answered `409`. A number without Telegram met an empty balance, so that check moved to W4-5.
 
-**W4-5. First deployment.**
+**W4-5. First deployment.** Two steps (`DL-141` (1)).
+
+*Step 1, the test stand* (plan `docs/superpowers/plans/2026-11-18-w4-5-test-stand.md`). Two or three acquaintances try the product on AWS Lightsail under a DuckDNS name, signing in with test phones, before the Owner's domain and Telegram exist.
+
+- `APP_ENV=staging`: the production boot check with the fake code driver and test phones whose code is not guessable (`DL-141` (3)).
+- `docker/deploy.sh`, `docker/stack.sh`, the maintenance answer in Caddy, tested in CI by `docker/deploy-test.sh` (`DL-141` (6), (7)).
+- `docker/server/prepare.sh` and the runbook `docker/DEPLOY.md` (`DL-141` (8)); no deploy key while the repository is public (`DL-141` (4)).
+- The tester APK and the panel upload scripts (`DL-141` (9)).
+- Symfony moved to 8.1 (risk row below).
+- Checked on the stand: the server's reach to Firebase and Google; TLS on both hosts; the public client address at Caddy and the app; the panel's relative `current` link; `/up` and `/account-deletion`; a test-phone sign-in; `approvals:expire` from the scheduler; the first night's backup on the server's disk and its restore into a scratch stack.
+
+*Step 2, production*, before W4-6's upload: the bullets below that the stand does not cover, with the Owner's domain, `APP_ENV=production` and the test phones removed.
 
 - Server preparation, written as a script in `docker/DEPLOY.md`:
   - a deploy user;
