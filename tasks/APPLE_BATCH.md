@@ -37,7 +37,7 @@ Rules for every stage:
 | 18 | Addresses | 9 | — | Merged (PR #141) |
 | 19 | New address | 12 | reverse geocoding, zone | Merged (PR #142) |
 | 20 | Sign-in | 14 | tries left | Merged (PR #143) |
-| 21 | Account deletion | 11 | erasure race | Planned |
+| 21 | Account deletion | 11 | erasure race | Merged (PR #144) |
 | 22 | System screens | 10 | — | Merged (PR #140) |
 
 Item `fav-3` is split: its tab part in stage 2, its list part in stage 10.
