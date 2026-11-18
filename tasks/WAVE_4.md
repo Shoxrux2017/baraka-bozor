@@ -259,7 +259,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
 | `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |
-| The other Symfony components stay on 8.0, past its maintenance, while `symfony/http-foundation` is on 8.1 (`DL-107` (10)). Move `symfony/*` to 8.1 before W4-5 | Open, W4-5 |
+| The other Symfony components stay on 8.0, past its maintenance, while `symfony/http-foundation` is on 8.1 (`DL-107` (10)). Move `symfony/*` to 8.1 before W4-5 | Closed (DL-141): `symfony/*` on 8.1.x |
 | Carried from Wave 2: CORS in production | Closed by W4-2 (`DL-107` (6)) |
 | Carried from Wave 2: device pruning, the push token change stream | Pruning closed by W4-8 (`DL-114` (7)); the stream closed by W4-9 (`DL-115` (9)) |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
