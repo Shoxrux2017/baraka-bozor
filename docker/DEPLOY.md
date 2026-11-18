@@ -268,7 +268,7 @@ tasks/scripts/build_release.ps1 -Apk -ApiEnv .env.stand [-OutDir <path>]
 BB_API_BASE_URL=https://api.<name>.duckdns.org/api/v1
 ```
 
-`-Identity` defaults to `$HOME\.ssharakabozor_vps`. Both scripts refuse a
+`-Identity` defaults to `~/.ssh/barakabozor_vps`. Both scripts refuse a
 modified tree or a HEAD that is not on `origin/main`, and print names, never
 values. The APK is written to `frontend/build/release/` as
 `barakabozor-<version>+<code>-<api host>.apk` after `apksigner` has proved it is
