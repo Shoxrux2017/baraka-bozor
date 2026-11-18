@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Runtime;
 
+use App\Modules\Auth\TestPhones;
 use App\Modules\Notifications\Push\PushSender;
 use App\Providers\AppServiceProvider;
 use App\Support\Runtime\ProductionConfiguration;
+use Illuminate\Database\Console\Migrations\FreshCommand;
+use Illuminate\Database\Console\WipeCommand;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionProperty;
 use RuntimeException;
 use Tests\Support\FcmTestKey;
 use Tests\TestCase;
@@ -208,7 +213,7 @@ final class ProductionConfigurationTest extends TestCase
         $this->assertSame([$name], ProductionConfiguration::problems(staging: true));
     }
 
-    public function test_the_boot_runs_the_check_in_production_and_staging_only(): void
+    public function test_the_boot_skips_the_check_only_in_local_and_testing(): void
     {
         config(['app.key' => '']);
         $provider = new AppServiceProvider($this->app);
@@ -220,7 +225,7 @@ final class ProductionConfigurationTest extends TestCase
                 $provider->boot($this->app->make(Router::class));
             }
 
-            foreach (['staging', 'production'] as $environment) {
+            foreach (['staging', 'production', 'prod'] as $environment) {
                 $this->app['env'] = $environment;
 
                 try {
@@ -232,6 +237,58 @@ final class ProductionConfigurationTest extends TestCase
             }
         } finally {
             $this->app['env'] = $original;
+        }
+    }
+
+    public function test_destructive_database_commands_are_prohibited_on_servers_only(): void
+    {
+        $provider = new AppServiceProvider($this->app);
+        $original = $this->app['env'];
+        $commands = [WipeCommand::class, FreshCommand::class];
+        $prohibited = static function (string $class): bool {
+            $property = new ReflectionProperty($class, 'prohibitedFromRunning');
+
+            return $property->getValue();
+        };
+
+        try {
+            foreach (['local' => false, 'testing' => false, 'staging' => true, 'production' => true, 'prod' => true] as $environment => $expected) {
+                $this->app['env'] = $environment;
+                $provider->boot($this->app->make(Router::class));
+
+                foreach ($commands as $command) {
+                    $this->assertSame($expected, $prohibited($command), "{$command} in {$environment}");
+                }
+            }
+        } finally {
+            $this->app['env'] = $original;
+            DB::prohibitDestructiveCommands(false);
+        }
+    }
+
+    public function test_the_container_test_phones_honour_staging(): void
+    {
+        $original = $this->app['env'];
+
+        try {
+            $this->app['env'] = 'staging';
+            config(['login_codes.test_phones' => ['+998900000099'], 'login_codes.test_code' => '000000']);
+            $this->app->forgetInstance(TestPhones::class);
+
+            try {
+                $this->app->make(TestPhones::class);
+                $this->fail('A guessable code was accepted on staging.');
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('LOGIN_CODE_TEST_CODE', $e->getMessage());
+            }
+
+            config(['login_codes.test_code' => '730154']);
+            $this->app->forgetInstance(TestPhones::class);
+
+            $this->assertSame('730154', $this->app->make(TestPhones::class)->codeFor('+998900000099'));
+        } finally {
+            $this->app['env'] = $original;
+            $this->app->forgetInstance(TestPhones::class);
         }
     }
 

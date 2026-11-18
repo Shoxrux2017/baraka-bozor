@@ -32,7 +32,7 @@ final class TestPhones
      */
     public function __construct(
         private readonly array $phones,
-        private readonly ?string $code,
+        #[\SensitiveParameter] private readonly ?string $code,
         bool $production = false,
         private readonly ?string $reviewerPhone = null,
         #[\SensitiveParameter] private readonly ?string $reviewerCode = null,
