@@ -234,7 +234,7 @@ script then waits for the stack's scheduler to write the expiry instead of
 running `approvals:expire` itself. Remove the rehearsal only with
 `docker compose --env-file <the rehearsal's env file> -f docker/compose.prod.yaml down -v`.
 
-`docker/DEPLOY.md` (W4-5) will be the server runbook.
+`docker/DEPLOY.md` is the server runbook: the test stand's preparation (`docker/server/prepare.sh`), env files, deploys, recovery and live checks (`DL-141`).
 
 ## Backups
 
