@@ -43,9 +43,11 @@ write_file() {
 
 # 1. Packages.
 say "packages"
+# A changed config file keeps the local version instead of asking.
+APT_KEEP=(-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold)
 apt-get update -qq
-apt-get upgrade -y -qq
-apt-get install -y -qq ca-certificates curl git jq ufw unattended-upgrades
+apt-get upgrade -y -qq "${APT_KEEP[@]}"
+apt-get install -y -qq "${APT_KEEP[@]}" ca-certificates curl git jq ufw unattended-upgrades
 
 # 2. Swap, for the image builds on a 4 GB machine.
 if ! swapon --show=NAME --noheadings | grep -qx "$SWAP_FILE"; then
@@ -75,7 +77,7 @@ docker_list="deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/
 if write_file /etc/apt/sources.list.d/docker.list 644 <<< "$docker_list"; then
   apt-get update -qq
 fi
-apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+apt-get install -y -qq "${APT_KEEP[@]}" docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 install -m 0755 -d /etc/docker
 if write_file /etc/docker/daemon.json 644 <<< '{"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"5"},"userland-proxy":false}'; then
   say "Docker's daemon settings changed; restarting Docker"

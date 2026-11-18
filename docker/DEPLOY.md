@@ -171,9 +171,12 @@ of names is `docker/production.env.example`.
 
 What the fake driver means for the testers: it records a code in memory and
 delivers nothing, so a tester signs in **only** with a number the Owner gave
-them, and the fixed code. A test phone is a Customer only; a Shopper or a
-Courier cannot sign in on the phone on the stand (staff sign in with a code first,
-`DL-77`), so staff screens are tried in the panel.
+them, and the fixed code. A test phone works for every role that signs in with a
+code: as a Customer it opens a Customer account; when an Admin has made a Shopper
+or Courier account on that number in the panel, the code is followed by the staff
+password step (`DL-77`, `docs/09` section 7). The Shopper's and the Courier's
+screens are in the app only; the panel serves the Operator, the Admin and the
+Manager, who sign in with a password.
 
 ### The backup's file
 
@@ -249,7 +252,7 @@ it, and enters the business settings.
 
 ## 5. The panel and the APK
 
-Both are built on the Owner's Windows machine from `main` (`DL-141` (9)); the
+Both are built on the agent's Windows machine from `main` (`DL-141` (9)); the
 scripts' headers list their parameters.
 
 ```text
@@ -263,6 +266,11 @@ tasks/scripts/build_release.ps1 -Apk -ApiEnv .env.stand
 with the upload key and sent to the testers by the Owner. A later install from
 Google Play needs the stand's APK removed first, because Play signs with its own
 key. There is no iOS build: a tester with an iPhone tries the panel only.
+
+The address map in a release build needs the upload key's SHA-1 on the app's Maps
+key (step 6 of `docs/store/play-console.ru.md`); until the Owner adds it the map
+shows "Authorization failure" and a tester cannot place an address. Check the map
+on the stand's APK before it goes to the testers.
 
 ## 6. Later releases and rollback
 
