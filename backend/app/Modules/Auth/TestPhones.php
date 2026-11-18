@@ -10,8 +10,10 @@ use RuntimeException;
  * The phone numbers that sign in without a delivered code
  * (`docs/07-architecture.md` Section 8), of two kinds:
  *
- * - test phones: verify with one fixed code, for the Owner and development.
- *   Empty in production, where the boot refuses any (`DL-11`);
+ * - test phones: verify with one fixed code, for the Owner, development and
+ *   the staging test stand (`DL-141`). On the stand the code must not be
+ *   guessable, as the repository is public. Empty in production, where the
+ *   boot refuses any (`DL-11`);
  * - the store reviewer's phone: the one exception allowed in production, with
  *   a fixed code of its own that differs from the test code (`DL-105`). It
  *   opens a Customer account only: no staff account may sit on it.
@@ -34,6 +36,7 @@ final class TestPhones
         bool $production = false,
         private readonly ?string $reviewerPhone = null,
         #[\SensitiveParameter] private readonly ?string $reviewerCode = null,
+        bool $staging = false,
     ) {
         $this->guardReviewer();
 
@@ -50,9 +53,13 @@ final class TestPhones
                 'LOGIN_CODE_TEST_PHONES is set but LOGIN_CODE_TEST_CODE is not a '.LoginCodePolicy::DIGITS.'-digit code.'
             );
         }
+
+        if ($staging && LoginCodePolicy::isGuessable($this->code)) {
+            throw new RuntimeException('LOGIN_CODE_TEST_CODE is too easy to guess for a staging server.');
+        }
     }
 
-    public static function fromConfig(bool $production): self
+    public static function fromConfig(bool $production, bool $staging = false): self
     {
         $phones = config('login_codes.test_phones');
         $code = config('login_codes.test_code');
@@ -68,6 +75,7 @@ final class TestPhones
             $production,
             is_string($reviewerPhone) && $reviewerPhone !== '' ? $reviewerPhone : null,
             is_string($reviewerCode) && $reviewerCode !== '' ? $reviewerCode : null,
+            $staging,
         );
     }
 

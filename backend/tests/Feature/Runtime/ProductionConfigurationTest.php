@@ -182,20 +182,54 @@ final class ProductionConfigurationTest extends TestCase
         ProductionConfiguration::assertComplete($this->app);
     }
 
-    public function test_the_boot_runs_the_check_in_production_only(): void
+    public function test_staging_accepts_the_fake_code_driver(): void
+    {
+        config(['login_codes.driver' => 'fake']);
+
+        $this->assertSame([], ProductionConfiguration::problems(staging: true));
+    }
+
+    /**
+     * @return array<string, array{string, mixed, string}>
+     */
+    public static function stagingGaps(): array
+    {
+        $gaps = self::gaps();
+        unset($gaps['fake driver']);
+
+        return $gaps;
+    }
+
+    #[DataProvider('stagingGaps')]
+    public function test_staging_still_names_every_other_gap(string $key, mixed $value, string $name): void
+    {
+        config([$key => $value]);
+
+        $this->assertSame([$name], ProductionConfiguration::problems(staging: true));
+    }
+
+    public function test_the_boot_runs_the_check_in_production_and_staging_only(): void
     {
         config(['app.key' => '']);
         $provider = new AppServiceProvider($this->app);
         $original = $this->app['env'];
 
         try {
-            $this->app['env'] = 'testing';
-            $provider->boot($this->app->make(Router::class));
+            foreach (['testing', 'local'] as $environment) {
+                $this->app['env'] = $environment;
+                $provider->boot($this->app->make(Router::class));
+            }
 
-            $this->app['env'] = 'production';
-            $this->expectException(RuntimeException::class);
-            $this->expectExceptionMessage('APP_KEY');
-            $provider->boot($this->app->make(Router::class));
+            foreach (['staging', 'production'] as $environment) {
+                $this->app['env'] = $environment;
+
+                try {
+                    $provider->boot($this->app->make(Router::class));
+                    $this->fail("The incomplete configuration was accepted in {$environment}.");
+                } catch (RuntimeException $e) {
+                    $this->assertStringContainsString('APP_KEY', $e->getMessage());
+                }
+            }
         } finally {
             $this->app['env'] = $original;
         }

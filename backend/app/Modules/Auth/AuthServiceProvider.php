@@ -40,7 +40,7 @@ final class AuthServiceProvider extends ServiceProvider
         $this->app->singleton(FakeCodeSink::class);
         $this->app->singleton(
             TestPhones::class,
-            static fn (Application $app): TestPhones => TestPhones::fromConfig($app->environment('production'))
+            static fn (Application $app): TestPhones => TestPhones::fromConfig($app->environment('production'), $app->environment('staging'))
         );
 
         $this->app->bind(CodeDeliveryGateway::class, static function (Application $app): CodeDeliveryGateway {

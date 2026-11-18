@@ -33,11 +33,11 @@ declare(strict_types=1);
 $testPhones = env('LOGIN_CODE_TEST_PHONES');
 
 return [
-    // The fake is the default everywhere except production, which must name
-    // its driver: a production box missing the variable must not deliver
+    // The fake is the default everywhere except production and staging, which
+    // must name their driver: such a box missing the variable must not deliver
     // nothing in silence. An unset APP_ENV counts as production, as it does
     // for the framework.
-    'driver' => env('LOGIN_CODE_DRIVER', env('APP_ENV', 'production') === 'production' ? null : 'fake'),
+    'driver' => env('LOGIN_CODE_DRIVER', in_array(env('APP_ENV', 'production'), ['production', 'staging'], true) ? null : 'fake'),
 
     'test_phones' => is_string($testPhones) && trim($testPhones) !== ''
         ? array_values(array_filter(array_map('trim', explode(',', $testPhones))))

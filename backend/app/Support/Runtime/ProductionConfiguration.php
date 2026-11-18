@@ -15,14 +15,16 @@ use RuntimeException;
  * or an unsafe setting must not start serving in silence. It names the settings
  * that are wrong and never their values (`AGENTS.md` §5). Exactly one CORS
  * origin is required: Caddy copies the variable verbatim into a header that
- * takes one.
+ * takes one. The staging test stand (`DL-141`) runs the same check, except that
+ * it may use the fake code driver, whose test phones are guarded in
+ * `TestPhones`.
  */
 final class ProductionConfiguration
 {
     /**
      * @return list<string> the names of the settings that are missing or unsafe
      */
-    public static function problems(): array
+    public static function problems(bool $staging = false): array
     {
         $problems = [];
 
@@ -46,7 +48,7 @@ final class ProductionConfiguration
             $problems[] = 'DB_PASSWORD';
         }
 
-        if (! is_string(config('login_codes.driver')) || self::blank(config('login_codes.driver')) || config('login_codes.driver') === 'fake') {
+        if (! is_string(config('login_codes.driver')) || self::blank(config('login_codes.driver')) || (config('login_codes.driver') === 'fake' && ! $staging)) {
             $problems[] = 'LOGIN_CODE_DRIVER';
         }
 
@@ -95,7 +97,7 @@ final class ProductionConfiguration
      */
     public static function assertComplete(Application $app): void
     {
-        $problems = self::problems();
+        $problems = self::problems($app->environment('staging'));
 
         if ($problems !== []) {
             throw new RuntimeException('Production configuration is incomplete or unsafe: '.implode(', ', $problems).'.');
