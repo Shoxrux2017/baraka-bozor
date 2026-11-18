@@ -83,9 +83,14 @@ trap cleanup EXIT
 # --- The scratch repository ---------------------------------------------------
 git_work() { git -C "$W/work" -c core.autocrlf=false -c user.name=deploy-test -c user.email=deploy-test@localhost "$@"; }
 
-git clone -q -c core.autocrlf=false "$SRC" "$W/work"
-git_work remote remove origin
-git_work checkout -q -B main
+# The checkout's files without its history: CI checks out a shallow clone, and
+# a clone of that could not push into a new repository ("shallow update not
+# allowed").
+mkdir -p "$W/work"
+git -C "$SRC" archive --format=tar HEAD | tar -x -C "$W/work"
+git init -q -b main "$W/work"
+git_work add -A
+git_work commit -q -m "release 0: the checkout's files"
 git init -q --bare -b main "$W/origin.git"
 git_work remote add origin "$W/origin.git"
 
